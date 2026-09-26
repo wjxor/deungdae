@@ -9,9 +9,8 @@
 - 개발 코드는 아직 없다. 설계 단계
 - 공공데이터 8종 활용 승인, 카카오 개발자 앱 키 발급 완료 (조원)
 - 캡스톤 프로젝트 신청서 작성 완료 단계 (과제명: 공공 안전데이터 기반 시간대별 안심 보행경로 추천 서비스)
-- 로컬 저장소 초기 구조 생성·첫 커밋 완료 (README, .gitignore, .env.example, shared/types.ts, apps/·data/ 폴더)
-- 원격 저장소는 상협 개인 계정에 만들 예정
-- **다음 작업: GitHub 원격 저장소 생성·push → collaborator 초대·branch protection** (아래 "GitHub 세팅 계획")
+- 저장소 초기 구조 생성·push 완료 — https://github.com/wjxor/deungdae (공개)
+- **다음 작업: collaborator 초대(승민·근영 GitHub 아이디 필요) → `main` branch protection** (아래 "GitHub 세팅 계획")
 
 ## 지금 할 일 (4주차 발표 전)
 
@@ -56,6 +55,7 @@
 
 - **스택**: TypeScript + React(Vite, PWA) / TypeScript + NestJS / PostgreSQL + PostGIS(Supabase) / Python 전처리 — 3주차 발표자료 14페이지
 - **개발 환경**: 로컬 개발, 도커는 당분간 안 씀. DB는 Supabase 공용 인스턴스를 셋이 같이 사용
+- **저장소**: 상협 개인 계정의 공개 저장소 `wjxor/deungdae`, 모노레포
 - **지도·경로 API는 카카오.** 티맵과 공식 문서로 비교함. 도보 경로 기능(경유지 5개, 탐색 옵션)과 무료 한도(일 1,000건)는 같고, 티맵의 차별점인 구간별 도로·시설 정보(지하보도·육교 등)는 안전점수에 반영하지 않기로 해서 필요 없음. 카카오는 키가 이미 있어서 선택
 - 티맵 보행자 API는 예비 — 카카오 도보 경로 품질 문제 시 경로 호출 모듈만 교체
 - **안전점수**: 공공데이터 시설 밀도(가로등·보안등·CCTV·안심벨·지구대·24시 시설)만 사용. 지하보도·육교·계단 같은 구간 성격은 반영하지 않음

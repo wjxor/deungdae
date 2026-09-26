@@ -42,3 +42,6 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# 개인 작업 기록 (Claude Code 프롬프트 로그) — 로컬에만 둔다
+docs/prompts.md

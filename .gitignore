@@ -36,6 +36,9 @@ data/processed/
 *.prj
 *.cpg
 
+# 스크립트 실행 결과 (API 응답 원본)
+scripts/output/
+
 # OS·에디터
 .DS_Store
 Thumbs.db

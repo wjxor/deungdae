@@ -35,6 +35,7 @@
 ├── apps/
 │   ├── web/           # React + Vite (승민)
 │   └── api/           # NestJS (상협)
+├── scripts/           # 실험·검증용 스크립트 (카카오 도보 API 테스트 등)
 └── data/              # Python 전처리 노트북·스크립트 (근영)
 ```
 
@@ -55,6 +56,9 @@ cp .env.example .env   # 값은 팀 채널에서 받아 채운다
 # 2. 서버 (apps/api) — 작성 예정
 # 3. 클라이언트 (apps/web) — 작성 예정
 # 4. 데이터 전처리 (data) — data/README.md 참고
+
+# 5. 카카오 도보 API 테스트 — route_mode 3종 비교 (Node 22.18+, 의존성 없음)
+node --env-file=.env scripts/kakao-walk-test.ts "반석역" "노은도서관"
 ```
 
 ## 협업 규칙

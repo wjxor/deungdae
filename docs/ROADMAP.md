@@ -10,11 +10,13 @@
 - 공공데이터 8종 활용 승인, 카카오 개발자 앱 키 발급 완료 (조원)
 - 캡스톤 프로젝트 신청서 작성 완료 단계 (과제명: 공공 안전데이터 기반 시간대별 안심 보행경로 추천 서비스)
 - 저장소 초기 구조 생성·push 완료 — https://github.com/wjxor/deungdae (공개)
-- **다음 작업: collaborator 초대(승민·근영 GitHub 아이디 필요) → `main` branch protection** (아래 "GitHub 세팅 계획")
+- `main` 보호 룰셋 적용 완료 — PR 필수 + 승인 1명, 강제 push·삭제 금지 (아래 "브랜치 전략")
+- 카카오 도보 API 호출 테스트는 REST 키를 받은 뒤 실행
+- **다음 작업: collaborator 초대 (승민·근영 GitHub 아이디 필요)** (아래 "GitHub 세팅 계획")
 
 ## 지금 할 일 (4주차 발표 전)
 
-- [ ] **GitHub 저장소·브랜치 전략 세팅** — 상협 (Claude Code 첫 작업)
+- [ ] **GitHub 저장소·브랜치 전략 세팅** — 상협 (Claude Code 첫 작업). 저장소 생성·`main` 보호 완료, collaborator 초대 남음
 - [ ] **카카오 도보 API 실제 호출 테스트** — 상협. 발급 키로 대전 좌표를 넣어 응답 확인, 캡처해서 4주차 발표에 "권한 확인 완료" 근거로 사용
 - [ ] **`route_mode` 3종 비교 실험** — 상협. 대전 실제 귀갓길 5~10쌍으로 `BROAD_FIRST`/`SHORTEST`/`ACCESSIBLE` 결과가 얼마나 다른지 측정 (총거리, 경로 겹침). 안심경로 방식 결정의 근거
 - [ ] **데이터 검증** — 근영. 승인 데이터마다 좌표 컬럼 유무, 좌표계, 대전 필터 가능 여부, 전체 건수, **구별 건수**. 지구대·파출소는 주소만 있을 가능성 → 지오코딩 필요 여부 확인
@@ -114,7 +116,11 @@ deungdae/
 
 ### 브랜치 전략
 - `main` 하나 + 기능 브랜치 (`feat/FR-004-shortest-route`, `fix/...`, `docs/...`)
-- `main` 직접 push 금지, PR로 합치고 1명 이상 확인 후 merge (branch protection 설정)
+- `main` 직접 push 금지, PR로 합치고 1명 이상 확인 후 merge — **GitHub 룰셋 "main 보호"로 적용 (2026-09-26)**
+  - 강제 push·`main` 삭제 금지, PR 필수 + 승인 1명
+  - 예외: 저장소 관리자(상협)는 **PR에서만** 승인 없이 merge 가능, 직접 push는 불가. collaborator가 없어 승인해 줄 사람이 없는 동안 작업이 막히지 않게 하려는 것
+  - 조원 합류 후 이 예외를 없앨지 팀에서 정한다 (저장소 Settings → Rules → Rulesets)
+- 머지된 PR의 브랜치는 GitHub가 자동으로 삭제한다 (저장소 설정 "Automatically delete head branches")
 - 커밋 메시지에 요구사항 ID (`FR-004 최단경로 API 구현`)
 - 3명 팀이라 `develop` 브랜치는 두지 않는다
 

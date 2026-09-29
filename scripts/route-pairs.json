@@ -1,0 +1,72 @@
+[
+  {
+    "id": "cnu-gate-gungdong",
+    "district": "유성구",
+    "scene": "대학 정문 → 원룸촌",
+    "origin": { "name": "충남대학교 대덕캠퍼스 정문", "location": { "lat": 36.362668, "lng": 127.344854 } },
+    "destination": { "name": "궁동로데오거리", "location": { "lat": 36.362159, "lng": 127.350218 } }
+  },
+  {
+    "id": "panam-apartment",
+    "district": "동구",
+    "scene": "지하철역 → 아파트",
+    "origin": { "name": "판암역 대전1호선", "location": { "lat": 36.316961, "lng": 127.458427 } },
+    "destination": { "name": "판암역삼정그린코아2단지아파트", "location": { "lat": 36.320592, "lng": 127.461554 } }
+  },
+  {
+    "id": "daejeon-station-woosong",
+    "district": "동구",
+    "scene": "기차역 → 대학가 (원도심)",
+    "origin": { "name": "대전역", "location": { "lat": 36.332294, "lng": 127.434645 } },
+    "destination": { "name": "우송대학교 서캠퍼스", "location": { "lat": 36.33709, "lng": 127.44509 } }
+  },
+  {
+    "id": "onchen-gungdong",
+    "district": "유성구",
+    "scene": "번화가 역 → 원룸촌",
+    "origin": { "name": "유성온천역 대전1호선", "location": { "lat": 36.35372, "lng": 127.341446 } },
+    "destination": { "name": "궁동로데오거리", "location": { "lat": 36.362159, "lng": 127.350218 } }
+  },
+  {
+    "id": "jungangno-daesa",
+    "district": "중구",
+    "scene": "원도심 역 → 주택가",
+    "origin": { "name": "중앙로역 대전1호선", "location": { "lat": 36.328665, "lng": 127.425828 } },
+    "destination": { "name": "대사동성당", "location": { "lat": 36.320607, "lng": 127.416313 } }
+  },
+  {
+    "id": "banseok-noeun-library",
+    "district": "유성구",
+    "scene": "지하철역 → 신도시 주거지 (첫 테스트 쌍)",
+    "origin": { "name": "반석역 대전1호선", "location": { "lat": 36.392181, "lng": 127.314555 } },
+    "destination": { "name": "노은도서관", "location": { "lat": 36.381559, "lng": 127.320633 } }
+  },
+  {
+    "id": "cityhall-saemmeori",
+    "district": "서구",
+    "scene": "지하철역 → 아파트 단지 (둔산 격자)",
+    "origin": { "name": "시청역 대전1호선", "location": { "lat": 36.351524, "lng": 127.386751 } },
+    "destination": { "name": "샘머리1단지아파트", "location": { "lat": 36.36341, "lng": 127.39182 } }
+  },
+  {
+    "id": "songchon-hannam",
+    "district": "대덕구",
+    "scene": "먹자골목 → 대학",
+    "origin": { "name": "송촌먹자골목 공영주차장", "location": { "lat": 36.365496, "lng": 127.438057 } },
+    "destination": { "name": "한남대학교 정문", "location": { "lat": 36.351902, "lng": 127.421505 } }
+  },
+  {
+    "id": "daejeon-station-dju",
+    "district": "동구",
+    "scene": "기차역 → 대학",
+    "origin": { "name": "대전역", "location": { "lat": 36.332294, "lng": 127.434645 } },
+    "destination": { "name": "대전대학교", "location": { "lat": 36.336287, "lng": 127.460042 } }
+  },
+  {
+    "id": "onchen-kaist",
+    "district": "유성구",
+    "scene": "번화가 역 → 대학",
+    "origin": { "name": "유성온천역 대전1호선", "location": { "lat": 36.35372, "lng": 127.341446 } },
+    "destination": { "name": "카이스트 본원 정문", "location": { "lat": 36.365693, "lng": 127.363842 } }
+  }
+]

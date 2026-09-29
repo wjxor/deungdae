@@ -44,6 +44,7 @@
 - [로드맵](docs/ROADMAP.md) — 현재 상태, 할 일, 주차별 일정, 미결정 사항
 - [요구사항](docs/REQUIREMENTS.md) — FR/NFR, 화면, 데이터, 안전점수 규칙
 - [API 명세](docs/API.md) — 엔드포인트, 공용 타입
+- [route_mode 비교 실험](docs/route-mode-experiment.md) — 안심경로 방식 결정 근거 (카카오 도보 경로 3종의 겹침)
 
 ## 실행 방법
 
@@ -57,8 +58,10 @@ cp .env.example .env   # 값은 팀 채널에서 받아 채운다
 # 3. 클라이언트 (apps/web) — 작성 예정
 # 4. 데이터 전처리 (data) — data/README.md 참고
 
-# 5. 카카오 도보 API 테스트 — route_mode 3종 비교 (Node 22.18+, 의존성 없음)
+# 5. 카카오 도보 API 테스트 — route_mode 3종의 거리·경로 겹침 비교 (Node 22.18+, 의존성 없음)
 node --env-file=.env scripts/kakao-walk-test.ts "반석역" "노은도서관"
+#    귀갓길 쌍 목록 일괄 비교 (쌍당 도보 API 3건, 결과: docs/route-mode-experiment.md)
+node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
 ```
 
 ## 협업 규칙

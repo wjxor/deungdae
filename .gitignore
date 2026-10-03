@@ -36,6 +36,10 @@ data/processed/
 *.prj
 *.cpg
 
+# 데이터 검증 결과 목록은 팀 공유용으로 커밋한다 (수백 행). 주소 검색 캐시는 제외
+!data/validation/*.csv
+data/validation/.cache/
+
 # 스크립트 실행 결과 (API 응답 원본)
 scripts/output/
 
@@ -48,3 +52,6 @@ Thumbs.db
 
 # 개인 작업 기록 (Claude Code 프롬프트 로그) — 로컬에만 둔다
 docs/prompts.md
+
+# 발표자료 — 로컬에만 둔다
+pptx/

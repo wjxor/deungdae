@@ -133,7 +133,7 @@ export type User = { id: number; email: string; nickname: string };
 - `mode`는 프론트가 정해서 보낸다 (FR-005: 일몰시각 자동 판별이든 수동 토글이든 서버는 결과만 받는다)
 - `mode`와 무관하게 두 경로를 모두 돌려주고 `recommended`만 바뀐다. 프론트는 추천 경로를 기본 표시하고 탭으로 전환
 - 두 경로가 같으면 `routes`에 하나만 담고 `type`은 `"shortest"`
-- 대상 지역(4주차 팀 결정) 밖 좌표는 400 INVALID_INPUT
+- 대상 지역(대전광역시 전체) 밖 좌표는 400 INVALID_INPUT
 
 내부 동작: 안심경로 계산 방식(A 경유지 우회 / B 후보 비교 / C 자체 엔진)은 4주차 확정. 어느 방식이든 응답 형식은 이 문서를 따른다
 

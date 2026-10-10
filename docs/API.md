@@ -68,7 +68,7 @@ export type Place = {
   location: LatLng;
 };
 
-export type ReportType = "dark" | "no_people" | "suspicious" | "other";
+export type ReportType = "dark" | "no_cctv" | "suspicious" | "other";
 
 export type Report = {
   id: number;

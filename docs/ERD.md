@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-10-10 (승민 리뷰 반영) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -15,7 +15,7 @@ erDiagram
     users |o--o{ reports : "작성"
 
     facility_types {
-        text code PK "streetlight, cctv ..."
+        text code PK "street_light, cctv ..."
         text name "가로등, CCTV ..."
         int weight "안전점수 가중치"
     }
@@ -57,11 +57,9 @@ erDiagram
     }
     sun_times {
         date date PK
-        text location PK "대전"
+        text region PK "대전"
         timestamptz sunrise
         timestamptz sunset
-        timestamptz civil_dawn
-        timestamptz civil_dusk
         timestamptz fetched_at
     }
     users {
@@ -112,7 +110,7 @@ erDiagram
 
 | code | name | weight (REQUIREMENTS 초안) |
 |---|---|---|
-| `streetlight` | 가로등 | 1 |
+| `street_light` | 가로등 | 1 |
 | `security_light` | 보안등 | **미정** |
 | `cctv` | CCTV | 3 |
 | `emergency_bell` | 안심벨(비상벨) | 5 |
@@ -201,11 +199,9 @@ erDiagram
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | `date` | date | PK | |
-| `location` | text | PK, 기본 `대전` | API의 `location` 값. 지금은 대전 한 지점(시청 부근) |
+| `region` | text | PK, 기본 `대전` | 지역명. 천문연 API 요청 파라미터 `location`에 넣는 값 (다른 테이블의 `location`은 좌표라 이름을 나눔). 지금은 대전 한 지점(시청 부근) |
 | `sunrise` | timestamptz | NOT NULL | |
 | `sunset` | timestamptz | NOT NULL | 야간 판별 기준 |
-| `civil_dawn` | timestamptz | | 시민박명 시작 (`civilm`). 야간 기준을 박명으로 바꿀 때 대비 |
-| `civil_dusk` | timestamptz | | 시민박명 종료 (`civile`) |
 | `fetched_at` | timestamptz | 기본 now() | |
 
 API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 있어 저장 전에 정리한다.

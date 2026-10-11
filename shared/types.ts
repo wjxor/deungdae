@@ -43,7 +43,7 @@ export type Place = {
 };
 
 // 화면 S4 유형: 조명 부족 / CCTV 없음 / 우범지역 / 기타
-export type ReportType = "dark" | "no_cctv" | "suspicious" | "other";
+export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";
 
 export type Report = {
   id: number;

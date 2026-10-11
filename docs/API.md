@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-10-10 · 상태: 초안 v0.2 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-10-11 · 상태: 초안 v0.2 (6~7주차 발표 전 확정)
 Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -68,7 +68,7 @@ export type Place = {
   location: LatLng;
 };
 
-export type ReportType = "dark" | "no_cctv" | "suspicious" | "other";
+export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";
 
 export type Report = {
   id: number;

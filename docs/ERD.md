@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-10-10 (승민 리뷰 반영) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-10-11 (승민 리뷰 반영) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -225,7 +225,7 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 | `id` | integer | PK | API `Report.id` |
 | `user_id` | integer | FK → `users.id`, NULL 허용 | 제보에 로그인이 필요한지 미합의라 null 허용 |
 | `location` | geography(Point, 4326) | NOT NULL, GIST 인덱스 | 제보 위치 |
-| `type` | text | NOT NULL | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `suspicious` 우범지역 / `other` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음) |
+| `type` | text | NOT NULL | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `suspicious` 우범지역 / `others` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음) |
 | `description` | text | | |
 | `photo_url` | text | | 사진 첨부 여부 미정. 사진은 클라우드 스토리지에 두고 URL만 저장 (사진 자체 저장은 Won't) |
 | `created_at` | timestamptz | 기본 now() | 최근 30일 감점 계산에 쓴다 |
@@ -268,5 +268,5 @@ GROUP BY f.type, t.weight;
 
 - [ ] 보안등·지구대 가중치 (REQUIREMENTS 점수 표에 없음)
 - [ ] `route_cache` 좌표 반올림 자릿수(초안 4자리)·만료 시간(초안 24시간)
-- [x] 제보 유형: 화면 S4(조명 부족·CCTV 없음·우범지역)에 맞춰 `dark`/`no_cctv`/`suspicious`/`other`로 통일 (2026-10-10 승민 리뷰, `shared/types.ts`·API 명세 함께 수정)
+- [x] 제보 유형: 화면 S4(조명 부족·CCTV 없음·우범지역)에 맞춰 `dark`/`no_cctv`/`suspicious`/`others`로 통일 (2026-10-10 승민 리뷰, 기타는 승민 의견대로 `others`. `shared/types.ts`·API 명세 함께 수정)
 - [ ] 24시 시설 범위: 편의점(카카오 카테고리 검색)·심야 약국 중 무엇을 넣을지 (노션 3.2 "미완료")

@@ -45,6 +45,7 @@
 - [로드맵](docs/ROADMAP.md) — 현재 상태, 할 일, 주차별 일정, 미결정 사항
 - [요구사항](docs/REQUIREMENTS.md) — FR/NFR, 화면, 데이터, 안전점수 규칙
 - [API 명세](docs/API.md) — 엔드포인트, 공용 타입
+- [ERD](docs/ERD.md) — DB 테이블 설계 (PostgreSQL + PostGIS)
 - [route_mode 비교 실험](docs/route-mode-experiment.md) — 안심경로 방식 결정 근거 (카카오 도보 경로 3종의 겹침)
 
 ## 실행 방법

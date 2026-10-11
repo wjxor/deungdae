@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-09-23 · 상태: 초안 v0.2 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-10-11 · 상태: 초안 v0.2 (6~7주차 발표 전 확정)
 Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -68,7 +68,7 @@ export type Place = {
   location: LatLng;
 };
 
-export type ReportType = "dark" | "no_people" | "suspicious" | "other";
+export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";
 
 export type Report = {
   id: number;
@@ -143,7 +143,7 @@ export type User = { id: number; email: string; nickname: string };
 FR-002 안전시설 아이콘 표시용. `bbox` = 남서 lat,lng, 북동 lat,lng. 가로등이 수천 개라 **줌 레벨이 일정 이상일 때만 호출**하고 bbox를 좁게 잡는다.
 
 ```json
-{ "facilities": [ { "type": "streetlight", "location": { "lat": 36.361, "lng": 127.345 } } ] }
+{ "facilities": [ { "type": "street_light", "location": { "lat": 36.361, "lng": 127.345 } } ] }
 ```
 
 ## 5. 인증

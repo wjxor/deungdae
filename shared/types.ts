@@ -71,11 +71,13 @@ export type Facility = {
 export type FacilitiesResponse = { facilities: Facility[] };
 
 export type Place = {
-  id: string;
+  id: string;               // 목록 key용. 주소로 찾은 결과는 카카오 장소 ID가 없어 서버가 만든 값
   name: string;
   address: string;
   location: LatLng;
 };
+
+export type PlacesResponse = { places: Place[] };
 
 // 화면 S4 유형: 조명 부족 / CCTV 없음 / 우범지역 / 기타
 export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";

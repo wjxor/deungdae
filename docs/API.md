@@ -106,11 +106,13 @@ export type Facility = {
 export type FacilitiesResponse = { facilities: Facility[] };
 
 export type Place = {
-  id: string;
+  id: string;               // 목록 key용. 주소로 찾은 결과는 카카오 장소 ID가 없어 서버가 만든 값
   name: string;
   address: string;
   location: LatLng;
 };
+
+export type PlacesResponse = { places: Place[] };
 
 export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";
 
@@ -152,11 +154,21 @@ export type User = { id: number; email: string; nickname: string };
 ## 2. 장소 검색
 
 ### GET /api/places?q=충남대학교&near=36.36,127.34
-서버가 카카오 로컬 API를 호출해 결과를 `Place[]`로 정리해 돌려준다. `near`는 선택, 있으면 가까운 순.
+서버가 카카오 로컬 API를 호출해 결과를 `Place[]`로 정리해 돌려준다.
 
+- `q` (필수) = 장소명이나 주소 (`충남대학교`, `대전 유성구 대학로 99`). 비어 있으면 400 `INVALID_INPUT`. 위치 권한을 거부한 사용자가 출발지를 주소로 넣는 길이기도 하다 (iOS)
+- `near` (선택) = `lat,lng`. 있으면 가까운 순
+- **대전광역시 안의 장소만** 돌려준다. 대전 밖 장소를 고르면 경로 검색이 `OUT_OF_AREA`로 실패하기 때문
+- 최대 15개, 페이지 없음 (카카오 검색 한 번에 받는 최대 개수). 결과가 없으면 에러가 아니라 `{ "places": [] }`
+
+응답 `PlacesResponse`
 ```json
 { "places": [ { "id": "8394", "name": "충남대학교", "address": "대전 유성구 대학로 99", "location": { "lat": 36.3664, "lng": 127.3446 } } ] }
 ```
+
+내부 동작: 카카오 키워드 검색을 먼저 부르고, 결과가 없으면 주소 검색을 한 번 더 부른다. 주소로 찾은 결과는 `name`이 주소와 같다. 대전 안인지는 결과 주소로 거른다 (구현 때 카카오 응답을 보고 조정).
+
+출발지가 현재 위치일 때(FR-003) 입력칸에는 "현재 위치"라고 표시하고 기기 좌표를 그대로 경로 검색에 쓴다. 좌표를 주소로 바꾸는 API는 두지 않는다 (v0.4).
 
 ## 3. 경로 검색
 

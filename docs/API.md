@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-10-13 · 상태: 초안 v0.3 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-10-13 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
 Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -15,12 +15,20 @@ Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>
 ```
 
 | HTTP | code | 상황 |
-|---|---
-| 400 | INVALID_INPUT | 필수 값 누락, 대상 지역 밖 좌표 |
+|---|---|---|
+| 400 | INVALID_INPUT | 필수 값 누락, 형식 오류, 출발지와 도착지가 같음 |
+| 400 | OUT_OF_AREA | 대상 지역(대전광역시) 밖 좌표 |
+| 400 | TOO_FAR | 출발지와 도착지가 도보 경로로 찾기에 너무 멂 (카카오 `TOO_FAR_AWAY`) |
 | 401 | UNAUTHORIZED | 토큰 없음·만료 |
-| 404 | ROUTE_NOT_FOUND | 경로 계산 실패 |
+| 404 | ORIGIN_UNREACHABLE | 출발지 근처에 걸을 수 있는 길이 없음 (카카오 `START_LINK_NOT_FOUND`) |
+| 404 | DESTINATION_UNREACHABLE | 도착지 근처에 걸을 수 있는 길이 없음 (카카오 `END_LINK_NOT_FOUND`) |
+| 404 | ROUTE_NOT_FOUND | 그 밖의 경로 계산 실패 (카카오 `ROUTE_RESULT_NOT_FOUND` 등) |
 | 409 | EMAIL_EXISTS | 회원가입 중복 |
-| 502 | EXTERNAL_API_ERROR | 카카오 API 실패 |
+| 502 | EXTERNAL_API_ERROR | 카카오·천문연 API 실패·응답 없음 |
+| 503 | QUOTA_EXCEEDED | 카카오 도보 경로 하루 무료 한도(1,000건) 초과. 서버 캐시에 있는 같은 요청은 한도와 상관없이 응답한다 |
+
+- 프론트는 `code`로 분기하고, `message`는 화면에 그대로 보여 줄 수 있는 한국어 문장이다
+- 경로를 못 찾은 이유를 코드로 나눈 것은 안내 문구가 달라서다 (v0.4). 예: `OUT_OF_AREA`는 "대전에서만 쓸 수 있어요", `QUOTA_EXCEEDED`는 "오늘은 경로 검색이 많아 잠시 후 다시". B안이면 검색 1회에 도보 API를 3번 불러 하루 약 330회가 상한이라 시연 중에도 날 수 있다
 
 ## 공용 타입 (`shared/types.ts`)
 
@@ -28,6 +36,27 @@ Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>
 
 ```ts
 export type LatLng = { lat: number; lng: number };
+
+export type ErrorCode =
+  | "INVALID_INPUT"
+  | "OUT_OF_AREA"
+  | "TOO_FAR"
+  | "UNAUTHORIZED"
+  | "ORIGIN_UNREACHABLE"
+  | "DESTINATION_UNREACHABLE"
+  | "ROUTE_NOT_FOUND"
+  | "EMAIL_EXISTS"
+  | "EXTERNAL_API_ERROR"
+  | "QUOTA_EXCEEDED";
+
+export type ApiError = {
+  error: {
+    code: ErrorCode;
+    message: string;        // 화면에 그대로 보여 줄 수 있는 한국어 문장
+  };
+};
+
+export type HealthResponse = { status: "ok"; db: "ok" | "error"; time: string };
 
 export type Mode = "day" | "night";
 export type RouteType = "shortest" | "safe";
@@ -136,7 +165,7 @@ export type User = { id: number; email: string; nickname: string };
 - `mode`와 무관하게 두 경로를 모두 돌려주고 `recommended`만 바뀐다. 프론트는 추천 경로를 기본 표시하고 탭으로 전환
 - 안심경로가 최단경로와 같아도 `routes`에는 `shortest`·`safe`를 둘 다 담고(`path`·점수 등 내용이 같음) `sameRoute: true`로 알린다. 그래서 `recommended`에 해당하는 경로는 항상 `routes` 안에 있다. 프론트는 `sameRoute`면 탭 대신 "최단경로가 곧 안심경로"라는 안내를 보여 주는 식으로 처리한다 (v0.3, 2026-10-13 승민 질문으로 정리. v0.2는 "하나만 담고 `type`은 `shortest`"라 밤에는 `recommended: "safe"`인 경로가 없었음)
 - "같다"는 안심경로 계산 결과가 최단경로와 같은 경로라는 뜻이다 (B안이면 안전점수가 가장 높은 후보가 최단 후보 자체일 때)
-- 대상 지역(대전광역시 전체) 밖 좌표는 400 INVALID_INPUT
+- 대상 지역(대전광역시 전체) 밖 좌표는 400 `OUT_OF_AREA`. 출발·도착 근처에 길이 없거나 너무 먼 경우 등 실패 이유별 코드는 공통 규칙의 에러 표
 
 내부 동작: 안심경로 계산 방식(A 경유지 우회 / B 후보 비교 / C 자체 엔진)은 6~7주차 발표 전 팀 회의에서 확정. 어느 방식이든 응답 형식은 이 문서를 따른다
 

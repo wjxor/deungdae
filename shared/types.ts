@@ -3,6 +3,27 @@
 
 export type LatLng = { lat: number; lng: number };
 
+export type ErrorCode =
+  | "INVALID_INPUT"
+  | "OUT_OF_AREA"
+  | "TOO_FAR"
+  | "UNAUTHORIZED"
+  | "ORIGIN_UNREACHABLE"
+  | "DESTINATION_UNREACHABLE"
+  | "ROUTE_NOT_FOUND"
+  | "EMAIL_EXISTS"
+  | "EXTERNAL_API_ERROR"
+  | "QUOTA_EXCEEDED";
+
+export type ApiError = {
+  error: {
+    code: ErrorCode;
+    message: string;        // 화면에 그대로 보여 줄 수 있는 한국어 문장
+  };
+};
+
+export type HealthResponse = { status: "ok"; db: "ok" | "error"; time: string };
+
 export type Mode = "day" | "night";
 export type RouteType = "shortest" | "safe";
 export type SafetyLevel = "safe" | "caution" | "danger";

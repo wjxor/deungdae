@@ -25,6 +25,8 @@ export type ApiError = {
 
 export type HealthResponse = { status: "ok"; db: "ok" | "error"; time: string };
 
+export type DaylightResponse = { sunrise: string; sunset: string; isNight: boolean };
+
 export type Mode = "day" | "night";
 export type RouteType = "shortest" | "safe";
 export type SafetyLevel = "safe" | "caution" | "danger";

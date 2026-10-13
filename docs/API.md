@@ -60,6 +60,8 @@ export type ApiError = {
 
 export type HealthResponse = { status: "ok"; db: "ok" | "error"; time: string };
 
+export type DaylightResponse = { sunrise: string; sunset: string; isNight: boolean };
+
 export type Mode = "day" | "night";
 export type RouteType = "shortest" | "safe";
 export type SafetyLevel = "safe" | "caution" | "danger";
@@ -133,12 +135,17 @@ export type User = { id: number; email: string; nickname: string };
 
 ## 1-1. 주야간 판별
 
-### GET /api/daylight?lat=36.35&lng=127.38&date=2026-10-02
-서버가 한국천문연구원 출몰시각 API를 호출해 그날의 일출·일몰 시각과 현재가 야간인지 돌려준다. 하루 한 번만 호출하고 서버에서 캐싱 (지역·날짜 단위). `date` 생략 시 오늘.
+### GET /api/daylight
+서버가 한국천문연구원 출몰시각 API로 받은 **오늘** 대전의 일출·일몰 시각과 지금이 야간인지 돌려준다. 천문연 API는 하루 한 번만 부르고 서버에 캐싱한다 (ERD `sun_times`, 대전 한 지점 기준).
 
+응답 `DaylightResponse`
 ```json
 { "sunrise": "2026-10-02T06:27:00+09:00", "sunset": "2026-10-02T18:14:00+09:00", "isNight": true }
 ```
+
+- `isNight`는 서버의 현재 시각이 오늘 일출 전이거나 일몰 후이면 `true`
+- 앱을 켜 둔 채로 일몰 시각이 지날 수 있어 `sunrise`·`sunset`도 함께 준다. 프론트는 이 시각을 기기 시각과 비교해 다시 판별할 수 있다
+- v0.3의 `lat`·`lng`·`date` 파라미터는 뺐다 (v0.4). 대전 한 지점 기준이라 좌표가 결과를 바꾸지 않고, 오늘이 아닌 날짜를 주면 `isNight`의 뜻이 없어서다
 
 프론트는 앱 시작 시 이 값으로 토글 기본값을 정하고, 사용자가 토글을 누르면 그 값을 우선한다. 경로 검색 요청의 `mode`는 최종적으로 프론트가 정해서 보낸다 (FR-005).
 

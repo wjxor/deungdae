@@ -19,6 +19,7 @@ Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>
 | 400 | INVALID_INPUT | 필수 값 누락, 형식 오류, 출발지와 도착지가 같음 |
 | 400 | OUT_OF_AREA | 대상 지역(대전광역시) 밖 좌표 |
 | 400 | TOO_FAR | 출발지와 도착지가 도보 경로로 찾기에 너무 멂 (카카오 `TOO_FAR_AWAY`) |
+| 400 | BBOX_TOO_LARGE | 시설 조회 범위(`bbox`)가 너무 넓음 |
 | 401 | UNAUTHORIZED | 토큰 없음·만료 |
 | 404 | ORIGIN_UNREACHABLE | 출발지 근처에 걸을 수 있는 길이 없음 (카카오 `START_LINK_NOT_FOUND`) |
 | 404 | DESTINATION_UNREACHABLE | 도착지 근처에 걸을 수 있는 길이 없음 (카카오 `END_LINK_NOT_FOUND`) |
@@ -41,6 +42,7 @@ export type ErrorCode =
   | "INVALID_INPUT"
   | "OUT_OF_AREA"
   | "TOO_FAR"
+  | "BBOX_TOO_LARGE"
   | "UNAUTHORIZED"
   | "ORIGIN_UNREACHABLE"
   | "DESTINATION_UNREACHABLE"
@@ -89,6 +91,17 @@ export type RouteSearchResponse = {
   routes: Route[];          // 항상 shortest, safe 둘 다 (두 경로가 같아도 둘 다)
   sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
+
+// ERD facility_types.code와 같다
+export type FacilityType = "street_light" | "security_light" | "cctv" | "emergency_bell" | "police";
+
+export type Facility = {
+  id: number;
+  type: FacilityType;
+  location: LatLng;
+};
+
+export type FacilitiesResponse = { facilities: Facility[] };
 
 export type Place = {
   id: string;
@@ -176,11 +189,21 @@ export type User = { id: number; email: string; nickname: string };
 
 ## 4. 안전 시설
 
-### GET /api/facilities?bbox=36.35,127.33,36.37,127.36
-FR-002 안전시설 아이콘 표시용. `bbox` = 남서 lat,lng, 북동 lat,lng. 가로등이 수천 개라 **줌 레벨이 일정 이상일 때만 호출**하고 bbox를 좁게 잡는다.
+### GET /api/facilities?bbox=36.35,127.33,36.37,127.36&types=street_light,cctv,emergency_bell
+FR-002 안전시설 아이콘 표시용. 가로등·보안등만 7만 개가 넘어 **줌 레벨이 일정 이상일 때만 호출**하고 bbox를 좁게 잡는다.
 
+- `bbox` (필수) = 남서 lat,lng, 북동 lat,lng. 가로·세로가 각각 2km를 넘으면 400 `BBOX_TOO_LARGE` (초안 — 적재 후 마커 수를 보고 조정)
+- `types` (선택) = 쉼표로 구분한 `FacilityType`. 생략하면 5종 전부. FR-002 아이콘 대상은 가로등·CCTV·안심벨이고, 보안등·지구대까지 띄울지는 프론트가 이 값으로 고른다
+- `type` 값은 ERD `facility_types.code`와 같다
+- `id`는 지도를 옮길 때 bbox가 겹쳐 같은 시설이 다시 올 때 마커 중복을 거르는 데 쓴다
+- 같은 좌표에 CCTV가 여러 대인 곳(461곳)을 마커 하나로 묶을지는 데이터 정제 기준(ROADMAP)이 정해진 뒤 정한다
+
+응답 `FacilitiesResponse`
 ```json
-{ "facilities": [ { "type": "street_light", "location": { "lat": 36.361, "lng": 127.345 } } ] }
+{ "facilities": [
+  { "id": 10234, "type": "street_light", "location": { "lat": 36.361, "lng": 127.345 } },
+  { "id": 51877, "type": "cctv", "location": { "lat": 36.3622, "lng": 127.3471 } }
+] }
 ```
 
 ## 5. 인증

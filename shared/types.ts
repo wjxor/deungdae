@@ -7,6 +7,7 @@ export type ErrorCode =
   | "INVALID_INPUT"
   | "OUT_OF_AREA"
   | "TOO_FAR"
+  | "BBOX_TOO_LARGE"
   | "UNAUTHORIZED"
   | "ORIGIN_UNREACHABLE"
   | "DESTINATION_UNREACHABLE"
@@ -55,6 +56,17 @@ export type RouteSearchResponse = {
   routes: Route[];          // 항상 shortest, safe 둘 다 (두 경로가 같아도 둘 다)
   sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
+
+// ERD facility_types.code와 같다
+export type FacilityType = "street_light" | "security_light" | "cctv" | "emergency_bell" | "police";
+
+export type Facility = {
+  id: number;
+  type: FacilityType;
+  location: LatLng;
+};
+
+export type FacilitiesResponse = { facilities: Facility[] };
 
 export type Place = {
   id: string;

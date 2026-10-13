@@ -31,8 +31,9 @@ export type RouteSearchRequest = {
 };
 
 export type RouteSearchResponse = {
-  recommended: RouteType;   // day → shortest, night → safe
-  routes: Route[];          // 항상 shortest, safe 둘 다
+  recommended: RouteType;   // day → shortest, night → safe. 항상 routes 안에 있는 type
+  routes: Route[];          // 항상 shortest, safe 둘 다 (두 경로가 같아도 둘 다)
+  sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
 
 export type Place = {

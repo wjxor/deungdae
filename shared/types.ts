@@ -29,8 +29,7 @@ export type RouteType = "shortest" | "safe";
 export type SafetyLevel = "safe" | "caution" | "danger";
 
 export type Segment = {
-  from: LatLng;
-  to: LatLng;
+  path: LatLng[];           // 구간 모양. 첫 점이 구간 시작, 마지막 점이 구간 끝 (앞 구간의 끝 = 다음 구간의 시작)
   distanceM: number;
   safetyScore: number;      // 0~100
   level: SafetyLevel;

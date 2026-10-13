@@ -63,8 +63,7 @@ export type RouteType = "shortest" | "safe";
 export type SafetyLevel = "safe" | "caution" | "danger";
 
 export type Segment = {
-  from: LatLng;
-  to: LatLng;
+  path: LatLng[];           // 구간 모양. 첫 점이 구간 시작, 마지막 점이 구간 끝 (앞 구간의 끝 = 다음 구간의 시작)
   distanceM: number;
   safetyScore: number;      // 0~100
   level: SafetyLevel;
@@ -161,6 +160,12 @@ export type User = { id: number; email: string; nickname: string };
 }
 ```
 
+`segments`의 한 구간 (`Segment`)
+```json
+{ "path": [ { "lat": 36.3664, "lng": 127.3446 }, { "lat": 36.3661, "lng": 127.3448 }, { "lat": 36.3660, "lng": 127.3449 } ], "distanceM": 52, "safetyScore": 82, "level": "safe" }
+```
+
+- 구간은 경로를 약 50m씩 나눈 것이다 (REQUIREMENTS 안전점수 규칙). 프론트는 구간마다 `path`를 `level` 색으로 그리고, 구간을 순서대로 이어 그리면 경로 전체가 된다 (FR-008). v0.3까지는 시작·끝 두 점(`from`·`to`)만 있어서 구간 안에서 길이 꺾이면 직선으로 이어져 건물을 가로질렀다. `from`·`to`는 `path`의 처음·끝과 같아 v0.4에서 뺐다
 - `mode`는 프론트가 정해서 보낸다 (FR-005: 일몰시각 자동 판별이든 수동 토글이든 서버는 결과만 받는다)
 - `mode`와 무관하게 두 경로를 모두 돌려주고 `recommended`만 바뀐다. 프론트는 추천 경로를 기본 표시하고 탭으로 전환
 - 안심경로가 최단경로와 같아도 `routes`에는 `shortest`·`safe`를 둘 다 담고(`path`·점수 등 내용이 같음) `sameRoute: true`로 알린다. 그래서 `recommended`에 해당하는 경로는 항상 `routes` 안에 있다. 프론트는 `sameRoute`면 탭 대신 "최단경로가 곧 안심경로"라는 안내를 보여 주는 식으로 처리한다 (v0.3, 2026-10-13 승민 질문으로 정리. v0.2는 "하나만 담고 `type`은 `shortest`"라 밤에는 `recommended: "safe"`인 경로가 없었음)

@@ -1,7 +1,9 @@
 import os
+from pathlib import Path
+
 import pandas as pd
 
-RAW_DIR = "data/raw"
+RAW_DIR = str(Path(__file__).resolve().parent / "raw")  # 어디서 실행해도 data/raw를 본다
 
 # 파일명: (식별 필드, 위도 필드, 경도 필드)
 TARGETS = {

@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from pathlib import Path
 from urllib.parse import unquote
 
 import requests
@@ -14,7 +15,7 @@ SERVICE_KEY = unquote(os.getenv("DATA_GO_KR_KEY", "").strip())
 if not SERVICE_KEY:
     sys.exit(".env에 DATA_GO_KR_KEY가 없습니다.")
 
-RAW_DIR = "data/raw"
+RAW_DIR = str(Path(__file__).resolve().parent / "raw")  # 어디서 실행해도 data/raw에 저장
 os.makedirs(RAW_DIR, exist_ok=True)
 
 # 호출 오류시 재시도
@@ -25,9 +26,14 @@ session.mount("https://", HTTPAdapter(max_retries=Retry(
     status_forcelist=[429, 500, 502, 503, 504],  
 )))
 
-def get_json(url, params, retries=5):
-    r = session.get(url, params=params, timeout=30)
-    r.raise_for_status()  
+def get_json(url, params):
+    """API를 호출해 JSON을 돌려준다. 오류가 나도 서비스 키가 든 전체 URL은 출력하지 않는다"""
+    try:
+        r = session.get(url, params=params, timeout=30)
+    except requests.RequestException as e:
+        sys.exit(f"요청 실패 ({url}): {type(e).__name__}")
+    if not r.ok:
+        sys.exit(f"HTTP {r.status_code} ({url}): {r.text[:300]}")
     return r.json()
 
 

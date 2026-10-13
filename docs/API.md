@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-10-11 · 상태: 초안 v0.2 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-10-13 · 상태: 초안 v0.3 (6~7주차 발표 전 확정)
 Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -57,8 +57,9 @@ export type RouteSearchRequest = {
 };
 
 export type RouteSearchResponse = {
-  recommended: RouteType;   // day → shortest, night → safe
-  routes: Route[];          // 항상 shortest, safe 둘 다
+  recommended: RouteType;   // day → shortest, night → safe. 항상 routes 안에 있는 type
+  routes: Route[];          // 항상 shortest, safe 둘 다 (두 경로가 같아도 둘 다)
+  sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
 
 export type Place = {
@@ -126,13 +127,15 @@ export type User = { id: number; email: string; nickname: string };
   "routes": [
     { "type": "shortest", "distanceM": 2140, "durationS": 1830, "safetyScore": 46, "path": [ ... ], "segments": [ ... ] },
     { "type": "safe",     "distanceM": 2380, "durationS": 2040, "safetyScore": 78, "path": [ ... ], "segments": [ ... ] }
-  ]
+  ],
+  "sameRoute": false
 }
 ```
 
 - `mode`는 프론트가 정해서 보낸다 (FR-005: 일몰시각 자동 판별이든 수동 토글이든 서버는 결과만 받는다)
 - `mode`와 무관하게 두 경로를 모두 돌려주고 `recommended`만 바뀐다. 프론트는 추천 경로를 기본 표시하고 탭으로 전환
-- 두 경로가 같으면 `routes`에 하나만 담고 `type`은 `"shortest"`
+- 안심경로가 최단경로와 같아도 `routes`에는 `shortest`·`safe`를 둘 다 담고(`path`·점수 등 내용이 같음) `sameRoute: true`로 알린다. 그래서 `recommended`에 해당하는 경로는 항상 `routes` 안에 있다. 프론트는 `sameRoute`면 탭 대신 "최단경로가 곧 안심경로"라는 안내를 보여 주는 식으로 처리한다 (v0.3, 2026-10-13 승민 질문으로 정리. v0.2는 "하나만 담고 `type`은 `shortest`"라 밤에는 `recommended: "safe"`인 경로가 없었음)
+- "같다"는 안심경로 계산 결과가 최단경로와 같은 경로라는 뜻이다 (B안이면 안전점수가 가장 높은 후보가 최단 후보 자체일 때)
 - 대상 지역(대전광역시 전체) 밖 좌표는 400 INVALID_INPUT
 
 내부 동작: 안심경로 계산 방식(A 경유지 우회 / B 후보 비교 / C 자체 엔진)은 6~7주차 발표 전 팀 회의에서 확정. 어느 방식이든 응답 형식은 이 문서를 따른다

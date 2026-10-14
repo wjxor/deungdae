@@ -59,8 +59,8 @@ export type RouteSearchResponse = {
   sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
 
-// ERD facility_types.code와 같다
-export type FacilityType = "street_light" | "security_light" | "cctv" | "emergency_bell" | "police";
+// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 안전점수에만 써서 응답에 없다
+export type FacilityType = "cctv" | "emergency_bell" | "police";
 
 export type Facility = {
   id: number;

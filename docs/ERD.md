@@ -104,7 +104,7 @@ erDiagram
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
-| `code` | text | PK | 아래 값. `/api/facilities` 응답의 `type`과 같다 |
+| `code` | text | PK | 아래 값. `/api/facilities` 응답의 `type`과 같다 (응답에는 지도에 표시하는 `cctv`·`emergency_bell`·`police`만, FR-002) |
 | `name` | text | NOT NULL | 화면 표시 이름 |
 | `weight` | integer | NOT NULL | 안전점수 가중치 (개·대당) |
 

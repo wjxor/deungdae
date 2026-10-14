@@ -3,13 +3,36 @@
 
 export type LatLng = { lat: number; lng: number };
 
+export type ErrorCode =
+  | "INVALID_INPUT"
+  | "OUT_OF_AREA"
+  | "TOO_FAR"
+  | "BBOX_TOO_LARGE"
+  | "UNAUTHORIZED"
+  | "ORIGIN_UNREACHABLE"
+  | "DESTINATION_UNREACHABLE"
+  | "ROUTE_NOT_FOUND"
+  | "EMAIL_EXISTS"
+  | "EXTERNAL_API_ERROR"
+  | "QUOTA_EXCEEDED";
+
+export type ApiError = {
+  error: {
+    code: ErrorCode;
+    message: string;        // 화면에 그대로 보여 줄 수 있는 한국어 문장
+  };
+};
+
+export type HealthResponse = { status: "ok"; db: "ok" | "error"; time: string };
+
+export type DaylightResponse = { sunrise: string; sunset: string; isNight: boolean };
+
 export type Mode = "day" | "night";
 export type RouteType = "shortest" | "safe";
 export type SafetyLevel = "safe" | "caution" | "danger";
 
 export type Segment = {
-  from: LatLng;
-  to: LatLng;
+  path: LatLng[];           // 구간 모양. 첫 점이 구간 시작, 마지막 점이 구간 끝 (앞 구간의 끝 = 다음 구간의 시작)
   distanceM: number;
   safetyScore: number;      // 0~100
   level: SafetyLevel;
@@ -36,12 +59,25 @@ export type RouteSearchResponse = {
   sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
 
+// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 안전점수에만 써서 응답에 없다
+export type FacilityType = "cctv" | "emergency_bell" | "police";
+
+export type Facility = {
+  id: number;
+  type: FacilityType;
+  location: LatLng;
+};
+
+export type FacilitiesResponse = { facilities: Facility[] };
+
 export type Place = {
-  id: string;
+  id: string;               // 목록 key용. 주소로 찾은 결과는 카카오 장소 ID가 없어 서버가 만든 값
   name: string;
   address: string;
   location: LatLng;
 };
+
+export type PlacesResponse = { places: Place[] };
 
 // 화면 S4 유형: 조명 부족 / CCTV 없음 / 우범지역 / 기타
 export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";

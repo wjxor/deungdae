@@ -1,8 +1,14 @@
-import type { FacilitiesResponse, LatLng, PlacesResponse } from '../../../../shared/types'
+import type { DaylightResponse, FacilitiesResponse, LatLng, PlacesResponse } from '../../../../shared/types'
+import { mockDaylight } from '../mocks/daylight'
 import { MOCK_FACILITIES } from '../mocks/facilities'
 import { MOCK_PLACES } from '../mocks/places'
 
 export type Bbox = { sw: LatLng; ne: LatLng }
+
+// GET /api/daylight (API.md 1-1장). 지금은 목 데이터로 답한다. 서버가 생기면 이 함수 안만 fetch로 바꾼다.
+export async function fetchDaylight(): Promise<DaylightResponse> {
+  return mockDaylight()
+}
 
 // GET /api/facilities?bbox=남서lat,lng,북동lat,lng (API.md 4장). 지금은 목 데이터로 답한다.
 // 서버가 생기면 이 함수 안만 fetch로 바꾼다.

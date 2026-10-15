@@ -17,6 +17,8 @@ export default function FacilityLayer({ map }: { map: kakao.maps.Map | null }) {
     let seq = 0
 
     const load = async () => {
+      // 아이콘 크기를 줌 레벨에 맞추려고 CSS가 읽을 수 있게 남긴다 (.map[data-level] 규칙)
+      map.getNode().dataset.level = String(map.getLevel())
       const visible = map.getLevel() <= MAX_LEVEL
       shown.forEach((o) => o.setVisible(visible))
       if (!visible) return

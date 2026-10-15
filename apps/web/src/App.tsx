@@ -1,9 +1,5 @@
-import KakaoMap from './components/KakaoMap'
+import MapHome from './screens/MapHome'
 
 export default function App() {
-  return (
-    <main className="map-home">
-      <KakaoMap />
-    </main>
-  )
+  return <MapHome />
 }

@@ -35,3 +35,60 @@ body {
   place-items: center;
   text-align: center;
 }
+
+.my-location {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #14171b;
+  box-shadow: 0 0 0 6px rgba(20, 23, 27, 0.15);
+}
+
+.notice {
+  position: absolute;
+  z-index: 10;
+  top: max(16px, env(safe-area-inset-top));
+  left: 16px;
+  right: 16px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #fff;
+  color: #14171b;
+  border: 1px solid #dadfe3;
+  font-size: 14px;
+}
+
+.notice button {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #14171b;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.locate {
+  position: absolute;
+  z-index: 10;
+  right: 16px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid #dadfe3;
+  background: #fff;
+  color: #14171b;
+  cursor: pointer;
+}
+
+.locate:disabled {
+  color: #9aa3ad;
+  cursor: default;
+}

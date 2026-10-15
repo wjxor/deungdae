@@ -5,14 +5,16 @@ import { loadKakaoMaps } from '../lib/kakao'
 type Props = {
   center: LatLng
   myLocation: LatLng | null
+  pin: LatLng | null
 }
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 
-export default function KakaoMap({ center, myLocation }: Props) {
+export default function KakaoMap({ center, myLocation, pin }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<kakao.maps.Map | null>(null)
   const myOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
+  const pinOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // 지도를 만들 때 쓸 중심. 이후 이동은 아래 effect가 맡는다
@@ -60,6 +62,25 @@ export default function KakaoMap({ center, myLocation }: Props) {
     })
     myOverlayRef.current.setMap(map)
   }, [myLocation, ready])
+
+  // 검색해서 고른 장소의 핀
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map) return
+    pinOverlayRef.current?.setMap(null)
+    pinOverlayRef.current = null
+    if (!pin) return
+    const el = document.createElement('div')
+    el.className = 'place-pin'
+    pinOverlayRef.current = new kakao.maps.CustomOverlay({
+      position: toKakao(pin),
+      content: el,
+      xAnchor: 0.5,
+      yAnchor: 1,
+      zIndex: 11,
+    })
+    pinOverlayRef.current.setMap(map)
+  }, [pin, ready])
 
   return (
     <>

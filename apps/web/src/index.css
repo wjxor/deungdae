@@ -1,64 +1,22 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* R1 흑연: 카카오 지도 위에 얹는 UI. 낮 색이고, 밤 색은 아래 .map-home[data-mode='night']에서 덮어쓴다 */
+  --panel: #fff;
+  --line: #dadfe3;
+  --ink: #14171b;
+  --on-ink: #fff;
+  --muted: #69737e;
+  --disabled: #9aa3ad;
+  --halo: rgba(20, 23, 27, 0.15);
+  --map-bg: #e9ecee;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  font: 16px/1.4 'Pretendard Variable', Pretendard, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
 }
 
@@ -66,46 +24,333 @@ body {
   margin: 0;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+button {
+  font: inherit;
+  letter-spacing: inherit;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+#root {
+  height: 100dvh;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+
+/* 위는 지도, 아래는 버튼 줄 */
+.map-home {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
+  color: var(--ink);
+  background: var(--panel);
 }
-p {
+
+/* 밤 모드. 카카오에는 어두운 일반 지도가 없어서, 타일 이미지에만 CSS 필터를 건다.
+   로고와 저작권(.map의 두 번째 div)과 우리가 올린 아이콘은 건드리지 않는다. */
+.map-home[data-mode='night'] {
+  --panel: #1d2126;
+  --line: #2d333b;
+  --ink: #f2f4f6;
+  --on-ink: #14171b;
+  --muted: #8b95a1;
+  --disabled: #5c6670;
+  --halo: rgba(242, 244, 246, 0.22);
+  --map-bg: #1d2126;
+  color-scheme: dark;
+}
+
+.map-home[data-mode='night'] .map > div:first-child img {
+  filter: invert(0.9) hue-rotate(180deg) brightness(0.92) saturate(0.65) contrast(0.95);
+}
+
+.map-area {
+  position: relative;
+  overflow: hidden;
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+  background: var(--map-bg);
+}
+
+.map-error {
+  position: absolute;
+  inset: 0;
   margin: 0;
+  padding: 16px;
+  display: grid;
+  place-items: center;
+  text-align: center;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+.my-location {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--ink);
+  box-shadow: 0 0 0 6px var(--halo);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* 안전시설 아이콘. 색만이 아니라 그림으로도 구분한다 */
+/* 크기는 줌 레벨에 따라 줄인다. FacilityLayer가 .map의 data-level을 갱신한다 */
+.map {
+  --m: 30px;
+}
+
+.map[data-level='4'] {
+  --m: 24px;
+}
+
+.map[data-level='5'] {
+  --m: 18px;
+}
+
+.facility-marker {
+  width: var(--m);
+  height: var(--m);
+  display: grid;
+  place-items: center;
+  border-radius: calc(var(--m) * 0.3);
+  background: var(--panel);
+  color: var(--c);
+  border: 1.5px solid var(--c);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.facility-marker svg {
+  width: 60%;
+  height: 60%;
+}
+
+.facility-marker.cctv { --c: #2f5f8a; }
+.facility-marker.emergency_bell { --c: #b24a42; }
+.facility-marker.police { --c: #2f7a55; }
+
+/* 밤에는 어두운 지도 위에서 묻히지 않게, 밝은 색으로 채우고 그림은 어둡게 그린다 */
+.map-home[data-mode='night'] .facility-marker {
+  background: var(--c);
+  color: #14171b;
+  border-color: #14171b;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.map-home[data-mode='night'] .facility-marker.cctv { --c: #86a9c9; }
+.map-home[data-mode='night'] .facility-marker.emergency_bell { --c: #cf948c; }
+.map-home[data-mode='night'] .facility-marker.police { --c: #86b79a; }
+
+.place-pin {
+  width: 22px;
+  height: 22px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--ink);
+  border: 2px solid var(--panel);
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.top {
+  position: absolute;
+  z-index: 10;
+  top: max(16px, env(safe-area-inset-top));
+  left: 16px;
+  right: 16px;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.top > * {
+  justify-self: stretch;
+}
+
+.top > .mode {
+  justify-self: start;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* iOS Safari는 16px 미만이면 포커스 때 화면이 확대된다 */
+}
+
+.search-box input::placeholder {
+  color: var(--muted);
+}
+
+.search-results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 50dvh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.search-results li + li {
+  border-top: 1px solid var(--line);
+}
+
+.search-results button {
+  display: grid;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search-results button strong {
+  font-weight: 600;
+}
+
+.search-results button span {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.search-results .empty {
+  padding: 14px 16px;
+  color: var(--muted);
+}
+
+/* 낮/밤 토글 */
+.mode {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+.mode button {
+  min-width: 40px;
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 13px;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mode button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.mode-hint {
+  padding: 0 8px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.notice {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.notice button {
+  margin-left: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.locate {
+  position: absolute;
+  z-index: 10;
+  right: 16px;
+  bottom: 16px;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.locate:disabled {
+  color: var(--disabled);
+  cursor: default;
+}
+
+.bar {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+}
+
+.bar button {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.bar .report {
+  flex: none;
+  width: 56px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.bar .route {
+  flex: 1;
+  border: 0;
+  border-radius: 28px;
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.bar button:disabled {
+  opacity: 0.45;
+}
+
+:focus-visible {
+  outline: 3px solid #2f80ed;
+  outline-offset: 2px;
 }

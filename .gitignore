@@ -40,6 +40,10 @@ data/processed/
 !data/validation/*.csv
 data/validation/.cache/
 
+# 정제 입력(손으로 정한 좌표)은 커밋한다
+!data/police_coords.csv
+!data/bell_final_coords.csv
+
 # 스크립트 실행 결과 (API 응답 원본)
 scripts/output/
 

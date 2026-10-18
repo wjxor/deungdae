@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-10-11 (승민 리뷰 반영) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-10-18 (지구대 `source_key`) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -145,7 +145,7 @@ erDiagram
 | `id` | integer | PK | |
 | `type` | text | FK → `facility_types.code`, NOT NULL | |
 | `data_source_id` | integer | FK → `data_sources.id`, NOT NULL | 어느 적재분인지 |
-| `source_key` | text | | 원본 식별값: 비상벨 `MNG_NO`, CCTV `manageNo`, 가로등 `관리번호`. 보안등은 고유 ID가 없어 null. CCTV `manageNo`도 중복이 있어 UNIQUE를 걸지 않는다 |
+| `source_key` | text | | 원본 식별값: 비상벨 `MNG_NO`, CCTV `manageNo`, 가로등 `관리번호`, 지구대·파출소 `관서명`(원본 `연번`은 전국 목록 순번이라 경찰청이 목록을 갱신하면 바뀔 수 있어서, PR #13). 보안등은 고유 ID가 없어 null. CCTV `manageNo`도 중복이 있어 UNIQUE를 걸지 않는다 |
 | `name` | text | | 설치 위치명 (비상벨 `INSTL_PSTN`, 보안등 `LMP_LC_NM` 등) |
 | `address` | text | | 도로명 우선, 없으면 지번 |
 | `district` | text | CHECK (5개 구) | 동구·중구·서구·유성구·대덕구 |

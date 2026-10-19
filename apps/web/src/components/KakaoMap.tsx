@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { LatLng } from '../../../../shared/types'
+import type { FacilityType, LatLng } from '../../../../shared/types'
 import { loadKakaoMaps } from '../lib/kakao'
 import FacilityLayer from './FacilityLayer'
 
@@ -7,11 +7,12 @@ type Props = {
   center: LatLng
   myLocation: LatLng | null
   pin: LatLng | null
+  facilityVisible: Record<FacilityType, boolean>
 }
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 
-export default function KakaoMap({ center, myLocation, pin }: Props) {
+export default function KakaoMap({ center, myLocation, pin, facilityVisible }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const myOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const pinOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
@@ -79,7 +80,7 @@ export default function KakaoMap({ center, myLocation, pin }: Props) {
   return (
     <>
       <div ref={containerRef} className="map" />
-      <FacilityLayer map={map} />
+      <FacilityLayer map={map} visible={facilityVisible} />
       {error && (
         <p className="map-error" role="alert">
           {error}

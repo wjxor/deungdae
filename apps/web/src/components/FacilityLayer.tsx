@@ -1,4 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import type { FacilityType } from '../../../../shared/types'
 import { fetchFacilities } from '../lib/api'
 import { createFacilityIcon } from '../lib/facilityIcon'
 import { distanceM } from '../lib/geo'
@@ -9,19 +10,38 @@ import { distanceM } from '../lib/geo'
 const MAX_LEVEL = 5
 const BBOX_MAX_M = 4000
 
+type Props = {
+  map: kakao.maps.Map | null
+  visible: Record<FacilityType, boolean> // 종류별 표시 여부 (안심시설 필터)
+}
+
 // 지도 위에 CCTV·안심벨·지구대 아이콘을 올린다 (FR-002)
-export default function FacilityLayer({ map }: { map: kakao.maps.Map | null }) {
+export default function FacilityLayer({ map, visible }: Props) {
+  const shown = useRef(new Map<number, { type: FacilityType; overlay: kakao.maps.CustomOverlay }>())
+  // load()와 필터 effect가 같은 규칙으로 보이고 숨기려고 최신 값을 ref에 둔다
+  const visibleRef = useRef(visible)
+  const levelOkRef = useRef(true)
+
+  const apply = () => {
+    shown.current.forEach(({ type, overlay }) => overlay.setVisible(levelOkRef.current && visibleRef.current[type]))
+  }
+
+  useEffect(() => {
+    visibleRef.current = visible
+    apply()
+  })
+
   useEffect(() => {
     if (!map) return
-    const shown = new Map<number, kakao.maps.CustomOverlay>()
+    const layer = shown.current
     let seq = 0
 
     const load = async () => {
       // 아이콘 크기를 줌 레벨에 맞추려고 CSS가 읽을 수 있게 남긴다 (.map[data-level] 규칙)
       map.getNode().dataset.level = String(map.getLevel())
-      const visible = map.getLevel() <= MAX_LEVEL
-      shown.forEach((o) => o.setVisible(visible))
-      if (!visible) return
+      levelOkRef.current = map.getLevel() <= MAX_LEVEL
+      apply()
+      if (!levelOkRef.current) return
 
       const b = map.getBounds()
       const sw = { lat: b.getSouthWest().getLat(), lng: b.getSouthWest().getLng() }
@@ -34,7 +54,7 @@ export default function FacilityLayer({ map }: { map: kakao.maps.Map | null }) {
         const { facilities } = await fetchFacilities({ sw, ne })
         if (mine !== seq) return // 더 새 요청이 있으면 이 응답은 버린다
         facilities.forEach((f) => {
-          if (shown.has(f.id)) return // 지도를 옮길 때 겹치는 시설은 id로 거른다
+          if (layer.has(f.id)) return // 지도를 옮길 때 겹치는 시설은 id로 거른다
           const overlay = new kakao.maps.CustomOverlay({
             position: new kakao.maps.LatLng(f.location.lat, f.location.lng),
             content: createFacilityIcon(f.type),
@@ -43,8 +63,9 @@ export default function FacilityLayer({ map }: { map: kakao.maps.Map | null }) {
             zIndex: 5,
           })
           overlay.setMap(map)
-          shown.set(f.id, overlay)
+          layer.set(f.id, { type: f.type, overlay })
         })
+        apply() // 꺼 둔 종류는 새로 받아도 바로 숨긴다
       } catch {
         // 시설 아이콘만 안 보이고 지도는 계속 쓸 수 있다
       }
@@ -54,7 +75,8 @@ export default function FacilityLayer({ map }: { map: kakao.maps.Map | null }) {
     void load()
     return () => {
       kakao.maps.event.removeListener(map, 'idle', load)
-      shown.forEach((o) => o.setMap(null))
+      layer.forEach(({ overlay }) => overlay.setMap(null))
+      layer.clear()
     }
   }, [map])
 

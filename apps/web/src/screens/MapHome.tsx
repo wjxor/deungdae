@@ -23,14 +23,14 @@ export default function MapHome() {
   const center = recenter ?? myLocation ?? DAEJEON_CENTER
 
   // 주야간: 서버가 알려 준 값이 기본이고, 사용자가 누르면 그 값이 우선한다 (FR-005)
-  const [daylight, setDaylight] = useState<{ auto: Mode; sunset: string } | null>(null)
+  const [daylight, setDaylight] = useState<{ auto: Mode; sunrise: string; sunset: string } | null>(null)
   const [manual, setManual] = useState<Mode | null>(null)
   const mode: Mode = manual ?? daylight?.auto ?? 'day'
 
   useEffect(() => {
     let cancelled = false
     fetchDaylight()
-      .then((d) => !cancelled && setDaylight({ auto: d.isNight ? 'night' : 'day', sunset: d.sunset }))
+      .then((d) => !cancelled && setDaylight({ auto: d.isNight ? 'night' : 'day', sunrise: d.sunrise, sunset: d.sunset }))
       .catch(() => {
         // 못 받으면 낮으로 두고, 사용자가 직접 바꿀 수 있다
       })
@@ -63,8 +63,8 @@ export default function MapHome() {
           <div className="toprow">
             <ModeToggle
               mode={mode}
+              sunrise={daylight?.sunrise ?? null}
               sunset={daylight?.sunset ?? null}
-              manual={manual !== null && manual !== daylight?.auto}
               onChange={setManual}
             />
             <FacilityFilter visible={facilityVisible} onToggle={toggleFacility} />

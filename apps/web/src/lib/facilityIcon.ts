@@ -1,6 +1,6 @@
 import type { FacilityType } from '../../../../shared/types'
 
-// 안전시설 마커 (K3: 줌에 따라 점 → 아이콘). 색만이 아니라 그림으로도 구분한다.
+// 안전시설 마커 (K3: 줌에 따라 점 → 아이콘). 레벨 4 이하에서는 색만이 아니라 그림으로도 구분한다.
 // 크기는 CSS가 .map의 data-level로 정한다 (index.css).
 export const FACILITY_TYPES: FacilityType[] = ['cctv', 'emergency_bell', 'police']
 

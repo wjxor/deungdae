@@ -17,7 +17,7 @@ datasource db {
 model FacilityType {
   code   String @id // street_light, security_light, cctv, emergency_bell, police
   name   String
-  weight Int // 개·대당 가중치 (보안등 1·지구대 5는 MVP용 임시값 — ERD "확인할 것")
+  weight Int // 개·대당 가중치 (보안등 1·지구대 10은 MVP용 임시값 — ERD "확인할 것")
 
   dataSources DataSource[]
   facilities  Facility[]

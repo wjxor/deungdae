@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-10-18 (지구대 `source_key`) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-10-21 (보안등·지구대 임시 가중치) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -111,10 +111,12 @@ erDiagram
 | code | name | weight (REQUIREMENTS 초안) |
 |---|---|---|
 | `street_light` | 가로등 | 1 |
-| `security_light` | 보안등 | **미정** |
+| `security_light` | 보안등 | 1 (**임시**, 가로등과 같게) |
 | `cctv` | CCTV | 3 |
 | `emergency_bell` | 안심벨(비상벨) | 5 |
-| `police` | 지구대·파출소 | **미정** |
+| `police` | 지구대·파출소 | 10 (**임시**, 사람이 상주해 안심벨보다 높게) |
+
+보안등·지구대는 REQUIREMENTS 점수 표에 없어서 9주차 MVP용 임시값을 넣었다 (2026-10-21 상협). 지구대는 처음 5(안심벨과 같게)로 잡았다가 승민 제안으로 10 (PR #21). 시설 데이터 적재 후 실제 후보 경로 점수를 보고 확정한다.
 
 제보 감점(−5/건, 최근 30일)은 시설이 아니라 `reports`에서 계산한다.
 
@@ -253,7 +255,7 @@ GROUP BY f.type, t.weight;
 | 안심경로 계산 방식 — B 기본 + A 보강으로 확정 (2026-10-18) | 이 ERD 그대로 쓴다 (A 보강의 경유지는 `route_cache.waypoints`). MVP 뒤 **C안(자체 엔진)을 시도하면** OSM 보행자 도로망 테이블(노드·링크, 링크별 안전점수)을 추가해야 해서 지금은 그리지 않았다 |
 | 서버 배포처 | 영향 없음 (캐시를 DB에 둠) |
 | 정제 기준 | `attributes`·`coord_source`로 어느 쪽으로 정해도 담을 수 있게 둠 |
-| 보안등·지구대 가중치 | `facility_types.weight` 값만 정하면 된다 |
+| 보안등·지구대 가중치 | 임시값(보안등 1·지구대 10)으로 넣고, 정해지면 `facility_types.weight` 값만 바꾼다 |
 | 제보 로그인 필요 여부, 사진 첨부 | `reports.user_id`·`photo_url`을 null 허용으로 둠 |
 
 ## Prisma·PostGIS 메모
@@ -266,7 +268,7 @@ GROUP BY f.type, t.weight;
 
 ## 확인할 것
 
-- [ ] 보안등·지구대 가중치 (REQUIREMENTS 점수 표에 없음)
+- [ ] 보안등·지구대 가중치 (REQUIREMENTS 점수 표에 없음) — MVP용 임시값 보안등 1·지구대 10 (2026-10-21 상협, 지구대는 승민 제안으로 5 → 10, PR #21). 적재 후 후보 경로 점수를 보고 확정
 - [ ] `route_cache` 좌표 반올림 자릿수(초안 4자리)·만료 시간(초안 24시간)
 - [x] 제보 유형: 화면 S4(조명 부족·CCTV 없음·우범지역)에 맞춰 `dark`/`no_cctv`/`suspicious`/`others`로 통일 (2026-10-10 승민 리뷰, 기타는 승민 의견대로 `others`. `shared/types.ts`·API 명세 함께 수정)
 - [x] 24시 시설 범위: 편의점·심야 약국 모두 제외하고 `store_24h` 행 삭제 (2026-10-10 승민 제안·상협 동의, PR #6)

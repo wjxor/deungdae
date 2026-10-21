@@ -1,0 +1,95 @@
+// 등대 DB 스키마. docs/ERD.md의 Must 테이블 5개 (Could인 users·reports는 13주차에 추가)
+// 테이블·컬럼은 snake_case, 모델·필드는 PascalCase·camelCase (@@map·@map)
+// DB 접속 주소는 이 파일이 아니라 prisma.config.ts에 있다 (Prisma 7)
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 시설 종류와 안전점수 가중치. 가중치를 코드가 아니라 테이블에 둬서 배포 없이 조정한다
+model FacilityType {
+  code   String @id // street_light, security_light, cctv, emergency_bell, police
+  name   String
+  weight Int // 개·대당 가중치 (보안등 1·지구대 10은 MVP용 임시값 — ERD "확인할 것")
+
+  dataSources DataSource[]
+  facilities  Facility[]
+
+  @@map("facility_types")
+}
+
+// 원본 데이터 출처·적재 이력. 적재할 때마다 한 행
+model DataSource {
+  id           Int       @id @default(autoincrement())
+  facilityType String    @map("facility_type")
+  title        String
+  sourceUrl    String?   @map("source_url")
+  baseDate     DateTime? @map("base_date") @db.Date
+  rawCount     Int       @map("raw_count")
+  loadedCount  Int       @map("loaded_count")
+  note         String?
+  importedAt   DateTime  @default(now()) @map("imported_at") @db.Timestamptz
+
+  type       FacilityType @relation(fields: [facilityType], references: [code])
+  facilities Facility[]
+
+  @@map("data_sources")
+}
+
+// 안전시설 5종을 한 테이블에 둔다. 위치는 PostGIS geography라 Prisma Client로는 읽고 쓰지 못하고 $queryRaw로 다룬다
+// district CHECK 제약은 마이그레이션 SQL에 직접 넣는다 (ERD "Prisma·PostGIS 메모")
+model Facility {
+  id           Int                                   @id @default(autoincrement())
+  type         String
+  dataSourceId Int                                   @map("data_source_id")
+  sourceKey    String?                               @map("source_key")
+  name         String?
+  address      String?
+  district     String?
+  location     Unsupported("geography(Point, 4326)")
+  coordSource  String                                @default("original") @map("coord_source")
+  attributes   Json                                  @default("{}")
+  createdAt    DateTime                              @default(now()) @map("created_at") @db.Timestamptz
+
+  facilityType FacilityType @relation(fields: [type], references: [code])
+  dataSource   DataSource   @relation(fields: [dataSourceId], references: [id])
+
+  @@index([type])
+  @@index([location], type: Gist)
+  @@map("facilities")
+}
+
+// 경로 API 응답 캐시. 카카오 도보 경로 일 1,000건 무료 한도 때문에 같은 요청은 다시 부르지 않는다
+model RouteCache {
+  id        Int      @id @default(autoincrement())
+  cacheKey  String   @unique @map("cache_key") // provider·route_mode·좌표(소수점 4자리)·경유지의 SHA-256
+  provider  String // kakao (티맵 교체 대비)
+  routeMode String   @map("route_mode")
+  waypoints Json     @default("[]")
+  response  Json
+  distanceM Int?     @map("distance_m")
+  durationS Int?     @map("duration_s")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+
+  @@map("route_cache")
+}
+
+// 일출·일몰 캐시 (FR-005). 천문연 API를 하루 1회 부르고 저장한다
+model SunTime {
+  date      DateTime @db.Date
+  region    String   @default("대전")
+  sunrise   DateTime @db.Timestamptz
+  sunset    DateTime @db.Timestamptz
+  fetchedAt DateTime @default(now()) @map("fetched_at") @db.Timestamptz
+
+  @@id([date, region])
+  @@map("sun_times")
+}

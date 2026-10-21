@@ -564,3 +564,22 @@ button {
     padding-inline: max(16px, calc((100% - 440px) / 2));
   }
 }
+
+/* 경로 말풍선 (S3). 선택한 경로는 진하게, 다른 경로는 흰 바탕으로 */
+.route-bubble {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.route-bubble.is-selected {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}

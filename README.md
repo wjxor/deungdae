@@ -50,14 +50,14 @@
 
 ## 실행 방법
 
-> 앱 코드가 아직 없다. 세팅 후 이 자리를 채운다.
-
 ```bash
 # 1. 환경변수
 cp .env.example .env   # 값은 팀 채널에서 받아 채운다
 
-# 2. 서버 (apps/api) — 작성 예정
-# 3. 클라이언트 (apps/web) — 작성 예정
+# 2. 서버 (apps/api) — http://localhost:3000/api, 자세한 것은 apps/api/README.md
+cd apps/api && npm ci && npm run start:dev
+# 3. 클라이언트 (apps/web) — http://localhost:5173
+cd apps/web && npm ci && npm run dev
 # 4. 데이터 전처리 (data) — data/README.md 참고
 
 # 5. 카카오 도보 API 테스트 — route_mode 3종의 거리·경로 겹침 비교 (Node 22.18+, 의존성 없음)

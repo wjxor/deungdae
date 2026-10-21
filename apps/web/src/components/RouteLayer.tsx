@@ -23,9 +23,22 @@ const OTHER_COLOR = '#7b838d'
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 const toKakaoPath = (path: LatLng[]) => path.map(toKakao)
 
+// 출발·도착 표시. 같은 핀(S1의 도착지 핀)에 이름표만 다르다. 현재 위치(my-location 링)와 모양이 달라야 해서다
+function marker(text: '출발' | '도착'): HTMLElement {
+  const el = document.createElement('div')
+  el.className = 'route-marker'
+  const tag = document.createElement('span')
+  tag.className = 'route-tag'
+  tag.textContent = text
+  const pin = document.createElement('div')
+  pin.className = 'place-pin'
+  el.append(tag, pin)
+  return el
+}
+
 // 지도 위에 최단·안심 경로를 그린다 (FR-007, FR-008).
 // 선택한 경로는 구간 색 실선, 다른 경로는 회색 점선이고 각각 "안심경로 11분" 말풍선이 붙는다.
-// 출발·도착 표시는 선택 경로의 처음·끝 점에 둔다. 목 데이터가 요청 좌표와 상관없는 경로를 주기 때문이고,
+// 출발·도착 핀은 선택 경로의 처음·끝 점에 둔다. 목 데이터가 요청 좌표와 상관없는 경로를 주기 때문이고,
 // 서버가 생기면 요청 좌표와 같아진다.
 export default function RouteLayer({ map, view }: Props) {
   const { routes, selected, sameRoute, mode } = view
@@ -84,12 +97,8 @@ export default function RouteLayer({ map, view }: Props) {
     chosen.segments.forEach((s) => line(s.path, LEVEL_COLOR[mode][s.level], 8, 4))
     bubble(chosen, true)
 
-    const start = document.createElement('div')
-    start.className = 'my-location'
-    overlay(chosen.path[0], start, 0.5, 8)
-    const end = document.createElement('div')
-    end.className = 'place-pin'
-    overlay(chosen.path[chosen.path.length - 1], end, 1, 8)
+    overlay(chosen.path[0], marker('출발'), 1, 8)
+    overlay(chosen.path[chosen.path.length - 1], marker('도착'), 1, 8)
 
     return () => {
       polylines.forEach((p) => p.setMap(null))

@@ -686,7 +686,8 @@ button {
   cursor: default;
 }
 
-.route-card[aria-pressed='true'] {
+.route-card[aria-pressed='true'],
+.route-card.is-selected {
   border-color: var(--sel-line);
   background: var(--sel-bg);
   color: var(--sel-text);
@@ -704,7 +705,8 @@ button {
   letter-spacing: -0.02em;
 }
 
-.route-card[aria-pressed='true'] .time {
+.route-card[aria-pressed='true'] .time,
+.route-card.is-selected .time {
   color: var(--sel-text);
 }
 
@@ -779,4 +781,42 @@ button {
   margin-right: 6px;
   border-radius: 3px;
   vertical-align: middle;
+}
+
+/* 출발·도착 핀 위의 이름표 */
+.route-marker {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.route-tag {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 경로를 기다리는 동안 카드 자리 */
+.route-skel {
+  height: 96px;
+  border-radius: 12px;
+  background: var(--line);
+  animation: route-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes route-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-skel {
+    animation: none;
+  }
 }

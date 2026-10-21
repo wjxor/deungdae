@@ -9,7 +9,7 @@ type Props = {
   myLocation: LatLng | null
   pin: LatLng | null
   facilityVisible: Record<FacilityType, boolean>
-  route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 시설 아이콘·도착지 핀·내 위치 점은 숨긴다
+  route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 시설 아이콘과 도착지 핀은 숨긴다
 }
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
@@ -19,7 +19,7 @@ export default function KakaoMap({ center, myLocation, pin, facilityVisible, rou
   const myOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const pinOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const [map, setMap] = useState<kakao.maps.Map | null>(null)
-  const inRoute = route !== undefined // 경로 화면이면 내 위치 점·도착지 핀은 RouteLayer가 대신 그린다
+  const inRoute = route !== undefined // 경로 화면이면 도착지 핀은 RouteLayer가 대신 그린다
   const [error, setError] = useState<string | null>(null)
   // 지도를 만들 때 쓸 중심. 이후 이동은 아래 effect가 맡는다
   const initialCenter = useRef(center)
@@ -49,7 +49,7 @@ export default function KakaoMap({ center, myLocation, pin, facilityVisible, rou
     if (!map) return
     myOverlayRef.current?.setMap(null)
     myOverlayRef.current = null
-    if (!myLocation || inRoute) return
+    if (!myLocation) return
     const dot = document.createElement('div')
     dot.className = 'my-location'
     myOverlayRef.current = new kakao.maps.CustomOverlay({
@@ -60,7 +60,7 @@ export default function KakaoMap({ center, myLocation, pin, facilityVisible, rou
       zIndex: 10,
     })
     myOverlayRef.current.setMap(map)
-  }, [myLocation, map, inRoute])
+  }, [myLocation, map])
 
   // 검색해서 고른 장소의 핀
   useEffect(() => {

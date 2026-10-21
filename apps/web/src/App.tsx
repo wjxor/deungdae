@@ -19,6 +19,7 @@ export default function App() {
       <RouteCompare
         origin={myLocation ?? DAEJEON_CENTER}
         originLabel={myLocation ? '현재 위치' : '대전시청'}
+        myLocation={myLocation}
         destination={destination}
         daylight={daylight}
         onBack={() => setScreen('home')}

@@ -42,7 +42,9 @@ export async function searchPlaces(q: string, near?: LatLng): Promise<PlacesResp
 }
 
 // POST /api/routes/search (API.md 3장). 지금은 목 데이터로 답한다.
-// 서버가 생기면 이 함수 안만 fetch로 바꾼다. 사용자가 "경로 찾기"를 누를 때만 부른다.
+// 서버가 생기면 이 함수 안만 fetch로 바꾼다 (화면을 떠나면 요청이 취소되게 AbortSignal을 받아 넘기면 된다).
+// 사용자가 "경로 찾기"를 누를 때만 부른다. 실패하면 서버의 { error: { code, message } }를
+// ApiRequestError로 던진다 (lib/apiError.ts).
 export async function searchRoutes(req: RouteSearchRequest): Promise<RouteSearchResponse> {
   return mockRouteSearch(req)
 }

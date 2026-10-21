@@ -1,0 +1,2 @@
+# Prisma Client 생성 결과. npm install(postinstall)이나 npx prisma generate로 다시 만든다
+src/generated/

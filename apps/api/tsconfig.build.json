@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // shared/types.ts 때문에 루트 기준으로 빌드한다. 결과는 dist/apps/api/src/main.js (nest-cli.json entryFile)
+    "rootDir": "../.."
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}

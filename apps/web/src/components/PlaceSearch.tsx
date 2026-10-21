@@ -45,7 +45,7 @@ export default function PlaceSearch({ near, onPick }: Props) {
   return (
     <div className="place-search">
       <div className="search-box">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <path d="M20 20l-3.5-3.5" />
         </svg>
@@ -53,7 +53,7 @@ export default function PlaceSearch({ near, onPick }: Props) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="장소, 주소 검색"
+          placeholder="어디로 갈까요?"
           aria-label="장소 검색"
           enterKeyHint="search"
         />

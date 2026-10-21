@@ -8,6 +8,9 @@
   --disabled: #9aa3ad;
   --halo: rgba(20, 23, 27, 0.15);
   --map-bg: #e9ecee;
+  --cta: #1f7a5c;
+  --on-cta: #fff;
+  --here: #f0a81c; /* 내 위치·검색 핀 */
 
   font: 16px/1.4 'Pretendard Variable', Pretendard, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   letter-spacing: -0.01em;
@@ -33,7 +36,7 @@ button {
   height: 100dvh;
 }
 
-/* 위는 지도, 아래는 버튼 줄 */
+/* 위는 지도, 아래는 버튼 시트 */
 .map-home {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
@@ -50,9 +53,13 @@ button {
   --ink: #f2f4f6;
   --on-ink: #14171b;
   --muted: #8b95a1;
+  --soft: #c0c8d0; /* 밤에 작은 보조 글씨·꺼진 항목 */
+  --on-neon: #10141a; /* 밤 마커·배지의 밝은 색 위에 올리는 그림색 */
   --disabled: #5c6670;
   --halo: rgba(242, 244, 246, 0.22);
   --map-bg: #1d2126;
+  --cta: #5fcf9f;
+  --on-cta: #0f1a15;
   color-scheme: dark;
 }
 
@@ -81,17 +88,18 @@ button {
   text-align: center;
 }
 
+/* 현재 위치. 서비스 이름(등대)에 맞춰 호박색 빛으로 표시한다 */
 .my-location {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
-  border: 3px solid var(--ink);
-  box-shadow: 0 0 0 6px var(--halo);
+  background: var(--panel);
+  border: 3px solid var(--here);
+  box-shadow: 0 0 0 5px rgba(240, 168, 28, 0.25), 0 0 20px 6px rgba(240, 168, 28, 0.35);
 }
 
-/* 안전시설 아이콘. 색만이 아니라 그림으로도 구분한다 */
-/* 크기는 줌 레벨에 따라 줄인다. FacilityLayer가 .map의 data-level을 갱신한다 */
+/* 안전시설 마커. 줌 레벨에 따라 모습이 달라진다 (FacilityLayer가 .map의 data-level을 갱신한다)
+   레벨 5: 점 / 레벨 4 이하: 아이콘 */
 .map {
   --m: 30px;
 }
@@ -101,50 +109,208 @@ button {
 }
 
 .map[data-level='5'] {
-  --m: 18px;
+  --m: 11px;
 }
 
 .facility-marker {
+  position: relative;
   width: var(--m);
   height: var(--m);
   display: grid;
   place-items: center;
-  border-radius: calc(var(--m) * 0.3);
-  background: var(--panel);
-  color: var(--c);
-  border: 1.5px solid var(--c);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  background: var(--c);
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .facility-marker svg {
-  width: 60%;
-  height: 60%;
+  width: 68%;
+  height: 68%;
 }
 
-.facility-marker.cctv { --c: #2f5f8a; }
-.facility-marker.emergency_bell { --c: #b24a42; }
-.facility-marker.police { --c: #2f7a55; }
+.map[data-level='5'] .facility-marker svg {
+  display: none;
+}
 
-/* 밤에는 어두운 지도 위에서 묻히지 않게, 밝은 색으로 채우고 그림은 어둡게 그린다 */
+.facility-marker.cctv, .frow.cctv, .fdot.cctv { --c: #0090d0; }
+.facility-marker.emergency_bell, .frow.emergency_bell, .fdot.emergency_bell { --c: #f0430a; }
+.facility-marker.police, .frow.police, .fdot.police { --c: #8e24aa; }
+
+/* 밤에는 네온 사인처럼, 밝은 색으로 채우고 그림은 어둡게 그린 뒤 빛을 번지게 한다 */
 .map-home[data-mode='night'] .facility-marker {
-  background: var(--c);
-  color: #14171b;
+  color: var(--on-neon);
   border-color: #14171b;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 9px 1px var(--c);
 }
 
-.map-home[data-mode='night'] .facility-marker.cctv { --c: #86a9c9; }
-.map-home[data-mode='night'] .facility-marker.emergency_bell { --c: #cf948c; }
-.map-home[data-mode='night'] .facility-marker.police { --c: #86b79a; }
+.map-home[data-mode='night'] :is(.facility-marker, .frow, .fdot).cctv { --c: #19d3ff; }
+.map-home[data-mode='night'] :is(.facility-marker, .frow, .fdot).emergency_bell { --c: #ff6a1f; }
+.map-home[data-mode='night'] :is(.facility-marker, .frow, .fdot).police { --c: #c653ff; }
 
+/* 안심시설 필터. 평소엔 작은 버튼 하나, 누르면 종류별 스위치가 펼쳐진다 */
+.ffilter {
+  display: contents;
+}
+
+.fpill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px 0 11px;
+  border: 0;
+  border-radius: 17px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+}
+
+.map-home[data-mode='night'] .fpill {
+  color: var(--soft);
+}
+
+/* 켜진 종류는 마커 색, 꺼진 종류는 회색 점 */
+.fdots {
+  display: flex;
+  gap: 3px;
+}
+
+.fdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.fdot[data-on='false'] {
+  background: var(--line);
+}
+
+.fpop {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(208px, 100%);
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.frow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 10px 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.frow .fname {
+  flex: 1;
+}
+
+.frow .badge {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--c);
+  color: #fff;
+}
+
+.frow .badge svg {
+  width: 68%;
+  height: 68%;
+}
+
+.map-home[data-mode='night'] .frow[aria-checked='true'] .badge {
+  color: var(--on-neon);
+}
+
+.fsw {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex: none;
+  border-radius: 11px;
+  background: var(--c);
+}
+
+.fsw::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.map-home[data-mode='night'] .fsw::after {
+  background: var(--on-neon);
+}
+
+/* 꺼진 종류: 색을 빼고 스위치를 왼쪽으로 */
+.frow[aria-checked='false'] {
+  color: var(--muted);
+}
+
+.frow[aria-checked='false'] .badge {
+  background: var(--line);
+  color: var(--muted);
+}
+
+.map-home[data-mode='night'] .frow[aria-checked='false'],
+.map-home[data-mode='night'] .frow[aria-checked='false'] .badge {
+  color: var(--soft);
+}
+
+.frow[aria-checked='false'] .fsw {
+  background: var(--line);
+}
+
+.frow[aria-checked='false'] .fsw::after {
+  right: auto;
+  left: 3px;
+  background: var(--muted);
+}
+
+/* 검색해서 고른 장소의 핀 */
 .place-pin {
+  position: relative;
   width: 22px;
   height: 22px;
   border-radius: 50% 50% 50% 0;
-  background: var(--ink);
+  background: var(--here);
   border: 2px solid var(--panel);
   transform: rotate(-45deg);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.place-pin::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #14171b;
 }
 
 .top {
@@ -158,24 +324,30 @@ button {
   justify-items: start;
 }
 
-.top > * {
+.top > .notice,
+.top > .place-search {
   justify-self: stretch;
 }
 
-.top > .mode {
-  justify-self: start;
+.toprow {
+  position: relative; /* 안심시설 패널이 이 줄 기준으로 열려서 화면 오른쪽으로 삐져나가지 않는다 */
+  justify-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .search-box {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 52px;
+  height: 48px;
   padding: 0 16px;
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--panel);
   color: var(--muted);
-  border: 1px solid var(--line);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .search-box input {
@@ -193,11 +365,22 @@ button {
   color: var(--muted);
 }
 
+.place-search {
+  position: relative;
+}
+
+/* 결과는 입력칸 아래로 펼쳐지고, 지도 위에 잠깐 겹친다 */
 .search-results {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   list-style: none;
-  margin: 8px 0 0;
+  margin: 0;
   padding: 0;
-  max-height: 50dvh;
+  max-height: min(50dvh, 340px);
   overflow-y: auto;
   border-radius: 16px;
   background: var(--panel);
@@ -243,14 +426,17 @@ button {
   border-radius: 16px;
   background: var(--panel);
   border: 1px solid var(--line);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
 }
 
 .mode button {
-  min-width: 40px;
-  height: 26px;
-  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 12px 0 10px;
   border: 0;
-  border-radius: 13px;
+  border-radius: 14px;
   background: none;
   color: var(--muted);
   font-size: 13px;
@@ -267,6 +453,10 @@ button {
   padding: 0 8px 0 6px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.map-home[data-mode='night'] .mode-hint {
+  color: var(--soft);
 }
 
 .notice {
@@ -311,16 +501,24 @@ button {
   cursor: default;
 }
 
-.bar {
-  display: flex;
+.sheet {
+  position: relative;
+  z-index: 7;
+  display: grid;
   gap: 10px;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
   background: var(--panel);
-  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
 }
 
-.bar button {
-  height: 56px;
+.acts {
+  display: flex;
+  gap: 10px;
+}
+
+.acts button {
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -329,28 +527,40 @@ button {
   font-weight: 600;
 }
 
-.bar .report {
+.acts .report {
   flex: none;
-  width: 56px;
+  width: 52px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--panel);
   color: var(--ink);
 }
 
-.bar .route {
+.acts .route {
   flex: 1;
   border: 0;
-  border-radius: 28px;
-  background: var(--ink);
-  color: var(--on-ink);
+  border-radius: 26px;
+  background: var(--cta);
+  color: var(--on-cta);
 }
 
-.bar button:disabled {
+.acts button:disabled {
   opacity: 0.45;
 }
 
 :focus-visible {
   outline: 3px solid #2f80ed;
   outline-offset: 2px;
+}
+
+/* 넓은 화면(PC 시연 등). 지도는 그대로 꽉 채우고, 위쪽 UI와 하단 버튼만 폭을 제한한다 */
+@media (min-width: 768px) {
+  .top {
+    right: auto;
+    width: 400px;
+  }
+
+  .sheet {
+    padding-inline: max(16px, calc((100% - 440px) / 2));
+  }
 }

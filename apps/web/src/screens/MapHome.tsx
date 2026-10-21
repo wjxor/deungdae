@@ -6,19 +6,18 @@ import ModeToggle from '../components/ModeToggle'
 import PlaceSearch from '../components/PlaceSearch'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import type { useGeolocation } from '../hooks/useGeolocation'
-
-// 대전시청. 현재 위치를 못 잡았을 때의 기본 중심
-const DAEJEON_CENTER: LatLng = { lat: 36.3504, lng: 127.3845 }
+import { DAEJEON_CENTER } from '../lib/geo'
 
 type Props = {
   geo: ReturnType<typeof useGeolocation>
   daylight: ReturnType<typeof useDaylightMode>
   destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
   onPickDestination: (place: Place) => void
+  onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 S3로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -94,8 +93,8 @@ export default function MapHome({ geo, daylight, destination, onPickDestination 
               <path d="M12 10v5M12 18v.5" />
             </svg>
           </button>
-          {/* S2 경로 입력 화면을 만들면 연결한다 */}
-          <button type="button" className="route" disabled>
+          {/* 출발지를 정하는 S2를 만들 때까지는 현재 위치(없으면 대전시청)에서 바로 S3로 간다 */}
+          <button type="button" className="route" disabled={!destination} onClick={onFindRoute}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 11l18-8-8 18-2-8-8-2z" />
             </svg>

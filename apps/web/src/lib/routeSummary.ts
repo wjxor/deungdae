@@ -1,5 +1,7 @@
 import type { Route, RouteSearchResponse, RouteType, SafetyLevel } from '../../../../shared/types'
 
+export const ROUTE_NAME: Record<RouteType, string> = { shortest: '최단경로', safe: '안심경로' }
+
 // 응답에서 한 종류의 경로를 꺼낸다. routes에는 shortest·safe가 항상 둘 다 있다 (API.md 3장)
 export function pickRoute(res: RouteSearchResponse, type: RouteType): Route {
   const route = res.routes.find((r) => r.type === type)

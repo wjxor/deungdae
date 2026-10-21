@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { LatLng, Mode, Route, RouteType, SafetyLevel } from '../../../../shared/types'
-import { formatDuration } from '../lib/routeSummary'
+import { ROUTE_NAME, formatDuration } from '../lib/routeSummary'
 
 export type RouteView = {
   routes: Record<RouteType, Route>
@@ -19,7 +19,6 @@ const LEVEL_COLOR: Record<Mode, Record<SafetyLevel, string>> = {
 }
 const OUTLINE: Record<Mode, string> = { day: '#ffffff', night: '#10151a' } // 복잡한 지도 위에서 선이 묻히지 않게 두르는 테두리
 const OTHER_COLOR = '#7b838d'
-const NAME: Record<RouteType, string> = { shortest: '최단경로', safe: '안심경로' }
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 const toKakaoPath = (path: LatLng[]) => path.map(toKakao)
@@ -69,7 +68,7 @@ export default function RouteLayer({ map, view }: Props) {
       const el = document.createElement('div')
       el.className = `route-bubble${isSelected ? ' is-selected' : ''}`
       const time = formatDuration(route.durationS)
-      el.textContent = sameRoute ? time : `${NAME[route.type]} ${time}`
+      el.textContent = sameRoute ? time : `${ROUTE_NAME[route.type]} ${time}`
       overlay(route.path[Math.floor(route.path.length / 2)], el, 0.5, 6)
     }
 

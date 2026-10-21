@@ -1,46 +1,36 @@
-import { useEffect, useState } from 'react'
-import type { FacilityType, LatLng, Mode, Place } from '../../../../shared/types'
+import { useState } from 'react'
+import type { FacilityType, LatLng, Place } from '../../../../shared/types'
 import FacilityFilter from '../components/FacilityFilter'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import PlaceSearch from '../components/PlaceSearch'
-import { useGeolocation } from '../hooks/useGeolocation'
-import { fetchDaylight } from '../lib/api'
+import type { useDaylightMode } from '../hooks/useDaylightMode'
+import type { useGeolocation } from '../hooks/useGeolocation'
 
 // 대전시청. 현재 위치를 못 잡았을 때의 기본 중심
 const DAEJEON_CENTER: LatLng = { lat: 36.3504, lng: 127.3845 }
 
+type Props = {
+  geo: ReturnType<typeof useGeolocation>
+  daylight: ReturnType<typeof useDaylightMode>
+  destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
+  onPickDestination: (place: Place) => void
+}
+
 // S1 지도 홈
-export default function MapHome() {
-  const geo = useGeolocation()
+export default function MapHome({ geo, daylight, destination, onPickDestination }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
-  const [pin, setPin] = useState<LatLng | null>(null)
   // 안심시설 종류별 표시 여부. 처음엔 모두 켠다
   const [facilityVisible, setFacilityVisible] = useState<Record<FacilityType, boolean>>({ cctv: true, emergency_bell: true, police: true })
   const toggleFacility = (type: FacilityType) => setFacilityVisible((v) => ({ ...v, [type]: !v[type] }))
-  const center = recenter ?? myLocation ?? DAEJEON_CENTER
-
-  // 주야간: 서버가 알려 준 값이 기본이고, 사용자가 누르면 그 값이 우선한다 (FR-005)
-  const [daylight, setDaylight] = useState<{ auto: Mode; sunrise: string; sunset: string } | null>(null)
-  const [manual, setManual] = useState<Mode | null>(null)
-  const mode: Mode = manual ?? daylight?.auto ?? 'day'
-
-  useEffect(() => {
-    let cancelled = false
-    fetchDaylight()
-      .then((d) => !cancelled && setDaylight({ auto: d.isNight ? 'night' : 'day', sunrise: d.sunrise, sunset: d.sunset }))
-      .catch(() => {
-        // 못 받으면 낮으로 두고, 사용자가 직접 바꿀 수 있다
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const pin = destination?.location ?? null
+  const center = recenter ?? pin ?? myLocation ?? DAEJEON_CENTER
+  const { mode, sunrise, sunset, setMode } = daylight
 
   const pick = (place: Place) => {
-    setPin({ ...place.location })
+    onPickDestination(place)
     setRecenter({ ...place.location })
   }
 
@@ -63,9 +53,9 @@ export default function MapHome() {
           <div className="toprow">
             <ModeToggle
               mode={mode}
-              sunrise={daylight?.sunrise ?? null}
-              sunset={daylight?.sunset ?? null}
-              onChange={setManual}
+              sunrise={sunrise}
+              sunset={sunset}
+              onChange={setMode}
             />
             <FacilityFilter visible={facilityVisible} onToggle={toggleFacility} />
           </div>

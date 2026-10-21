@@ -1,0 +1,61 @@
+import type { Route, RouteSearchResponse, RouteType, SafetyLevel } from '../../../../shared/types'
+
+// 응답에서 한 종류의 경로를 꺼낸다. routes에는 shortest·safe가 항상 둘 다 있다 (API.md 3장)
+export function pickRoute(res: RouteSearchResponse, type: RouteType): Route {
+  const route = res.routes.find((r) => r.type === type)
+  if (!route) throw new Error(`routes에 ${type} 경로가 없습니다`)
+  return route
+}
+
+// 구간 거리를 안전도별로 합산한 비율(%). 정수로 반올림하고 합이 100이 되도록 맞춘다.
+// 카드의 구간 막대에 쓴다 (FR-008). 서버는 비율을 주지 않아 프론트에서 합산한다.
+export function levelShares(route: Route): Record<SafetyLevel, number> {
+  const meters: Record<SafetyLevel, number> = { safe: 0, caution: 0, danger: 0 }
+  route.segments.forEach((s) => {
+    meters[s.level] += s.distanceM
+  })
+  const total = meters.safe + meters.caution + meters.danger
+  const shares: Record<SafetyLevel, number> = { safe: 0, caution: 0, danger: 0 }
+  if (total === 0) return shares
+
+  const levels: SafetyLevel[] = ['safe', 'caution', 'danger']
+  levels.forEach((l) => {
+    shares[l] = Math.round((meters[l] / total) * 100)
+  })
+  // 반올림으로 합이 99나 101이 되면 가장 큰 칸에서 맞춘다
+  const gap = 100 - (shares.safe + shares.caution + shares.danger)
+  const largest = levels.reduce((a, b) => (meters[b] > meters[a] ? b : a))
+  shares[largest] += gap
+  return shares
+}
+
+const toMinutes = (durationS: number) => Math.max(1, Math.round(durationS / 60))
+
+export function formatDuration(durationS: number): string {
+  const minutes = toMinutes(durationS)
+  if (minutes < 60) return `${minutes}분`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m === 0 ? `${h}시간` : `${h}시간 ${m}분`
+}
+
+export function formatDistance(distanceM: number): string {
+  const m = Math.round(distanceM)
+  if (m < 1000) return `${m}m`
+  return `${(distanceM / 1000).toFixed(1)}km`
+}
+
+// 안심경로가 최단경로와 얼마나 다른지 한 문장으로 말한다. 안전점수가 더 높지 않으면 말할 것이 없어 null.
+// 점수 차이가 얼마나 작을 때 말하지 않을지는 팀에서 정하지 않았다 (ROADMAP "팀 회의").
+export function compareSentence(shortest: Route, safe: Route): string | null {
+  const scoreGain = safe.safetyScore - shortest.safetyScore
+  if (scoreGain <= 0) return null
+
+  const extraM = safe.distanceM - shortest.distanceM
+  // 카드에 보이는 분(formatDuration)끼리 뺀다. 초 단위로 빼면 카드의 두 시간 차이와 1분 어긋날 수 있다
+  const extraMin = toMinutes(safe.durationS) - toMinutes(shortest.durationS)
+  if (extraM <= 0) return `최단경로보다 안전점수가 ${scoreGain}점 높아요.`
+
+  const extra = extraMin > 0 ? `${formatDistance(extraM)}, ${extraMin}분` : formatDistance(extraM)
+  return `최단경로보다 ${extra} 더 걸리지만 안전점수가 ${scoreGain}점 높아요.`
+}

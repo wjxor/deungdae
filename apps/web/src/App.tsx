@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Place } from '../../../shared/types'
+import type { LatLng, Place } from '../../../shared/types'
 import { useDaylightMode } from './hooks/useDaylightMode'
 import { useGeolocation } from './hooks/useGeolocation'
 import { DAEJEON_CENTER } from './lib/geo'
@@ -12,13 +12,20 @@ export default function App() {
   const daylight = useDaylightMode()
   const [destination, setDestination] = useState<Place | null>(null)
   const [screen, setScreen] = useState<'home' | 'route'>('home')
+  const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string } | null>(null)
 
-  if (screen === 'route' && destination) {
-    const myLocation = geo.state.status === 'ready' ? geo.state.location : null
+  // [경로 찾기]를 누른 순간의 출발지. 이후 위치가 잡혀도 요청·상단 이름·지도 중심이 같은 값을 쓴다
+  const myLocation = geo.state.status === 'ready' ? geo.state.location : null
+  const findRoute = () => {
+    setTrip(myLocation ? { origin: myLocation, originLabel: '현재 위치' } : { origin: DAEJEON_CENTER, originLabel: '대전시청' })
+    setScreen('route')
+  }
+
+  if (screen === 'route' && destination && trip) {
     return (
       <RouteCompare
-        origin={myLocation ?? DAEJEON_CENTER}
-        originLabel={myLocation ? '현재 위치' : '대전시청'}
+        origin={trip.origin}
+        originLabel={trip.originLabel}
         myLocation={myLocation}
         destination={destination}
         daylight={daylight}
@@ -33,7 +40,7 @@ export default function App() {
       daylight={daylight}
       destination={destination}
       onPickDestination={setDestination}
-      onFindRoute={() => setScreen('route')}
+      onFindRoute={findRoute}
     />
   )
 }

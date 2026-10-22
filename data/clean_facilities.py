@@ -41,6 +41,11 @@ ADDR_TYPO = {"유성궁": "유성구", "중수": "중구"}
 
 # CCTV 경도가 서쪽으로 1.57km 밀린 행(위도는 그대로)에 더해 주는 값
 LNG_SHIFT = 0.0175
+# 검증 목록 비고가 "0.0175° 서쪽 밀림"이어도 원본 위치가 맞아서 경도 보정에서 빼는 행
+# 038.(2012-47) 판암초 주변(판암1동 322-2): 원본 위치에서 7m에 판암동 328, 20m에 판암동 322-2(CCTV 주소와 같은 번지)
+# 보안등이 있고 판암초교 CCTV와 약 150m 거리다. +0.0175를 더하면 삼정동(삼정동 302 보안등 8m)이 되어 주소와 맞지 않고
+# 판암초교 CCTV와 1.4km 떨어진다. 주소 검색이 판암1동 번지를 삼정동의 같은 번지로 찾아 어긋난 것으로 보인다
+LNG_SHIFT_EXCLUDE = {"038.(2012-47) 판암초 주변"}
 # CCTV 위도 오타: 같은 주소(정림동 13-16)·같은 경도의 "030. 정림동성당근처"가 36.30749673이고
 # "030-1. 정림동성당근처(고정)"만 36.60749673 — 숫자 하나(3→6)만 다르다
 CCTV_LAT_FIX = {"030-1.(200-2011-24) 정림동성당근처(고정)": ("030.(200-2011-24) 정림동성당근처", 36.30749673)}
@@ -151,9 +156,11 @@ def fix_cctv(rows):
     """CCTV 보정과 중복 제거
     - 완전히 같은 행(관리번호·좌표 동일)은 하나만 남긴다
     - 위도 오타 1건은 같은 주소·같은 경도의 짝 행 값으로 고친다
-    - 상협 검증 목록(address_mismatch.csv)에서 '0.0175° 서쪽 밀림'으로 표시된 행(서구 94 · 동구 1)은 경도에 +0.0175"""
+    - 상협 검증 목록(address_mismatch.csv)에서 '0.0175° 서쪽 밀림'으로 표시된 행 중 LNG_SHIFT_EXCLUDE를 뺀 서구 94행은 경도에 +0.0175"""
     m = pd.read_csv(MISMATCH, encoding="utf-8-sig", dtype=str)
-    shifted = set(m[(m["dataset"] == "CCTV") & m["note"].fillna("").str.contains("0.0175")]["id"])
+    listed = set(m[(m["dataset"] == "CCTV") & m["note"].fillna("").str.contains("0.0175")]["id"])
+    assert LNG_SHIFT_EXCLUDE <= listed, "제외한 행이 검증 목록에 없음"
+    shifted = listed - LNG_SHIFT_EXCLUDE
     by_key = {r["source_key"]: r for r in rows}
     out, seen, n_dup, n_shift, n_lat = [], set(), 0, 0, 0
     for r in rows:
@@ -174,7 +181,7 @@ def fix_cctv(rows):
             n_shift += 1
         out.append(r)
     assert n_shift == len(shifted), f"보정 대상 {len(shifted)}건 중 {n_shift}건만 찾음"
-    print(f"  CCTV 중복 제거 {n_dup}, 경도 +{LNG_SHIFT} 보정 {n_shift}, 위도 오타 보정 {n_lat}")
+    print(f"  CCTV 중복 제거 {n_dup}, 경도 +{LNG_SHIFT} 보정 {n_shift}(목록 {len(listed)}행 중 {len(LNG_SHIFT_EXCLUDE)}행 제외), 위도 오타 보정 {n_lat}")
     return out
 
 

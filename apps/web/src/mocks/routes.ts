@@ -9,29 +9,30 @@ import type {
   Segment,
 } from '../../../../shared/types'
 
-// 목 데이터. 우송대학교(36.33710, 127.44509) → 대전역 부근을 잇는 가짜 경로다.
+// 목 데이터. 대전역 부근 → 우송대학교(36.33710, 127.44509)를 잇는 가짜 경로다.
+// 목 장소(mocks/places.ts)가 우송대학교 하나라 도착지는 항상 우송대학교이므로, 경로도 그쪽에서 끝나게 했다.
 // 실제 보행 도로를 따라가지 않는다. 화면(S3)에서 점선·구간 색상·비교 카드를 확인하려고 만든 것이다.
 // 서버(POST /routes/search)가 생기면 이 파일은 지운다. (API.md 3장)
 
-const ORIGIN: LatLng = { lat: 36.3371, lng: 127.44509 }
-const DESTINATION: LatLng = { lat: 36.3326, lng: 127.4344 }
+const ORIGIN: LatLng = { lat: 36.3326, lng: 127.4344 }
+const DESTINATION: LatLng = { lat: 36.3371, lng: 127.44509 }
 
 // 최단경로: 거의 직선. 중간에 한 번 꺾인다.
 const SHORTEST_WAYPOINTS: LatLng[] = [
   ORIGIN,
-  { lat: 36.3369, lng: 127.4435 },
-  { lat: 36.3352, lng: 127.4408 },
   { lat: 36.3338, lng: 127.4375 },
+  { lat: 36.3352, lng: 127.4408 },
+  { lat: 36.3369, lng: 127.4435 },
   DESTINATION,
 ]
 
 // 안심경로: 북쪽 큰길로 돌아간다 (CCTV·안심벨이 많은 쪽이라는 설정).
 const SAFE_WAYPOINTS: LatLng[] = [
   ORIGIN,
-  { lat: 36.3392, lng: 127.4462 },
-  { lat: 36.3398, lng: 127.4418 },
-  { lat: 36.3385, lng: 127.4372 },
   { lat: 36.3358, lng: 127.4350 },
+  { lat: 36.3385, lng: 127.4372 },
+  { lat: 36.3398, lng: 127.4418 },
+  { lat: 36.3392, lng: 127.4462 },
   DESTINATION,
 ]
 

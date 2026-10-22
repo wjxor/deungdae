@@ -1,7 +1,15 @@
-import type { DaylightResponse, FacilitiesResponse, LatLng, PlacesResponse } from '../../../../shared/types'
+import type {
+  DaylightResponse,
+  FacilitiesResponse,
+  LatLng,
+  PlacesResponse,
+  RouteSearchRequest,
+  RouteSearchResponse,
+} from '../../../../shared/types'
 import { mockDaylight } from '../mocks/daylight'
 import { MOCK_FACILITIES } from '../mocks/facilities'
 import { MOCK_PLACES } from '../mocks/places'
+import { mockRouteSearch } from '../mocks/routes'
 
 export type Bbox = { sw: LatLng; ne: LatLng }
 
@@ -31,4 +39,12 @@ export async function searchPlaces(q: string, near?: LatLng): Promise<PlacesResp
   let places = MOCK_PLACES.filter((p) => p.name.includes(keyword) || p.address.includes(keyword))
   if (near) places = [...places].sort((a, b) => distance(a.location, near) - distance(b.location, near))
   return { places: places.slice(0, MAX_PLACES) }
+}
+
+// POST /api/routes/search (API.md 3장). 지금은 목 데이터로 답한다.
+// 서버가 생기면 이 함수 안만 fetch로 바꾼다 (화면을 떠나면 요청이 취소되게 AbortSignal을 받아 넘기면 된다).
+// 사용자가 "경로 찾기"를 누를 때만 부른다. 실패하면 서버의 { error: { code, message } }를
+// ApiRequestError로 던진다 (lib/apiError.ts).
+export async function searchRoutes(req: RouteSearchRequest): Promise<RouteSearchResponse> {
+  return mockRouteSearch(req)
 }

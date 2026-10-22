@@ -262,7 +262,7 @@ GROUP BY f.type, t.weight;
 
 - Supabase에서 PostGIS 확장을 켠다 (Database → Extensions → `postgis`)
 - 위치 컬럼은 Prisma 스키마에 `Unsupported("geography(Point, 4326)")`로 선언한다. Prisma Client의 일반 쿼리로는 읽고 쓰지 못해 `$queryRaw`·`$executeRaw`로 다룬다 (Prisma 공식 문서: 확장 타입은 `Unsupported` + raw SQL)
-- 공간 인덱스·`district` CHECK는 `prisma migrate dev --create-only`로 마이그레이션 파일을 만든 뒤 SQL을 직접 추가한다
+- 공간 인덱스는 Prisma 스키마(`@@index([location], type: Gist)`)로 만들고, `district` CHECK처럼 스키마로 못 쓰는 것은 마이그레이션 SQL에 직접 추가한다. 공용 DB라 `prisma migrate dev`(DB 초기화를 물음) 대신 `migrate diff`로 SQL을 뽑아 `migrate deploy`한다 — 방법은 `apps/api/README.md` "마이그레이션" (2026-10-21 첫 마이그레이션)
 - Prisma Studio는 확장 타입이 있는 테이블을 읽지 못한다 → 데이터 확인은 DBeaver·QGIS
 - 시설 데이터 적재(Python, 근영)는 Prisma를 거치지 않고 DB에 직접 넣는다. **스키마는 Prisma 마이그레이션 한 곳에서만 바꾼다** — Python 쪽에서 테이블을 만들거나 고치지 않는다
 

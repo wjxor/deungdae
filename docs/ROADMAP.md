@@ -174,7 +174,8 @@ deungdae/
   - 예외: 저장소 관리자(상협)는 **PR에서만** 승인 없이 merge 가능, 직접 push는 불가. collaborator가 없어 승인해 줄 사람이 없는 동안 작업이 막히지 않게 하려는 것
   - 조원 합류 후 이 예외를 없앨지 팀 회의에서 정하려 했지만 다루지 않기로 함 (2026-10-18 상협). 룰셋은 지금 그대로이고, 바꿀 때는 저장소 Settings → Rules → Rulesets
 - 머지된 PR의 브랜치는 GitHub가 자동으로 삭제한다 (저장소 설정 "Automatically delete head branches")
-- 커밋 메시지에 요구사항 ID (`FR-004 최단경로 API 구현`)
+- merge는 **squash만** 허용하고, squash 커밋 제목은 PR 제목이다 (2026-10-22 상협, 저장소 Settings → General → Pull Requests). PR 하나가 `main`의 커밋 하나가 된다. 기본값은 커밋이 1개인 PR이면 그 커밋 메시지를 제목으로 써서 #12가 `Update .gitignore`로 들어갔고, #25는 이 설정 전이라 merge commit으로 들어가 브랜치 커밋(`Add files via upload`)이 그대로 남았다
+- 커밋 메시지에 요구사항 ID (`FR-004 최단경로 API 구현`). PR 제목이 `main`의 커밋 메시지가 되므로 PR 제목에도 붙인다
 - 3명 팀이라 `develop` 브랜치는 두지 않는다
 
 ### 첫 커밋에 넣을 것

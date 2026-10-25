@@ -11,6 +11,8 @@ npm ci              # 설치하면서 Prisma Client도 만든다 (postinstall: p
 npm run start:dev   # http://localhost:3000/api (파일을 고치면 다시 뜬다)
 curl http://localhost:3000/api/health
 # {"status":"ok","db":"ok","time":"2026-10-21T22:00:50+09:00"}
+curl http://localhost:3000/api/daylight
+# {"sunrise":"2026-10-25T06:46:00+09:00","sunset":"2026-10-25T17:42:00+09:00","isNight":true}
 curl -G http://localhost:3000/api/places --data-urlencode 'q=충남대학교'
 # {"places":[{"id":"12520707","name":"충남대학교 대덕캠퍼스","address":"대전 유성구 대학로 99",...}]}
 curl -X POST http://localhost:3000/api/routes/search -H 'Content-Type: application/json' \
@@ -25,6 +27,7 @@ curl 'http://localhost:3000/api/facilities?bbox=36.35,127.33,36.37,127.36'
 - `/api/routes/search`는 카카오 도보 경로(하루 1,000건 무료)를 부른다. 같은 출발·도착(약 10m 안)은 DB `route_cache`에 24시간 남아 다시 부르지 않는다. DB가 없으면 캐시 없이 매번 부른다
 - `DATABASE_URL`이 없거나 DB에 못 붙어도 서버는 뜨고, `/api/health`가 `"db": "error"`로 알려 준다. 이때 `/api/facilities`는 502 `EXTERNAL_API_ERROR`로 답한다
 - `/api/facilities`는 DB `facilities` 테이블을 읽는다. 시설 데이터를 적재하기 전에는 늘 빈 목록이다
+- `/api/daylight`는 `KASI_API_KEY`(공공데이터포털 서비스 키, 천문연 출몰시각 활용 신청된 것)가 필요하다. 없으면 오늘 값이 DB `sun_times`에 있을 때만 답하고, 없으면 502 `EXTERNAL_API_ERROR`. 천문연은 하루에 한 번만 부른다 (같은 날은 서버 메모리, 다시 켜면 `sun_times`)
 
 ## DB 연결 (Supabase)
 
@@ -114,12 +117,13 @@ apps/api/
     ├── kakao/              # 카카오 로컬 API(키워드·주소 검색) 호출 (KAKAO_REST_API_KEY)
     ├── walk/               # 도보 경로 호출과 캐시 (route_cache). 티맵으로 바꾸면 여기만
     ├── health/             # GET /api/health
+    ├── daylight/           # GET /api/daylight (천문연 출몰시각 호출, sun_times 캐시) (KASI_API_KEY)
     ├── places/             # GET /api/places
     ├── facilities/         # GET /api/facilities (지도 범위 안의 CCTV·안심벨·지구대)
     └── routes/             # POST /api/routes/search (약 50m 구간 나누기, 안전 등급)
 test/
-├── *.e2e-spec.ts           # DB·카카오를 가짜로 바꾼 e2e
-└── fixtures/               # 테스트용 카카오 응답 (실제 응답 일부)
+├── *.e2e-spec.ts           # DB·카카오·천문연을 가짜로 바꾼 e2e
+└── fixtures/               # 테스트용 카카오·천문연 응답 (실제 응답 일부)
 ```
 
 ## 메모

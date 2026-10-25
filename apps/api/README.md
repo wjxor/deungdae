@@ -11,9 +11,12 @@ npm ci              # 설치하면서 Prisma Client도 만든다 (postinstall: p
 npm run start:dev   # http://localhost:3000/api (파일을 고치면 다시 뜬다)
 curl http://localhost:3000/api/health
 # {"status":"ok","db":"ok","time":"2026-10-21T22:00:50+09:00"}
+curl -G http://localhost:3000/api/places --data-urlencode 'q=충남대학교'
+# {"places":[{"id":"12520707","name":"충남대학교 대덕캠퍼스","address":"대전 유성구 대학로 99",...}]}
 ```
 
 - 환경변수는 저장소 루트의 `.env` 하나를 읽는다 (`apps/web`과 같은 파일). 이름은 루트 `.env.example`
+- `/api/places`는 `KAKAO_REST_API_KEY`가 필요하다. 없으면 서버는 뜨고 장소 검색만 502 `EXTERNAL_API_ERROR`로 답한다
 - `DATABASE_URL`이 없거나 DB에 못 붙어도 서버는 뜨고, `/api/health`가 `"db": "error"`로 알려 준다
 
 ## DB 연결 (Supabase)
@@ -94,12 +97,20 @@ apps/api/
     ├── main.ts             # 서버 시작
     ├── app.setup.ts        # /api 접두사, CORS (main과 e2e가 같이 씀)
     ├── app.module.ts
-    ├── common/time.ts      # 한국 시간 ISO 문자열 (+09:00)
+    ├── common/
+    │   ├── api-exception.ts  # 에러 응답 { error: { code, message } } (API.md 공통 규칙)
+    │   ├── daejeon.ts        # 대전 범위 사각형, 주소가 대전인지
+    │   ├── geo.ts            # 거리(m), "위도,경도" 읽기
+    │   └── time.ts           # 한국 시간 ISO 문자열 (+09:00)
     ├── prisma/             # DB 연결 (DATABASE_URL, Transaction pooler)
-    └── health/             # GET /api/health
+    ├── kakao/              # 카카오 로컬 API(키워드·주소 검색) 호출 (KAKAO_REST_API_KEY)
+    ├── health/             # GET /api/health
+    └── places/             # GET /api/places
 ```
 
 ## 메모
 
 - API 응답 타입은 루트 `shared/types.ts`를 `import type`으로 쓴다. 명세를 바꾸면 이 파일부터 고친다
+- 에러는 `ApiException`(`common/api-exception.ts`)으로 던진다. Nest 기본 예외 처리가 본문을 그대로 보내서 API.md 형식이 된다
+- 카카오 호출 로그에는 검색어·좌표를 남기지 않는다 (사용자 위치가 들어 있을 수 있음)
 - 위치 컬럼(`geography`)은 Prisma Client로 못 읽고 써서 `$queryRaw`로 다룬다 (ERD "Prisma·PostGIS 메모")

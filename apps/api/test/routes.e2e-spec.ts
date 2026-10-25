@@ -14,9 +14,18 @@ import {
   walkFailed,
 } from './fixtures/kakao-walk.js';
 
-// 실제 카카오·DB 없이 돌도록 둘 다 가짜로 바꾼다 (DB가 없으면 캐시 없이 동작)
+// 실제 카카오·DB 없이 돌도록 둘 다 가짜로 바꾼다. 경로 캐시는 늘 비어 있고, 안전점수 쿼리는 시설이 없는 것처럼 답한다
 const fakeWalk = { walk: vi.fn() };
-const fakePrisma = { configured: false, $disconnect: vi.fn() };
+const fakePrisma = {
+  configured: true,
+  $queryRaw: vi.fn(),
+  $disconnect: vi.fn(),
+  routeCache: {
+    findUnique: vi.fn(() => Promise.resolve(null)),
+    upsert: vi.fn(() => Promise.resolve({})),
+    deleteMany: vi.fn(() => Promise.resolve({ count: 0 })),
+  },
+};
 
 const BODY = { origin: DAEJEON_STATION, destination: WOOSONG, mode: 'night' };
 
@@ -25,6 +34,7 @@ describe('POST /api/routes/search (e2e)', () => {
 
   beforeEach(async () => {
     fakeWalk.walk.mockReset().mockResolvedValue(WALK_OK);
+    fakePrisma.$queryRaw.mockReset().mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
       .useValue(fakePrisma)
@@ -94,5 +104,24 @@ describe('POST /api/routes/search (e2e)', () => {
         message: expect.any(String) as unknown,
       },
     });
+  });
+
+  it('최단·넓은 길 우선 두 후보를 부른다 (같은 경로면 sameRoute)', async () => {
+    await request(app.getHttpServer())
+      .post('/api/routes/search')
+      .send(BODY)
+      .expect(200);
+    const modes = fakeWalk.walk.mock.calls.map((c: unknown[]) => c[2]);
+    expect(modes).toHaveLength(2);
+    expect(modes).toEqual(expect.arrayContaining(['SHORTEST', 'BROAD_FIRST']));
+  });
+
+  it('안전점수 쿼리가 실패하면 502 EXTERNAL_API_ERROR', async () => {
+    fakePrisma.$queryRaw.mockRejectedValue(new Error('connection refused'));
+    const res = await request(app.getHttpServer())
+      .post('/api/routes/search')
+      .send(BODY)
+      .expect(502);
+    expect((res.body as ApiError).error.code).toBe('EXTERNAL_API_ERROR');
   });
 });

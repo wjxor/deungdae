@@ -17,7 +17,7 @@ export function invalidInput(message: string): ApiException {
   return new ApiException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', message);
 }
 
-/** 502 EXTERNAL_API_ERROR — 카카오·천문연 API 실패·응답 없음 */
+/** 502 EXTERNAL_API_ERROR — 카카오·천문연 API 실패·응답 없음, 시설 조회 중 DB 실패 */
 export function externalApiError(message: string): ApiException {
   return new ApiException(
     HttpStatus.BAD_GATEWAY,

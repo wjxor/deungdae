@@ -25,7 +25,7 @@ Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>
 | 404 | DESTINATION_UNREACHABLE | 도착지 근처에 걸을 수 있는 길이 없음 (카카오 `END_LINK_NOT_FOUND`) |
 | 404 | ROUTE_NOT_FOUND | 그 밖의 경로 계산 실패 (카카오 `ROUTE_RESULT_NOT_FOUND` 등) |
 | 409 | EMAIL_EXISTS | 회원가입 중복 |
-| 502 | EXTERNAL_API_ERROR | 카카오·천문연 API 실패·응답 없음 |
+| 502 | EXTERNAL_API_ERROR | 카카오·천문연 API 실패·응답 없음, 시설 조회 중 DB 실패 |
 | 503 | QUOTA_EXCEEDED | 카카오 도보 경로 하루 무료 한도(1,000건) 초과. 서버 캐시에 있는 같은 요청은 한도와 상관없이 응답한다 |
 
 - 프론트는 `code`로 분기하고, `message`는 화면에 그대로 보여 줄 수 있는 한국어 문장이다
@@ -232,6 +232,14 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 - `type`은 `cctv`·`emergency_bell`·`police` 중 하나이고, 값은 ERD `facility_types.code`와 같다
 - `id`는 지도를 옮길 때 bbox가 겹쳐 같은 시설이 다시 올 때 마커 중복을 거르는 데 쓴다
 - 같은 좌표에 CCTV가 여러 대인 곳(461곳)을 마커 하나로 묶을지는 데이터 정제 기준(ROADMAP)이 정해진 뒤 정한다
+- 형식이 틀리면(숫자 4개가 아님, 위도·경도 범위 밖, 남서가 북동보다 북쪽·동쪽) 400 `INVALID_INPUT`. DB가 없거나 실패하면 502 `EXTERNAL_API_ERROR`
+- bbox가 대전 밖이면 에러가 아니라 빈 목록이다
+
+구현 상태 (2026-10-25, 정제 데이터로 확인):
+- 가로·세로는 프론트 `FacilityLayer`와 같은 식으로 잰다 (가로는 남쪽 변, 세로는 서쪽 변, 하버사인). 식이 다르면 프론트가 4km 안이라고 보낸 범위를 서버가 거절할 수 있어서다
+- DB에서 `location` GIST 인덱스로 찾고, bbox 경계 위의 점도 넣는다. 남·북 변을 위도선이 아니라 대원으로 이어서 생기는 차이는 4km 범위에서 0.3m보다 작다
+- 시설 데이터를 DB에 적재하기 전이라, 정제 결과(`data/processed` 5종 75,251건)를 임시 테이블에 넣고 같은 SQL로 확인했다. 한 번에 최대 716개(4km × 4km), PC 레벨 4 화면(3.8 × 1.9km) 352개, 폰 레벨 5 화면(1.5 × 3.4km) 252개. 가장 촘촘한 4km 범위도 DB 안 실행 시간은 6ms
+- `id` 순으로 돌려준다. 같은 좌표의 CCTV를 묶지 않고, 화장실·점검 불량 비상벨도 거르지 않는다 (정제 기준은 팀 회의 — ROADMAP)
 
 응답 `FacilitiesResponse`
 ```json

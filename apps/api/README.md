@@ -16,12 +16,15 @@ curl -G http://localhost:3000/api/places --data-urlencode 'q=충남대학교'
 curl -X POST http://localhost:3000/api/routes/search -H 'Content-Type: application/json' \
   -d '{"origin":{"lat":36.332294,"lng":127.434645},"destination":{"lat":36.33709,"lng":127.44509},"mode":"night"}'
 # {"recommended":"safe","routes":[{"type":"shortest","distanceM":1279,...},{"type":"safe",...}],"sameRoute":true}
+curl 'http://localhost:3000/api/facilities?bbox=36.35,127.33,36.37,127.36'
+# {"facilities":[{"id":51877,"type":"cctv","location":{"lat":36.3622,"lng":127.3471}},...]}
 ```
 
 - 환경변수는 저장소 루트의 `.env` 하나를 읽는다 (`apps/web`과 같은 파일). 이름은 루트 `.env.example`
 - `/api/places`·`/api/routes/search`는 `KAKAO_REST_API_KEY`가 필요하다. 없으면 서버는 뜨고 두 API만 502 `EXTERNAL_API_ERROR`로 답한다
 - `/api/routes/search`는 카카오 도보 경로(하루 1,000건 무료)를 부른다. 같은 출발·도착(약 10m 안)은 DB `route_cache`에 24시간 남아 다시 부르지 않는다. DB가 없으면 캐시 없이 매번 부른다
-- `DATABASE_URL`이 없거나 DB에 못 붙어도 서버는 뜨고, `/api/health`가 `"db": "error"`로 알려 준다
+- `DATABASE_URL`이 없거나 DB에 못 붙어도 서버는 뜨고, `/api/health`가 `"db": "error"`로 알려 준다. 이때 `/api/facilities`는 502 `EXTERNAL_API_ERROR`로 답한다
+- `/api/facilities`는 DB `facilities` 테이블을 읽는다. 시설 데이터를 적재하기 전에는 늘 빈 목록이다
 
 ## DB 연결 (Supabase)
 
@@ -103,6 +106,7 @@ apps/api/
     ├── app.module.ts
     ├── common/
     │   ├── api-exception.ts  # 에러 응답 { error: { code, message } } (API.md 공통 규칙)
+    │   ├── db-error.ts       # 로그에 남길 DB 에러 문장 (첫 줄만)
     │   ├── daejeon.ts        # 대전 범위 사각형, 주소가 대전인지
     │   ├── geo.ts            # 거리(m), "위도,경도" 읽기
     │   └── time.ts           # 한국 시간 ISO 문자열 (+09:00)
@@ -111,6 +115,7 @@ apps/api/
     ├── walk/               # 도보 경로 호출과 캐시 (route_cache). 티맵으로 바꾸면 여기만
     ├── health/             # GET /api/health
     ├── places/             # GET /api/places
+    ├── facilities/         # GET /api/facilities (지도 범위 안의 CCTV·안심벨·지구대)
     └── routes/             # POST /api/routes/search (약 50m 구간 나누기, 안전 등급)
 test/
 ├── *.e2e-spec.ts           # DB·카카오를 가짜로 바꾼 e2e

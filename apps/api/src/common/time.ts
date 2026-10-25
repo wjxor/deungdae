@@ -8,3 +8,8 @@ export function toKstIso(date: Date): string {
   const kst = new Date(date.getTime() + KST_OFFSET_MS);
   return `${kst.toISOString().slice(0, 19)}+09:00`;
 }
+
+/** 한국 시간 기준 날짜 (`2026-10-25`). 서버가 UTC로 돌아도 한국 자정에 날짜가 바뀐다 */
+export function toKstDate(date: Date): string {
+  return toKstIso(date).slice(0, 10);
+}

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import type { LatLng } from '../../../../shared/types.js';
+import { dbErrorText } from '../common/db-error.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -110,17 +111,4 @@ export class RouteCacheService {
       this.logger.warn(`경로 캐시 저장 실패: ${dbErrorText(e)}`);
     }
   }
-}
-
-/**
- * 로그에 남길 DB 에러 문장. Prisma 에러 본문에는 쿼리 값(경로 응답 속 좌표)이 들어갈 수 있어
- * 첫 줄만 남긴다
- */
-function dbErrorText(e: unknown): string {
-  if (!(e instanceof Error)) return String(e);
-  const code = (e as { code?: unknown }).code;
-  const firstLine = e.message.split('\n').find((line) => line.trim() !== '');
-  return [e.name, typeof code === 'string' ? code : '', firstLine ?? '']
-    .filter(Boolean)
-    .join(' ');
 }

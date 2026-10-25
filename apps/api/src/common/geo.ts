@@ -22,7 +22,26 @@ export function parseLatLng(raw: string): LatLng | null {
   const parts = raw.split(',').map((s) => s.trim());
   if (parts.length !== 2 || parts.some((s) => s === '')) return null;
   const [lat, lng] = parts.map(Number);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-  return { lat, lng };
+  return isValidLatLng(lat, lng) ? { lat, lng } : null;
+}
+
+/**
+ * 요청 본문의 `{ "lat": …, "lng": … }`를 좌표로 바꾼다. 형식이 틀리면 null.
+ * 숫자가 아닌 값(문자열 `"36.3"` 포함)과 범위를 넘는 값은 틀린 것으로 본다
+ */
+export function readLatLng(value: unknown): LatLng | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const { lat, lng } = value as Record<string, unknown>;
+  if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+  return isValidLatLng(lat, lng) ? { lat, lng } : null;
+}
+
+/** 유한한 숫자이고 위도 ±90·경도 ±180 안인지 */
+function isValidLatLng(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180
+  );
 }

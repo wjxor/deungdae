@@ -1,4 +1,4 @@
-import { distanceM, parseLatLng } from './geo.js';
+import { distanceM, parseLatLng, readLatLng } from './geo.js';
 
 describe('distanceM', () => {
   it('대전시청 → 충남대 정문은 약 4km', () => {
@@ -36,5 +36,28 @@ describe('parseLatLng', () => {
     '36,181',
   ])('%j는 null', (raw) => {
     expect(parseLatLng(raw)).toBeNull();
+  });
+});
+
+describe('readLatLng', () => {
+  it('{ lat, lng } 숫자를 그대로 읽는다', () => {
+    expect(readLatLng({ lat: 36.3325, lng: 127.4342, extra: 1 })).toEqual({
+      lat: 36.3325,
+      lng: 127.4342,
+    });
+  });
+
+  it.each([
+    undefined,
+    null,
+    '36.33,127.43',
+    [36.33, 127.43],
+    { lat: '36.33', lng: '127.43' },
+    { lat: 36.33 },
+    { lat: Number.NaN, lng: 127.43 },
+    { lat: 91, lng: 127.43 },
+    { lat: 36.33, lng: -181 },
+  ])('%j는 null', (value) => {
+    expect(readLatLng(value)).toBeNull();
   });
 });

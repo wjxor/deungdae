@@ -13,10 +13,14 @@ curl http://localhost:3000/api/health
 # {"status":"ok","db":"ok","time":"2026-10-21T22:00:50+09:00"}
 curl -G http://localhost:3000/api/places --data-urlencode 'q=충남대학교'
 # {"places":[{"id":"12520707","name":"충남대학교 대덕캠퍼스","address":"대전 유성구 대학로 99",...}]}
+curl -X POST http://localhost:3000/api/routes/search -H 'Content-Type: application/json' \
+  -d '{"origin":{"lat":36.332294,"lng":127.434645},"destination":{"lat":36.33709,"lng":127.44509},"mode":"night"}'
+# {"recommended":"safe","routes":[{"type":"shortest","distanceM":1279,...},{"type":"safe",...}],"sameRoute":true}
 ```
 
 - 환경변수는 저장소 루트의 `.env` 하나를 읽는다 (`apps/web`과 같은 파일). 이름은 루트 `.env.example`
-- `/api/places`는 `KAKAO_REST_API_KEY`가 필요하다. 없으면 서버는 뜨고 장소 검색만 502 `EXTERNAL_API_ERROR`로 답한다
+- `/api/places`·`/api/routes/search`는 `KAKAO_REST_API_KEY`가 필요하다. 없으면 서버는 뜨고 두 API만 502 `EXTERNAL_API_ERROR`로 답한다
+- `/api/routes/search`는 카카오 도보 경로(하루 1,000건 무료)를 부른다. 같은 출발·도착(약 10m 안)은 DB `route_cache`에 24시간 남아 다시 부르지 않는다. DB가 없으면 캐시 없이 매번 부른다
 - `DATABASE_URL`이 없거나 DB에 못 붙어도 서버는 뜨고, `/api/health`가 `"db": "error"`로 알려 준다
 
 ## DB 연결 (Supabase)
@@ -104,13 +108,18 @@ apps/api/
     │   └── time.ts           # 한국 시간 ISO 문자열 (+09:00)
     ├── prisma/             # DB 연결 (DATABASE_URL, Transaction pooler)
     ├── kakao/              # 카카오 로컬 API(키워드·주소 검색) 호출 (KAKAO_REST_API_KEY)
+    ├── walk/               # 도보 경로 호출과 캐시 (route_cache). 티맵으로 바꾸면 여기만
     ├── health/             # GET /api/health
-    └── places/             # GET /api/places
+    ├── places/             # GET /api/places
+    └── routes/             # POST /api/routes/search (약 50m 구간 나누기, 안전 등급)
+test/
+├── *.e2e-spec.ts           # DB·카카오를 가짜로 바꾼 e2e
+└── fixtures/               # 테스트용 카카오 응답 (실제 응답 일부)
 ```
 
 ## 메모
 
 - API 응답 타입은 루트 `shared/types.ts`를 `import type`으로 쓴다. 명세를 바꾸면 이 파일부터 고친다
 - 에러는 `ApiException`(`common/api-exception.ts`)으로 던진다. Nest 기본 예외 처리가 본문을 그대로 보내서 API.md 형식이 된다
-- 카카오 호출 로그에는 검색어·좌표를 남기지 않는다 (사용자 위치가 들어 있을 수 있음)
+- 카카오 호출 로그에는 검색어·좌표를 남기지 않는다 (사용자 위치가 들어 있을 수 있음). DB 에러도 첫 줄만 남긴다 (Prisma 에러 본문에 저장하려던 경로 좌표가 들어갈 수 있음)
 - 위치 컬럼(`geography`)은 Prisma Client로 못 읽고 써서 `$queryRaw`로 다룬다 (ERD "Prisma·PostGIS 메모")

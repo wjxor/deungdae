@@ -3,12 +3,14 @@
  *
  * 실행 (레포 루트에서):
  *   (cd apps/api && npm run build)                       # 서버 코드를 그대로 쓰려고 빌드 결과(dist)를 import한다
- *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs-score.json   # 처음 한 번 (도보 API 150건)
+ *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json --round         # 처음 한 번 (도보 API 30건)
+ *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs-score.json --round   # 처음 한 번 (도보 API 150건)
  *   node --env-file=.env scripts/safety-score-experiment.mjs          # 정제 결과(data/processed)로
  *   node --env-file=.env scripts/safety-score-experiment.mjs --db     # DB에 적재한 facilities 테이블로
  *
  * - 쌍: scripts/route-pairs.json(9월 장면 10쌍) + scripts/route-pairs-score.json(무작위 50쌍, make-score-pairs.py)
- * - 경로: scripts/output/<쌍 id>/walk-<MODE>.json (kakao-walk-test.ts가 저장한 카카오 응답). 카카오를 다시 부르지 않는다
+ * - 경로: scripts/output/rounded/<쌍 id>/walk-<MODE>.json (kakao-walk-test.ts --round가 저장한 카카오 응답).
+ *   서버처럼 좌표를 소수 4자리로 반올림해 받은 것이라 서버가 같은 쌍에 주는 경로와 같다. 카카오를 다시 부르지 않는다
  * - 구간 나누기·점수·고르는 규칙·구간 점수 SQL은 서버(apps/api/src/routes) 함수를 그대로 쓴다
  * - 기본은 정제 결과 CSV를 임시 테이블(pg_temp — 이 연결에서만 보이고 끝나면 사라짐)에 넣어 센다. 공용 테이블은 읽기만 한다
  * - 필요: .env의 DIRECT_URL(임시 테이블은 연결 하나를 계속 써야 해서 Session pooler), data/processed/*.csv(--db가 아니면)
@@ -110,7 +112,7 @@ try {
   for (const pair of pairs) {
     routes[pair.id] = {};
     for (const mode of MODES) {
-      const walk = toWalkRoute(JSON.parse(readFileSync(join(ROOT, `scripts/output/${pair.id}/walk-${mode}.json`), 'utf8')));
+      const walk = toWalkRoute(JSON.parse(readFileSync(join(ROOT, `scripts/output/rounded/${pair.id}/walk-${mode}.json`), 'utf8')));
       const pieces = splitPath(walk.path);
       // 원점수는 서버와 같은 SQL로, 종류별 개수는 분석용으로 따로 센다
       const q = segmentScoreQuery(pieces.map((p) => p.path));

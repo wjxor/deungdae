@@ -119,7 +119,7 @@ function buildRoute(type: RouteType, waypoints: LatLng[], bands: [number, number
   const distanceM = segments.reduce((sum, s) => sum + s.distanceM, 0)
   // 경로 점수는 구간 점수의 거리 가중 평균 (REQUIREMENTS 안전점수 규칙)
   const safetyScore = Math.round(segments.reduce((sum, s) => sum + s.safetyScore * s.distanceM, 0) / distanceM)
-  return { type, distanceM, durationS: Math.round(distanceM / WALK_SPEED_MPS), safetyScore, path, segments }
+  return { type, distanceM, durationS: Math.round(distanceM / WALK_SPEED_MPS), safetyScore, level: levelOf(safetyScore), path, segments }
 }
 
 const SHORTEST_ROUTE = buildRoute('shortest', SHORTEST_WAYPOINTS, SHORTEST_SCORE_BANDS)

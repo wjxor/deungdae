@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-10-25 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-10-27 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
 Base URL: `/api` · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -78,6 +78,7 @@ export type Route = {
   distanceM: number;
   durationS: number;
   safetyScore: number;      // 경로 전체 점수 0~100
+  level: SafetyLevel;       // 경로 전체 점수의 등급. 구간 level과 같은 기준 (70 이상 safe, 40~69 caution, 39 이하 danger)
   path: LatLng[];           // 지도에 선 그릴 때 사용
   segments: Segment[];      // 색상 구간
 };
@@ -201,8 +202,8 @@ export type User = { id: number; email: string; nickname: string };
 {
   "recommended": "safe",
   "routes": [
-    { "type": "shortest", "distanceM": 2140, "durationS": 1830, "safetyScore": 46, "path": [ ... ], "segments": [ ... ] },
-    { "type": "safe",     "distanceM": 2380, "durationS": 2040, "safetyScore": 78, "path": [ ... ], "segments": [ ... ] }
+    { "type": "shortest", "distanceM": 2140, "durationS": 1830, "safetyScore": 46, "level": "caution", "path": [ ... ], "segments": [ ... ] },
+    { "type": "safe",     "distanceM": 2380, "durationS": 2040, "safetyScore": 78, "level": "safe",    "path": [ ... ], "segments": [ ... ] }
   ],
   "sameRoute": false
 }
@@ -214,6 +215,7 @@ export type User = { id: number; email: string; nickname: string };
 ```
 
 - 구간은 경로를 약 50m씩 나눈 것이다 (REQUIREMENTS 안전점수 규칙). 프론트는 구간마다 `path`를 `level` 색으로 그리고, 구간을 순서대로 이어 그리면 경로 전체가 된다 (FR-008). v0.3까지는 시작·끝 두 점(`from`·`to`)만 있어서 구간 안에서 길이 꺾이면 직선으로 이어져 건물을 가로질렀다. `from`·`to`는 `path`의 처음·끝과 같아 v0.4에서 뺐다
+- 경로의 `level`은 경로 점수(`safetyScore`)의 등급이고 구간 `level`과 기준이 같다 (70 이상 `safe`, 40~69 `caution`, 39 이하 `danger`). 화면이 등급 기준값을 따로 두지 않게 서버가 같이 준다 (2026-10-27, PR #33 승민 제안)
 - `mode`는 프론트가 정해서 보낸다 (FR-005: 일몰시각 자동 판별이든 수동 토글이든 서버는 결과만 받는다)
 - `mode`와 무관하게 두 경로를 모두 돌려주고 `recommended`만 바뀐다. 프론트는 추천 경로를 기본 표시하고 탭으로 전환
 - 안심경로가 최단경로와 같아도 `routes`에는 `shortest`·`safe`를 둘 다 담고(`path`·점수 등 내용이 같음) `sameRoute: true`로 알린다. 그래서 `recommended`에 해당하는 경로는 항상 `routes` 안에 있다. 프론트는 `sameRoute`면 경로 카드를 하나만 두고 "최단경로와 안심경로가 일치해요"라고 안내한다 (v0.3, 2026-10-13 승민 질문으로 정리. v0.2는 "하나만 담고 `type`은 `shortest`"라 밤에는 `recommended: "safe"`인 경로가 없었음. 안내 문구는 S3 화면에 맞춤 — PR #22, 2026-10-22. 그 전 예시는 "최단경로가 곧 안심경로")

@@ -116,13 +116,14 @@ function isClientError(e: unknown): boolean {
   return e instanceof ApiException && e.getStatus() < 500;
 }
 
-/** 점수를 매긴 후보를 응답의 `Route`로 */
+/** 점수를 매긴 후보를 응답의 `Route`로. 경로 등급도 구간과 같은 기준이라 화면이 기준값을 따로 두지 않는다 */
 function toRoute(type: RouteType, route: ScoredRoute): Route {
   return {
     type,
     distanceM: route.walk.distanceM,
     durationS: route.walk.durationS,
     safetyScore: route.safetyScore,
+    level: toSafetyLevel(route.safetyScore),
     path: route.walk.path,
     segments: route.segments,
   };

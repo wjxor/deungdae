@@ -590,8 +590,11 @@ button {
   --lv-caution: #f0a22e;
   --lv-danger: #e5384d;
   --sel-bg: #e8f5ee;
-  --sel-line: #1f9d6b;
   --sel-text: #146c49;
+  --chip: #f2f4f5; /* 시트 안의 옅은 바탕 */
+  --lv-safe-t: #14804f; /* 점수 글자색. 옅은 노랑·초록 글씨는 흰 바탕에서 안 읽혀서 선 색보다 진하게 */
+  --lv-caution-t: #a86400;
+  --lv-danger-t: #c8283b;
 }
 
 .route-compare[data-mode='night'] {
@@ -599,8 +602,11 @@ button {
   --lv-caution: #ffc247;
   --lv-danger: #ff5a6e;
   --sel-bg: #1c3a2e;
-  --sel-line: #35d08a;
   --sel-text: #7be8b5;
+  --chip: #262c33;
+  --lv-safe-t: #35d08a;
+  --lv-caution-t: #ffc247;
+  --lv-danger-t: #ff5a6e;
 }
 
 .route-head {
@@ -669,77 +675,14 @@ button {
   gap: 10px;
 }
 
-.route-card {
-  display: grid;
-  gap: 2px;
-  padding: 12px 8px 10px;
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  color: var(--muted);
-  text-align: center;
-  cursor: pointer;
-}
-
-.route-card.wide {
-  grid-column: 1 / -1;
-  cursor: default;
-}
-
-.route-card[aria-pressed='true'],
-.route-card.is-selected {
-  border-color: var(--sel-line);
-  background: var(--sel-bg);
-  color: var(--sel-text);
-}
-
-.route-card .name {
-  font-size: 13px;
-}
-
-.route-card .time {
-  color: var(--ink);
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-}
-
-.route-card[aria-pressed='true'] .time,
-.route-card.is-selected .time {
-  color: var(--sel-text);
-}
-
-.route-card .meta {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-
-.mix {
-  display: flex;
-  gap: 2px;
-  height: 6px;
-  margin-top: 6px;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.mix i {
-  display: block;
-  height: 100%;
-}
-
-.mix .safe,
 .legend .safe::before {
   background: var(--lv-safe);
 }
 
-.mix .caution,
 .legend .caution::before {
   background: var(--lv-caution);
 }
 
-.mix .danger,
 .legend .danger::before {
   background: var(--lv-danger);
 }
@@ -756,12 +699,6 @@ button {
 
 .same b {
   display: block;
-}
-
-.cmp {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
 }
 
 .legend {
@@ -819,4 +756,359 @@ button {
   .route-skel {
     animation: none;
   }
+}
+
+/* S3 바텀시트 (RouteSheet). 높이는 내용이 정하고, 접힘·중간·펼침마다 보여 주는 내용이 다르다 */
+.sheet.rs {
+  gap: 8px;
+  max-height: 70dvh;
+  overflow-y: auto;
+  padding-top: 2px;
+}
+
+.rs-grab {
+  width: 100%;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  cursor: grab;
+  touch-action: none; /* 위아래로 끄는 동안 화면이 같이 스크롤되지 않게 */
+}
+
+.rs-grab i {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.rs-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--chip);
+}
+
+.rs-tabs button {
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.rs-tabs button[aria-selected='true'] {
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.route-compare[data-mode='night'] .rs-tabs button[aria-selected='true'] {
+  background: var(--line);
+}
+
+.rs-title {
+  margin: 0;
+  padding: 2px 4px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.rs-big2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px 4px 4px;
+}
+
+.rs-big2 > div {
+  padding: 0 0 0 14px;
+  border-left: 1px solid var(--line);
+}
+
+.rs-big2 > div:first-child {
+  padding-left: 4px;
+  border-left: 0;
+}
+
+.rs-big2 small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rs-big2 b {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-big2 b span {
+  margin-left: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 안전점수 숫자는 등급 색으로 칠한다 (선 색과 같은 기준) */
+.sc[data-level='safe'] {
+  color: var(--lv-safe-t);
+}
+
+.sc[data-level='caution'] {
+  color: var(--lv-caution-t);
+}
+
+.sc[data-level='danger'] {
+  color: var(--lv-danger-t);
+}
+
+/* 구간 색 띠. 길이는 경로 거리에 비례하고 색은 안전도가 바뀌는 곳에서만 나뉜다 */
+.rs-ribbon {
+  display: flex;
+  height: 8px;
+  max-width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rs-ribbon.large {
+  height: 12px;
+  border-radius: 6px;
+}
+
+.rs-ribbon i {
+  display: block;
+  height: 100%;
+  min-width: 1px;
+}
+
+.rs-ribbon .safe,
+.rs-lvt .safe {
+  background: var(--lv-safe);
+}
+
+.rs-ribbon .caution,
+.rs-lvt .caution {
+  background: var(--lv-caution);
+}
+
+.rs-ribbon .danger,
+.rs-lvt .danger {
+  background: var(--lv-danger);
+}
+
+.rs-sum {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 2px 0 6px;
+}
+
+.rs-sum div {
+  padding: 0 0 0 14px;
+  border-left: 1px solid var(--line);
+}
+
+.rs-sum div:first-child {
+  padding-left: 4px;
+  border-left: 0;
+}
+
+.rs-sum b {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-sum small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.rs-rows {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.rs-row,
+.rs-colh {
+  display: grid;
+  grid-template-columns: 22px 1fr 84px 44px;
+  column-gap: 12px;
+  row-gap: 3px;
+  align-items: center;
+  padding: 11px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rs-row.static,
+.rs-colh.static {
+  grid-template-columns: 1fr 84px 44px;
+}
+
+.rs-row.static {
+  cursor: default;
+}
+
+.rs-colh {
+  column-gap: 12px;
+  padding: 0 4px 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.rs-colh span:nth-last-child(-n + 2),
+.rs-row .tm,
+.rs-row .sc {
+  text-align: right;
+}
+
+.rs-row .rd {
+  grid-row: 1 / 4;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+}
+
+.rs-row[aria-checked='true'] .rd {
+  border-color: var(--ink);
+}
+
+.rs-row[aria-checked='true'] .rd::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.rs-row .nm {
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.rs-row[aria-checked='true'] .nm,
+.rs-row.static .nm {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.rs-row .tm {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-row .sc {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-row .mt {
+  grid-column: 2 / 5;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-row .rs-ribbon {
+  grid-column: 2 / 5;
+  margin-top: 4px;
+}
+
+.rs-row.static .mt,
+.rs-row.static .rs-ribbon {
+  grid-column: 1 / 4;
+}
+
+.rs-sec h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rs-sec h3 small {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.rs-lvt {
+  display: grid;
+  gap: 8px;
+}
+
+.rs-lvt > div {
+  display: grid;
+  grid-template-columns: 48px 1fr 96px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rs-lvt .bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--chip);
+  overflow: hidden;
+}
+
+.rs-lvt .bar i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.rs-lvt .v {
+  color: var(--muted);
+  text-align: right;
+}
+
+.rs-lvt .v b {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.rs-fac {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rs-fac li {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.rs-fac b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }

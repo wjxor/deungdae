@@ -50,7 +50,23 @@ export default function RouteLayer({ map, view }: Props) {
     routes.shortest.path.forEach((p) => bounds.extend(toKakao(p)))
     routes.safe.path.forEach((p) => bounds.extend(toKakao(p)))
     // 위쪽은 검색창·토글이 덮고 있어 더 넓게 비운다
-    map.setBounds(bounds, 150, 48, 48, 48)
+    const fit = () => map.setBounds(bounds, 150, 48, 48, 48)
+    fit()
+
+    // 시트가 접힘·중간·펼침으로 바뀌면 지도 영역의 높이가 달라진다. 크기가 가라앉은 뒤에 한 번만 다시 맞춘다
+    let timer: number | undefined
+    const observer = new ResizeObserver(() => {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        map.relayout()
+        fit()
+      }, 120)
+    })
+    observer.observe(map.getNode())
+    return () => {
+      observer.disconnect()
+      window.clearTimeout(timer)
+    }
   }, [map, routes])
 
   useEffect(() => {

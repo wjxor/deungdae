@@ -1,4 +1,4 @@
-import { toKstIso } from './time.js';
+import { toKstDate, toKstIso } from './time.js';
 
 describe('toKstIso', () => {
   it('UTC 시각을 한국 시간(+09:00)으로 바꾼다', () => {
@@ -11,5 +11,16 @@ describe('toKstIso', () => {
     expect(toKstIso(new Date('2026-10-21T15:30:05.678Z'))).toBe(
       '2026-10-22T00:30:05+09:00',
     );
+  });
+});
+
+describe('toKstDate', () => {
+  it('한국 시간 날짜를 돌려준다', () => {
+    expect(toKstDate(new Date('2026-10-25T03:00:00Z'))).toBe('2026-10-25');
+  });
+
+  it('UTC로는 전날이어도 한국 자정이 지났으면 다음 날', () => {
+    expect(toKstDate(new Date('2026-10-25T14:59:59Z'))).toBe('2026-10-25');
+    expect(toKstDate(new Date('2026-10-25T15:00:00Z'))).toBe('2026-10-26');
   });
 });

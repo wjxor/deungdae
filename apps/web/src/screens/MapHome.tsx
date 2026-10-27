@@ -13,7 +13,7 @@ type Props = {
   daylight: ReturnType<typeof useDaylightMode>
   destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
   onPickDestination: (place: Place) => void
-  onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 S3로 간다
+  onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
 }
 
 // S1 지도 홈
@@ -93,7 +93,6 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
               <path d="M12 10v5M12 18v.5" />
             </svg>
           </button>
-          {/* 출발지를 정하는 S2를 만들 때까지는 현재 위치(없으면 대전시청)에서 바로 S3로 간다 */}
           <button type="button" className="route" disabled={!destination} onClick={onFindRoute}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 11l18-8-8 18-2-8-8-2z" />

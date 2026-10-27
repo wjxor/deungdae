@@ -5,20 +5,27 @@ import { searchPlaces } from '../lib/api'
 type Props = {
   near: LatLng | null
   onPick: (place: Place) => void
+  placeholder?: string
+  ariaLabel?: string
+  // 입력칸에 처음 들어가 있는 글자("현재 위치" 등). 이 글자로는 검색하지 않는다
+  initialQuery?: string
+  // 입력칸만 그린다. 결과 목록은 가장 가까운 위치 기준 조상(S2는 위쪽 막대)에 맞춰 펼쳐진다
+  inline?: boolean
+  onQueryChange?: (query: string) => void // 입력칸의 글자가 바뀔 때마다 알린다
 }
 
 type Result = { q: string; places: Place[] } | { q: string; error: string }
 
 // 장소·주소 검색. 입력 후 300ms 뒤에 검색한다 (FR-003)
-export default function PlaceSearch({ near, onPick }: Props) {
-  const [query, setQuery] = useState('')
+export default function PlaceSearch({ near, onPick, placeholder = '어디로 갈까요?', ariaLabel = '장소 검색', initialQuery = '', inline = false, onQueryChange }: Props) {
+  const [query, setQuery] = useState(initialQuery)
   const [result, setResult] = useState<Result | null>(null)
-  const [picked, setPicked] = useState<string | null>(null)
+  const [picked, setPicked] = useState<string | null>(initialQuery || null)
 
   const q = query.trim()
 
   useEffect(() => {
-    if (!q) return
+    if (!q || q === picked) return
     let cancelled = false
     const timer = setTimeout(() => {
       searchPlaces(q, near ?? undefined)
@@ -42,22 +49,34 @@ export default function PlaceSearch({ near, onPick }: Props) {
     onPick(place)
   }
 
+  const input = (
+    <input
+      type="search"
+      value={query}
+      onChange={(e) => {
+        setQuery(e.target.value)
+        onQueryChange?.(e.target.value)
+      }}
+      onFocus={inline ? (e) => e.target.select() : undefined}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      enterKeyHint="search"
+    />
+  )
+
   return (
-    <div className="place-search">
-      <div className="search-box">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
-          <circle cx="11" cy="11" r="7" />
-          <path d="M20 20l-3.5-3.5" />
-        </svg>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="어디로 갈까요?"
-          aria-label="장소 검색"
-          enterKeyHint="search"
-        />
-      </div>
+    <div className={inline ? 'place-search inline' : 'place-search'}>
+      {inline ? (
+        input
+      ) : (
+        <div className="search-box">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
+          {input}
+        </div>
+      )}
       {current && (
         <ul className="search-results">
           {'error' in current && <li className="empty">{current.error}</li>}

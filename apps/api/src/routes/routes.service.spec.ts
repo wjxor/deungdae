@@ -80,8 +80,16 @@ describe('RoutesService', () => {
     expect(res.sameRoute).toBe(false);
     expect(res.routes.map((r) => r.type)).toEqual(['shortest', 'safe']);
     const [shortest, safe] = res.routes;
-    expect(shortest).toMatchObject({ distanceM: 342, safetyScore: 29 });
-    expect(safe).toMatchObject({ distanceM: 380, safetyScore: 75 });
+    expect(shortest).toMatchObject({
+      distanceM: 342,
+      safetyScore: 29,
+      level: 'danger',
+    });
+    expect(safe).toMatchObject({
+      distanceM: 380,
+      safetyScore: 75,
+      level: 'safe',
+    });
     expect(shortest.segments).toHaveLength(SEGMENTS);
     for (const s of shortest.segments) {
       expect(s).toMatchObject({ safetyScore: 29, level: 'danger' });

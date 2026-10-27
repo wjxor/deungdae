@@ -65,6 +65,7 @@ describe('POST /api/routes/search (e2e)', () => {
       distanceM: 342,
       durationS: 335,
       safetyScore: 0,
+      level: 'danger',
     });
     expect(shortest.path[0]).toEqual({ lat: 36.33243907, lng: 127.43566206 });
     expect(shortest.segments[0]).toEqual({

@@ -27,11 +27,11 @@ BBOX = (36.18, 36.51, 127.24, 127.57)  # lat 최소/최대, lng 최소/최대
 # type: (원본 건수, 제목, 출처 주소). 원본 건수는 정제 전 입력 건수 (README 정제 결과 표)
 # 출처 주소는 공공데이터포털의 데이터 상세 페이지다 (data/README.md 표의 번호와 같음)
 SOURCES = {
-    "street_light": (43082, "대전광역시 가로등 현황", "https://www.data.go.kr/data/15110054/openapi.do"),
+    "street_light": (43082, "대전광역시 가로등 현황", "https://www.data.go.kr/data/15110054/fileData.do"),
     "security_light": (28579, "대전광역시 보안등 조회", "https://www.data.go.kr/data/15110685/openapi.do"),
     "cctv": (2985, "대전광역시 방범용 CCTV", "https://www.data.go.kr/data/15109459/openapi.do"),
-    "emergency_bell": (575, "행정안전부 안전비상벨 위치정보", "https://www.data.go.kr/data/15149530/openapi.do"),
-    "police": (31, "경찰청 전국 지구대·파출소 주소", "https://www.data.go.kr/data/15077036/openapi.do"),
+    "emergency_bell": (575, "행정안전부 안전비상벨 위치정보", "https://www.data.go.kr/data/15155046/openapi.do"),
+    "police": (31, "경찰청 전국 지구대·파출소 주소", "https://www.data.go.kr/data/15077036/fileData.do"),
 }
 BASE_DATE = "2026-09-30"
 ATTR_KEYS = {

@@ -43,7 +43,7 @@ function marker(text: '출발' | '도착'): HTMLElement {
 export default function RouteLayer({ map, view }: Props) {
   const { routes, selected, sameRoute, mode } = view
 
-  // 경로가 새로 오면 전체가 보이게 지도를 맞춘다. 카드로 선택만 바꿀 때는 움직이지 않는다
+  // 경로가 새로 오면 전체가 보이게 지도를 맞춘다. 시트에서 경로만 바꿀 때는 움직이지 않는다
   useEffect(() => {
     if (!map) return
     const bounds = new kakao.maps.LatLngBounds()

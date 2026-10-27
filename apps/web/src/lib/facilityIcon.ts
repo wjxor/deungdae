@@ -4,6 +4,9 @@ import type { FacilityType } from '../../../../shared/types'
 // 크기는 CSS가 .map의 data-level로 정한다 (index.css).
 export const FACILITY_TYPES: FacilityType[] = ['cctv', 'emergency_bell', 'police']
 
+// 경로 화면(S2·S3)에서는 시설 아이콘을 모두 숨긴다 (경로선·핀과 겹쳐 지저분해서)
+export const NO_FACILITIES: Record<FacilityType, boolean> = { cctv: false, emergency_bell: false, police: false }
+
 export const FACILITY_ICONS: Record<FacilityType, { label: string; short: string; path: string }> = {
   cctv: {
     label: '방범용 CCTV',

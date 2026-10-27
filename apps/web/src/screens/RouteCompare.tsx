@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { FacilityType, LatLng, Mode, Place, Route, RouteSearchRequest, RouteType } from '../../../../shared/types'
+import type { LatLng, Mode, Place, Route, RouteSearchRequest, RouteType } from '../../../../shared/types'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import RouteSheet from '../components/RouteSheet'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import { searchRoutes } from '../lib/api'
 import { ApiRequestError } from '../lib/apiError'
+import { NO_FACILITIES } from '../lib/facilityIcon'
 import { pickRoute } from '../lib/routeSummary'
 
 type Props = {
@@ -21,9 +22,6 @@ type State =
   | { status: 'loading' }
   | { status: 'ready'; routes: Record<RouteType, Route>; sameRoute: boolean }
   | { status: 'failed'; message: string }
-
-// S3 경로 비교에서는 시설 아이콘을 모두 숨긴다 (경로선과 겹쳐 지저분해서)
-const NO_FACILITIES: Record<FacilityType, boolean> = { cctv: false, emergency_bell: false, police: false }
 
 // 낮에는 최단경로, 밤에는 안심경로를 기본으로 보여 준다 (API.md 3장)
 const recommendedOf = (mode: Mode): RouteType => (mode === 'night' ? 'safe' : 'shortest')
@@ -125,7 +123,7 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
           )}
 
           {state.status === 'failed' && (
-            // 서버가 준 문장을 그대로 보여 준다. 출발지를 다시 고르는 길은 S2를 만들 때 붙인다
+            // 서버가 준 문장을 그대로 보여 준다. 돌아가면 S2에서 출발지를 바꿀 수 있다
             <div className="route-status" role="alert">
               <p>{state.message}</p>
               <button type="button" className="text-btn" onClick={onBack}>

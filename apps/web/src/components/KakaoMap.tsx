@@ -8,16 +8,18 @@ type Props = {
   center: LatLng
   myLocation: LatLng | null
   pin: LatLng | null
+  originPin?: LatLng | null // 출발지 핀 (S2 미리보기)
   facilityVisible: Record<FacilityType, boolean>
   route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 시설 아이콘과 도착지 핀은 숨긴다
 }
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 
-export default function KakaoMap({ center, myLocation, pin, facilityVisible, route }: Props) {
+export default function KakaoMap({ center, myLocation, pin, originPin = null, facilityVisible, route }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const myOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const pinOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
+  const originPinRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const [map, setMap] = useState<kakao.maps.Map | null>(null)
   const inRoute = route !== undefined // 경로 화면이면 도착지 핀은 RouteLayer가 대신 그린다
   const [error, setError] = useState<string | null>(null)
@@ -79,6 +81,24 @@ export default function KakaoMap({ center, myLocation, pin, facilityVisible, rou
     })
     pinOverlayRef.current.setMap(map)
   }, [pin, map, inRoute])
+
+  // 출발지 핀
+  useEffect(() => {
+    if (!map) return
+    originPinRef.current?.setMap(null)
+    originPinRef.current = null
+    if (!originPin || inRoute) return
+    const el = document.createElement('div')
+    el.className = 'place-pin origin'
+    originPinRef.current = new kakao.maps.CustomOverlay({
+      position: toKakao(originPin),
+      content: el,
+      xAnchor: 0.5,
+      yAnchor: 1,
+      zIndex: 11,
+    })
+    originPinRef.current.setMap(map)
+  }, [originPin, map, inRoute])
 
   return (
     <>

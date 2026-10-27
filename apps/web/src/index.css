@@ -648,6 +648,79 @@ button {
   text-overflow: ellipsis;
 }
 
+/* S2 경로 입력. 위쪽 막대는 S3와 같고, 출발지 자리가 입력칸이다 */
+.origin-pick .route-head {
+  position: relative; /* 검색 결과가 입력칸이 아니라 이 막대 폭에 맞춰 펼쳐진다 */
+  height: auto;
+  padding: 4px 16px 4px 6px;
+}
+
+.origin-pick .fields {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.origin-pick .field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+}
+
+.origin-pick .field + .field {
+  border-top: 1px solid var(--line);
+}
+
+.origin-pick .field .place-search {
+  position: static;
+  flex: 1;
+  min-width: 0;
+}
+
+.origin-pick .field strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 16px; /* 출발지 입력칸(iOS 확대 방지로 16px)과 글자 크기·굵기를 맞춘다 */
+  font-weight: 600;
+}
+
+/* 출발·도착 글자 */
+.origin-pick .tag {
+  flex: none;
+  width: 28px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.origin-pick .place-search.inline input {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* iOS Safari는 16px 미만이면 포커스 때 화면이 확대된다 */
+  font-weight: 600;
+}
+
+.origin-pick .search-results {
+  white-space: normal;
+}
+
+.origin-pick .sheet .text-btn {
+  justify-self: start;
+}
+
+.place-pin.origin {
+  background: #2f80ed;
+}
+
 .route-status {
   margin: 0;
   padding: 18px 0;

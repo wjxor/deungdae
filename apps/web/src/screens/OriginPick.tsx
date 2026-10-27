@@ -28,6 +28,19 @@ export default function OriginPick({ geo, daylight, origin, isCurrent, destinati
   // 출발지가 바뀌면 입력칸이 새로 그려지므로, 어느 출발지에서 친 글자인지 같이 적어 둔다
   const [edit, setEdit] = useState<{ label: string | undefined; text: string } | null>(null)
   const unfinished = edit !== null && edit.label === origin?.label && edit.text.trim() !== origin?.label
+  // 출발지가 그대로여도 입력칸을 새로 그려 글자를 되돌릴 때 쓴다 ("현재 위치에서 출발")
+  const [resetCount, setResetCount] = useState(0)
+
+  // 장소를 고르면 치던 글자는 버린다. 같은 이름의 장소를 다시 골라도 입력칸이 새로 그려지지 않아서 남아 있으면 안 된다
+  const pick = (place: Place) => {
+    setEdit(null)
+    onPickOrigin(place)
+  }
+  const useCurrent = () => {
+    setEdit(null)
+    setResetCount((n) => n + 1)
+    onUseCurrent()
+  }
 
   const notice =
     origin || geo.state.status === 'loading'
@@ -60,11 +73,11 @@ export default function OriginPick({ geo, daylight, origin, isCurrent, destinati
                 <span className="tag from">출발</span>
                 {/* 출발지가 정해지거나 바뀌면 입력칸을 새로 그려 그 이름이 들어가게 한다 */}
                 <PlaceSearch
-                  key={origin?.label ?? ''}
+                  key={`${origin?.label ?? ''}:${resetCount}`}
                   inline
                   near={myLocation}
-                  onPick={onPickOrigin}
-              onQueryChange={(text) => setEdit({ label: origin?.label, text })}
+                  onPick={pick}
+                  onQueryChange={(text) => setEdit({ label: origin?.label, text })}
                   initialQuery={origin?.label}
                   placeholder="출발지 검색"
                   ariaLabel="출발지 검색"
@@ -90,8 +103,8 @@ export default function OriginPick({ geo, daylight, origin, isCurrent, destinati
       </div>
 
       <section className="sheet" aria-label="경로 입력">
-        {!isCurrent && myLocation && (
-          <button type="button" className="text-btn" onClick={onUseCurrent}>
+        {myLocation && (!isCurrent || unfinished) && (
+          <button type="button" className="text-btn" onClick={useCurrent}>
             현재 위치에서 출발
           </button>
         )}

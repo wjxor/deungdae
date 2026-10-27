@@ -22,7 +22,7 @@ import { splitPath } from './segments.js';
 
 /**
  * 안심경로 후보로 더 부르는 카카오 `route_mode`. 편안한 길(`ACCESSIBLE`)은 귀갓길 60쌍 중 최단·넓은 길 우선 둘 다와
- * 다른 길인 쌍이 6쌍뿐이고, 빼도 고르는 결과가 같아서 부르지 않는다 (docs/safety-score-experiment.md). 검색 1회에 도보 API 2건
+ * 다른 길인 쌍이 8쌍뿐이고, 빼도 고르는 결과가 같아서 부르지 않는다 (docs/safety-score-experiment.md). 검색 1회에 도보 API 2건
  */
 const SAFE_CANDIDATE_MODES: readonly KakaoRouteMode[] = ['BROAD_FIRST'];
 

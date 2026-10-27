@@ -4,9 +4,12 @@
  * 실행 (레포 루트에서):
  *   node --env-file=.env scripts/kakao-walk-test.ts "<출발>" "<도착>"
  *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
+ *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs-score.json --round
  *
  * - 출발·도착: 장소 이름(카카오 키워드 검색, 대전시청 중심 반경 20km) 또는 "위도,경도"
  * - --pairs: 쌍 목록 파일의 출발·도착을 전부 돌려 요약표를 만든다 (안심경로 방식 결정용 비교 실험)
+ * - --round: 서버(`roundLatLng`)처럼 좌표를 소수 4자리로 반올림해 부른다. 서버와 같은 경로를 받으려는 것이고,
+ *   응답은 scripts/output/rounded/ 아래에 따로 저장해 9월 실험 응답을 덮어쓰지 않는다
  * - route_mode 3종(BROAD_FIRST · SHORTEST · ACCESSIBLE)을 차례로 호출해 거리와 경로 겹침을 비교한다
  * - 응답 원본은 scripts/output/walk-<MODE>.json, --pairs면 scripts/output/<쌍 id>/walk-<MODE>.json 과
  *   scripts/output/route-mode-summary.json 에 저장한다 (gitignore 대상)
@@ -158,6 +161,12 @@ const SEARCH_RADIUS_M = 20_000;
 
 /** 응답 원본을 저장할 폴더 — scripts/output/ (gitignore 대상) */
 const OUTPUT_DIR = join(import.meta.dirname, "output");
+
+/** --round일 때 응답을 저장할 폴더 — scripts/output/rounded/ */
+const ROUNDED_OUTPUT_DIR = join(OUTPUT_DIR, "rounded");
+
+/** 서버가 경로 API를 부를 때 쓰는 좌표 자릿수 (apps/api/src/walk/route-cache.service.ts `roundLatLng`, 약 10m) */
+const SERVER_COORD_DIGITS = 4;
 
 /** "위도,경도" 입력 형식 */
 const LAT_LNG_PATTERN = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/;
@@ -512,30 +521,38 @@ async function loadPairs(filePath: string): Promise<RoutePair[]> {
   return pairs;
 }
 
-/** 쌍 파일의 지점을 Spot으로 (좌표를 이미 알고 있으므로 검색하지 않는다) */
-function toSpot({ name, location }: RoutePair["origin"]): Spot {
-  return { name, address: "-", location, fromSearch: false, alternatives: [] };
+/** 서버(`roundLatLng`)와 같은 반올림 — 소수 4자리 */
+function roundLikeServer({ lat, lng }: LatLng): LatLng {
+  return { lat: Number(lat.toFixed(SERVER_COORD_DIGITS)), lng: Number(lng.toFixed(SERVER_COORD_DIGITS)) };
+}
+
+/** 쌍 파일의 지점을 Spot으로 (좌표를 이미 알고 있으므로 검색하지 않는다). round면 서버처럼 반올림한다 */
+function toSpot({ name, location }: RoutePair["origin"], round: boolean): Spot {
+  return { name, address: "-", location: round ? roundLikeServer(location) : location, fromSearch: false, alternatives: [] };
 }
 
 /**
  * 쌍 목록 전체를 route_mode 3종으로 호출해 쌍별 결과와 요약표를 출력하고, 요약을 JSON으로 저장한다.
+ * round면 좌표를 서버처럼 반올림해 부르고 scripts/output/rounded/에 저장한다.
  * @returns 모든 쌍·모드가 status OK인지
  */
-async function runPairs(filePath: string, apiKey: string): Promise<boolean> {
+async function runPairs(filePath: string, apiKey: string, round: boolean): Promise<boolean> {
   const pairs = await loadPairs(filePath);
+  const outputRoot = round ? ROUNDED_OUTPUT_DIR : OUTPUT_DIR;
   console.log(`쌍 ${pairs.length}개 · 도보 경로 호출 ${pairs.length * ROUTE_MODES.length}건`);
+  if (round) console.log(`좌표: 서버처럼 소수 ${SERVER_COORD_DIGITS}자리로 반올림 · 저장: ${outputRoot}`);
   console.log(`겹침 기준: 서로 ${OVERLAP_TOLERANCE_M}m 안이면 같은 길로 봄\n`);
 
   const summaries: PairSummary[] = [];
   for (const [index, pair] of pairs.entries()) {
-    const origin = toSpot(pair.origin);
-    const destination = toSpot(pair.destination);
+    const origin = toSpot(pair.origin, round);
+    const destination = toSpot(pair.destination, round);
     const straightM = straightDistanceM(origin.location, destination.location);
     console.log(
       `[${index + 1}/${pairs.length}] ${pair.id} (${pair.district}) ${origin.name} → ${destination.name} · 직선 ${formatMeters(straightM)}`,
     );
 
-    const outputDir = join(OUTPUT_DIR, pair.id);
+    const outputDir = join(outputRoot, pair.id);
     await mkdir(outputDir, { recursive: true });
     const results: ModeResult[] = [];
     for (const mode of ROUTE_MODES) {
@@ -596,10 +613,10 @@ async function runPairs(filePath: string, apiKey: string): Promise<boolean> {
     ),
   );
 
-  const summaryPath = join(OUTPUT_DIR, "route-mode-summary.json");
+  const summaryPath = join(outputRoot, "route-mode-summary.json");
   await writeFile(summaryPath, JSON.stringify(summaries, null, 2));
   console.log(`\n요약: ${summaryPath}`);
-  console.log(`응답 원본: ${OUTPUT_DIR}/<쌍 id>/walk-<MODE>.json`);
+  console.log(`응답 원본: ${outputRoot}/<쌍 id>/walk-<MODE>.json`);
   return summaries.every((summary) => summary.results.every((result) => result.status === "OK"));
 }
 
@@ -609,9 +626,10 @@ async function runPairs(filePath: string, apiKey: string): Promise<boolean> {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const pairsFile = args[0] === "--pairs" ? args[1] : undefined;
+  const round = pairsFile !== undefined && args[2] === "--round";
   if (args[0] === "--pairs" ? !pairsFile : args.length < 2) {
     console.error('사용법 (레포 루트에서): node --env-file=.env scripts/kakao-walk-test.ts "<출발>" "<도착>"');
-    console.error("       node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json");
+    console.error("       node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json [--round]");
     console.error('       출발·도착은 장소 이름 또는 "위도,경도"');
     process.exitCode = 1;
     return;
@@ -629,7 +647,7 @@ async function main(): Promise<void> {
     const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
     console.log(`=== 카카오 도보 경로 API 테스트 — ${now} ===\n`);
 
-    const allOk = pairsFile ? await runPairs(pairsFile, apiKey) : await runSingle(args[0], args[1], apiKey);
+    const allOk = pairsFile ? await runPairs(pairsFile, apiKey, round) : await runSingle(args[0], args[1], apiKey);
     if (!allOk) {
       process.exitCode = 1;
     }

@@ -14,13 +14,13 @@ Python 3.12+ (pandas, GeoPandas) 전처리 노트북·스크립트를 둔다.
 | 대전광역시 가로등 현황 | data.go.kr/data/15110054 | API — `street_light` → `raw/street_light.csv` | 43,082 | 43,082 |
 | 대전광역시 보안등 조회 | data.go.kr/data/15110685 | API — `security_light` → `raw/security_light.csv` | 28,579 | 28,579 |
 | 대전광역시 방범용 CCTV | data.go.kr/data/15109459 | API — `cctv` → `raw/cctv.csv` | 2,985 | 2,984 |
-| 행정안전부 안전비상벨 위치정보 | 공공데이터포털 | API — `emergency_bell` → `raw/emergency_bell.csv`. 전국 데이터라 대전 5개 구 기관코드로 나눠 조회 | 575 | 575 |
+| 행정안전부 안전비상벨 위치정보 | data.go.kr/data/15155046 | API — `emergency_bell` → `raw/emergency_bell.csv`. 전국 데이터라 대전 5개 구 기관코드로 나눠 조회 | 575 | 575 |
 | 경찰청 전국 지구대·파출소 주소 | data.go.kr/data/15077036 | API — `police` → `raw/police.csv`. 전국을 받아 `시도청`이 `대전청`인 행만 저장 | 31 | 31 |
 | ~~국립중앙의료원 전국 약국 정보~~ (수집 안 함 — 24시 시설 제외, 2026-10-10) | data.go.kr/data/15000576 | | | |
 
 - 다운로드 방법의 이름은 아래 "원본 수집"의 `collect_raw_data.py` 인자
 - 원본 건수는 2026-09-30 근영 수집본(노션 "캡스톤" 3.2 `raw.zip`) 기준. 다시 수집하면 기관이 데이터를 갱신한 만큼 달라질 수 있다
-- 적재 건수는 `clean_facilities.py`로 정제한 뒤 남은 건수(아래 "정제"). DB에 넣은 건수는 적재한 뒤 확인한다
+- 적재 건수는 `clean_facilities.py`로 정제한 뒤 남은 건수(아래 "정제"). DB에도 같은 건수가 들어 있다 (아래 "적재")
 
 ## 원본 수집
 
@@ -46,8 +46,9 @@ python data/check_duplication.py
 | `collect_raw_data.py` | 5종 원본 수집. 이름: `security_light`(보안등) · `cctv` · `street_light`(가로등) · `emergency_bell`(비상벨) · `police`(지구대·파출소) |
 | `check_duplication.py` | 종류별 전체 건수, 완전 중복, ID 중복, 같은 좌표 중복 출력 |
 | `clean_facilities.py` | 원본을 `facilities` 형식 CSV로 정제 (아래 "정제") |
+| `load_facilities.py` | 정제 CSV를 DB에 적재 (아래 "적재") |
 | `bell_final_coords.csv`, `police_coords.csv` | 정제 입력 중 손으로 정한 좌표 (아래 "정제") |
-| `requirements.txt` | `requests`, `pandas`, `python-dotenv` |
+| `requirements.txt` | `requests`, `pandas`, `python-dotenv`, `psycopg[binary]` (적재용) |
 
 - 어느 폴더에서 실행해도 `data/raw/`에 저장하고 거기서 읽는다
 - 서비스 키는 인코딩 키·디코딩 키 어느 쪽을 넣어도 된다 (스크립트가 디코딩해서 쓴다)
@@ -129,3 +130,37 @@ python data/clean_facilities.py
 - 8행이 화장실 비상벨이고 공원·산림욕장·삼거리처럼 넓은 곳이 많다. 임도삼거리·절탑삼거리·상소동산림욕장·식장산문화공원 4행은 원본 지번이 `산`(임야)이다. 주소가 넓은 땅 전체를 가리켜 주소 검색 좌표가 설치 위치와 멀어진 것으로 보인다. 도안7근린공원과 도안근린공원은 같은 지번(가수원동 839)이라 거리도 같다
 - `202636400000900207`(판암1동 346-2)은 대조 목록 비고가 "경도 0.0175° 서쪽 밀림"이지만 원본이 맞다고 본다. 원본 위치 근처에 판암동 345-9(45m)·341-2(56m)·345-2(72m) 보안등과 판암초교 정문 CCTV(6m)가 있다. +0.0175를 더하면 삼정동(삼정동 산25·346-7)이 되어 주소(판암1동)와 맞지 않는다. 검색 좌표가 1,564m 어긋난 것은 346-2 번지가 삼정동에도 있어서인 것으로 보인다
 - 이 10행과 정제 후에도 주소와 어긋난 CCTV·보안등 행을 어떻게 할지는 팀 회의 안건이다(ROADMAP "지금 할 일")
+
+## 적재
+
+`data/processed/`의 정제 CSV 5개를 DB의 `facilities` 테이블에 넣는다. 정제(위)를 마친 뒤에 한다.
+
+```bash
+# 레포 루트에서
+pip install -r data/requirements.txt
+
+# 1. 점검만 - CSV 규칙을 확인하고 DB에는 연결하지 않는다
+python data/load_facilities.py
+
+# 2. 연결 확인 - DB에 연결해 facilities, data_sources 건수만 읽는다
+python data/load_facilities.py --check-db
+
+# 3. 적재 - 팀과 합의한 뒤 한 번만
+python data/load_facilities.py --commit
+```
+
+- DB 주소는 루트 `.env`의 `DIRECT_URL`(없으면 `DATABASE_URL`)을 읽는다. 주소와 비밀번호는 화면에 출력하지 않는다
+- 종류별로 `data_sources` 행을 만들고(원본 건수, 적재 건수, 출처 주소, 수집일 2026-09-30) 그 `id`를 `facilities.data_source_id`에 넣는다. 위치는 `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography`로 경도가 먼저다
+- 한 번에 처리해서 하나라도 틀리면 전부 취소한다. `facilities`나 `data_sources`에 이미 데이터가 있으면 중복 적재를 막으려고 멈춘다. 정제 기준이 바뀌어 다시 적재하려면 스크립트를 고쳐야 한다(별도 PR, `route_cache`도 비워야 한다)
+- 적재가 끝나면 모든 점이 대전 범위 안에 있는지 확인한다
+
+적재 결과 (2026-10-26, 정제 CSV와 DB의 행이 같은 것을 상협이 확인):
+
+| 종류 | 적재 건수 |
+|---|---:|
+| 가로등 | 43,082 |
+| 보안등 | 28,579 |
+| CCTV | 2,984 |
+| 안심벨 | 575 |
+| 지구대·파출소 | 31 |
+| 합계 | 75,251 |

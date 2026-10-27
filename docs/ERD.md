@@ -207,7 +207,7 @@ erDiagram
 | `sunset` | timestamptz | NOT NULL | 야간 판별 기준 |
 | `fetched_at` | timestamptz | 기본 now() | |
 
-API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 있어 저장 전에 정리한다.
+API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 있어 저장 전에 정리한다. 쓰는 값인 `sunrise`·`sunset`은 `"0646  "`(HHMM + 공백)이고, `HHMMSS`는 남중 시각(`suntransit`) 등 쓰지 않는 값이다 (2026-10-25 확인). 서버는 그 날 한국 시각(`timestamptz`)으로 바꿔 넣는다. 한 번 넣은 행은 지우지 않는다 (날짜별 계산값이라 개인정보가 없음).
 
 ### `users` — 회원 (Could, FR-011)
 

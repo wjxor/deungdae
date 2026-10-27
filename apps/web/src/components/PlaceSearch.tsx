@@ -67,7 +67,8 @@ export default function PlaceSearch({ near, onPick }: Props) {
               <li key={p.id}>
                 <button type="button" onClick={() => pick(p)}>
                   <strong>{p.name}</strong>
-                  <span>{p.address}</span>
+                  {/* 주소로 찾은 결과는 이름이 주소와 같아서 한 번만 보여 준다 (API.md 2장) */}
+                  {p.name !== p.address && <span>{p.address}</span>}
                 </button>
               </li>
             ))}

@@ -108,14 +108,5 @@ export function signedScore(n: number): string {
   return `${sign(n)}${Math.abs(n)}점`
 }
 
-// 경로 전체 점수의 등급. 서버가 구간 level을 정하는 기준(apps/api/src/routes/safety.ts의 toSafetyLevel,
-// REQUIREMENTS "안전점수 규칙": 70 이상 안전, 40~69 주의, 39 이하 위험)과 같다.
-// 서버는 경로 점수의 등급을 따로 주지 않아서 같은 숫자를 여기에도 둔다. 서버 기준이 바뀌면 함께 고친다
-export function scoreLevel(score: number): SafetyLevel {
-  if (score >= 70) return 'safe'
-  if (score >= 40) return 'caution'
-  return 'danger'
-}
-
 export const LEVEL_ORDER: SafetyLevel[] = ['safe', 'caution', 'danger']
 export const LEVEL_LABEL: Record<SafetyLevel, string> = { safe: '안전', caution: '주의', danger: '위험' }

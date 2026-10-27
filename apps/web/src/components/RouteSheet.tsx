@@ -14,7 +14,6 @@ import {
   levelRuns,
   levelShares,
   routeDiff,
-  scoreLevel,
   signedDistance,
   signedDuration,
   signedScore,
@@ -145,7 +144,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
         <i className="rd" aria-hidden="true" />
         <span className="nm">{ROUTE_NAME[type]}</span>
         <span className="tm">{formatDuration(r.durationS)}</span>
-        <span className="sc" data-level={scoreLevel(r.safetyScore)}>
+        <span className="sc" data-level={r.level}>
           {r.safetyScore}
         </span>
         <span className="mt">{formatDistance(r.distanceM)}</span>
@@ -215,9 +214,9 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
             </div>
             <div>
               <small>안전점수</small>
-              <b className="sc" data-level={scoreLevel(route.safetyScore)}>
+              <b className="sc" data-level={route.level}>
                 {route.safetyScore}
-                <span>/100 {LEVEL_LABEL[scoreLevel(route.safetyScore)]}</span>
+                <span>/100 {LEVEL_LABEL[route.level]}</span>
               </b>
             </div>
           </div>
@@ -256,7 +255,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
                 <div className="rs-row static">
                   <span className="nm">최단경로 = 안심경로</span>
                   <span className="tm">{formatDuration(route.durationS)}</span>
-                  <span className="sc" data-level={scoreLevel(route.safetyScore)}>
+                  <span className="sc" data-level={route.level}>
                     {route.safetyScore}
                   </span>
                   <span className="mt">{formatDistance(route.distanceM)}</span>

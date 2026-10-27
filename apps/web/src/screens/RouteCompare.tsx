@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import type { FacilityType, LatLng, Mode, Place, Route, RouteSearchRequest, RouteType } from '../../../../shared/types'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
+import RouteSheet from '../components/RouteSheet'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import { searchRoutes } from '../lib/api'
 import { ApiRequestError } from '../lib/apiError'
-import { ROUTE_NAME, compareSentence, formatDistance, formatDuration, levelShares, pickRoute } from '../lib/routeSummary'
+import { pickRoute } from '../lib/routeSummary'
 
 type Props = {
   origin: LatLng
@@ -32,7 +33,7 @@ const SLOW_MS = 3000
 
 const FALLBACK_MESSAGE = '경로를 찾지 못했어요. 잠시 후 다시 시도해 주세요.'
 
-// S3 경로 비교 (FR-007). 들어올 때 경로를 한 번만 받고, 카드 선택과 낮/밤 전환은 받은 경로의 표시만 바꾼다.
+// S3 경로 비교 (FR-007). 들어올 때 경로를 한 번만 받고, 경로 선택과 낮/밤 전환은 받은 경로의 표시만 바꾼다.
 export default function RouteCompare({ origin, originLabel, myLocation, destination, daylight, onBack }: Props) {
   const { mode, sunrise, sunset, setMode } = daylight
 
@@ -40,7 +41,7 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
   const [request] = useState<RouteSearchRequest>(() => ({ origin, destination: destination.location, mode }))
   const [state, setState] = useState<State>({ status: 'loading' })
   const [slow, setSlow] = useState(false)
-  // 사용자가 카드로 고른 경로. 없으면 낮/밤에 따른 추천을 보여 주고, 낮/밤을 바꾸면 추천으로 돌아간다
+  // 사용자가 시트에서 고른 경로. 없으면 낮/밤에 따른 추천을 보여 주고, 낮/밤을 바꾸면 추천으로 돌아간다
   const [picked, setPicked] = useState<RouteType | null>(null)
   const selected = picked ?? recommendedOf(mode)
 
@@ -73,7 +74,6 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
 
   const routes = state.status === 'ready' ? state.routes : null
   const sameRoute = state.status === 'ready' && state.sameRoute
-  const sentence = routes && !sameRoute ? compareSentence(routes.shortest, routes.safe) : null
 
   return (
     <main className="map-home route-compare" data-mode={mode}>
@@ -103,99 +103,38 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
         </header>
       </div>
 
-      <section className="sheet" aria-label="경로 비교">
-        {state.status === 'loading' && (
-          <>
-            <div className="route-cards" aria-hidden="true">
-              <div className="route-skel" />
-              <div className="route-skel" />
-            </div>
-            <p className="route-status" role="status">
-              {slow ? '조금 오래 걸리고 있어요. ' : '경로를 찾는 중이에요'}
-              {slow && (
-                <button type="button" className="text-btn" onClick={onBack}>
-                  취소
-                </button>
-              )}
-            </p>
-          </>
-        )}
-
-        {state.status === 'failed' && (
-          // 서버가 준 문장을 그대로 보여 준다. 출발지를 다시 고르는 길은 S2를 만들 때 붙인다
-          <div className="route-status" role="alert">
-            <p>{state.message}</p>
-            <button type="button" className="text-btn" onClick={onBack}>
-              돌아가기
-            </button>
-          </div>
-        )}
-
-        {routes && (
-          <>
-            {sameRoute && (
-              <p className="same" role="status">
-                <b>최단경로와 안심경로가 일치해요.</b>
-                가장 짧고 안전점수도 가장 높은 길이에요.
+      {routes ? (
+        <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} />
+      ) : (
+        <section className="sheet" aria-label="경로 비교">
+          {state.status === 'loading' && (
+            <>
+              <div className="route-cards" aria-hidden="true">
+                <div className="route-skel" />
+                <div className="route-skel" />
+              </div>
+              <p className="route-status" role="status">
+                {slow ? '조금 오래 걸리고 있어요. ' : '경로를 찾는 중이에요'}
+                {slow && (
+                  <button type="button" className="text-btn" onClick={onBack}>
+                    취소
+                  </button>
+                )}
               </p>
-            )}
+            </>
+          )}
 
-            <div className="route-cards">
-              {sameRoute ? (
-                <RouteCard name="최단경로 = 안심경로" route={routes.safe} />
-              ) : (
-                (['shortest', 'safe'] as const).map((type) => (
-                  <RouteCard
-                    key={type}
-                    name={ROUTE_NAME[type]}
-                    route={routes[type]}
-                    selected={selected === type}
-                    onSelect={() => setPicked(type)}
-                  />
-                ))
-              )}
+          {state.status === 'failed' && (
+            // 서버가 준 문장을 그대로 보여 준다. 출발지를 다시 고르는 길은 S2를 만들 때 붙인다
+            <div className="route-status" role="alert">
+              <p>{state.message}</p>
+              <button type="button" className="text-btn" onClick={onBack}>
+                돌아가기
+              </button>
             </div>
-
-            {sentence && <p className="cmp">{sentence}</p>}
-
-            <p className="legend">
-              <span className="safe">안전</span>
-              <span className="caution">주의</span>
-              <span className="danger">위험</span>
-            </p>
-          </>
-        )}
-      </section>
+          )}
+        </section>
+      )}
     </main>
-  )
-}
-
-// onSelect가 없으면 고를 것이 없는 카드(sameRoute의 한 장)라 누르는 버튼으로 만들지 않는다
-type CardProps = { name: string; route: Route; selected?: boolean; onSelect?: () => void }
-
-function RouteCard({ name, route, selected = true, onSelect }: CardProps) {
-  const shares = levelShares(route)
-  const body = (
-    <>
-      <span className="name">{name}</span>
-      <span className="time">{formatDuration(route.durationS)}</span>
-      <span className="meta">
-        {formatDistance(route.distanceM)} · 안전 {route.safetyScore}
-      </span>
-      <span className="mix" aria-hidden="true">
-        {(['safe', 'caution', 'danger'] as const).map(
-          (level) => shares[level] > 0 && <i key={level} className={level} style={{ width: `${shares[level]}%` }} />,
-        )}
-      </span>
-    </>
-  )
-
-  if (!onSelect) {
-    return <div className="route-card wide is-selected">{body}</div>
-  }
-  return (
-    <button type="button" className="route-card" aria-pressed={selected} onClick={onSelect}>
-      {body}
-    </button>
   )
 }

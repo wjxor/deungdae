@@ -8,7 +8,7 @@ const WALK_URL = 'https://dapi.kakao.com/v2/routing/walk';
 /** 카카오가 이 시간 안에 답하지 않으면 실패로 본다 (ms) */
 const TIMEOUT_MS = 5000;
 
-/** 카카오 도보 경로 탐색 옵션 (ROADMAP "외부 API 확인 사실") */
+/** 카카오 도보 경로 탐색 옵션 (docs/EXTERNAL_APIS.md) */
 export type KakaoRouteMode = 'SHORTEST' | 'BROAD_FIRST' | 'ACCESSIBLE';
 
 /**

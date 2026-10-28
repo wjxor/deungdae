@@ -1,7 +1,7 @@
 import type { SafetyLevel } from '../../../../shared/types.js';
 
 // 안전점수·안심경로 값. 2026-10-25 귀갓길 60쌍 분석(docs/safety-score-experiment.md)으로 정한 MVP 임시값이고,
-// 팀 회의에서 확정한다 (ROADMAP "팀 회의"). 바꾸면 그 문서의 스크립트를 다시 돌려 결과를 확인한다
+// 팀 회의에서 확정한다 (ROADMAP "팀에서 정해야 할 것"). 바꾸면 그 문서의 스크립트를 다시 돌려 결과를 확인한다
 
 /** 구간 원점수(반경 30m 안 시설의 가중치 합)가 이 값 이상이면 100점. 60쌍 최단경로 구간의 상위 5% 근처 값 (10~11) */
 export const SCORE_CAP_RAW = 10;

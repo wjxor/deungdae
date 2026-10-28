@@ -24,7 +24,7 @@ erDiagram
         text facility_type FK
         text title "공공데이터 이름"
         text source_url
-        date base_date "원본 기준일"
+        date base_date "수집일"
         int raw_count "원본 건수"
         int loaded_count "적재 건수"
         text note "정제 기준"
@@ -124,7 +124,7 @@ erDiagram
 
 ### `data_sources` — 원본 데이터 출처·적재 이력
 
-적재할 때마다 한 행. `data/README.md`의 "원본 건수·적재 건수 기록" 규칙을 DB에도 남긴다. 다시 적재하면 새 행이 생기고, 이전 행은 이력으로 남는다.
+적재할 때마다 한 행. `data/README.md`의 "원본 건수·적재 건수 기록" 규칙을 DB에도 남긴다. 다시 적재하면 새 행이 생기고, 이전 행은 이력으로 남는다. 지금 적재 스크립트(`data/load_facilities.py`, PR #40)는 빈 테이블에만 넣으므로, 다시 적재하는 기능은 정제 기준이 바뀔 때 따로 만든다 (`route_cache`도 비움).
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -132,7 +132,7 @@ erDiagram
 | `facility_type` | text | FK → `facility_types.code` | |
 | `title` | text | NOT NULL | 예: 대전광역시 방범용 CCTV |
 | `source_url` | text | | 공공데이터포털 주소 |
-| `base_date` | date | | 원본 기준일 (CCTV는 기준일 필드가 없어 null) |
+| `base_date` | date | | 원본 수집일 (지금 5종 모두 2026-09-30). 원본의 기준일은 행마다 다르거나(안심벨 `DAT_CRTR_YMD`·보안등 `REFERENCEDATE`) 없어서(CCTV·가로등·지구대) 한 값으로 정할 수 없다 (2026-10-27, PR #40) |
 | `raw_count` | integer | NOT NULL | 원본 건수 (totalCount) |
 | `loaded_count` | integer | NOT NULL | 정제 후 적재 건수 |
 | `note` | text | | 적용한 정제 기준 요약 (예: "대전 밖 좌표 1행 제외") |

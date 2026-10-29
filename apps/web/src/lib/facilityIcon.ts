@@ -4,8 +4,11 @@ import type { FacilityType } from '../../../../shared/types'
 // 크기는 CSS가 .map의 data-level로 정한다 (index.css).
 export const FACILITY_TYPES: FacilityType[] = ['cctv', 'emergency_bell', 'police']
 
-// 경로 화면(S2·S3)에서는 시설 아이콘을 모두 숨긴다 (경로선·핀과 겹쳐 지저분해서)
+// 출발지 입력 화면(S2)에서는 시설 아이콘을 모두 숨긴다 (핀과 겹쳐 지저분해서). 경로 화면(S3)은 KakaoMap이 아래 ROUTE_FACILITY_VISIBLE로 정한다
 export const NO_FACILITIES: Record<FacilityType, boolean> = { cctv: false, emergency_bell: false, police: false }
+
+// 경로 화면에서 지도에 띄우고 주변 개수로 세는 시설: 직접 도움받을 수 있는 안심벨·지구대만 (CCTV는 점수에만)
+export const ROUTE_FACILITY_VISIBLE: Record<FacilityType, boolean> = { cctv: false, emergency_bell: true, police: true }
 
 export const FACILITY_ICONS: Record<FacilityType, { label: string; short: string; path: string }> = {
   cctv: {

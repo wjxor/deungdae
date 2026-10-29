@@ -10,10 +10,13 @@ type Props = {
   pin: LatLng | null
   originPin?: LatLng | null // 출발지 핀 (S2 미리보기)
   facilityVisible: Record<FacilityType, boolean>
-  route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 시설 아이콘과 도착지 핀은 숨긴다
+  route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 안심벨·지구대만 보이며 도착지 핀은 RouteLayer가 그린다
 }
 
-const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
+// 경로 화면에서는 직접 도움을 받을 수 있는 안심벨·지구대만 늘 보인다 (CCTV는 바텀시트 개수로만)
+const ROUTE_FACILITY_VISIBLE: Record<FacilityType, boolean> = { cctv: false, emergency_bell: true, police: true }
+
+const toKakao =(p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 
 export default function KakaoMap({ center, myLocation, pin, originPin = null, facilityVisible, route }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -103,7 +106,8 @@ export default function KakaoMap({ center, myLocation, pin, originPin = null, fa
   return (
     <>
       <div ref={containerRef} className="map" />
-      {route ? <RouteLayer map={map} view={route} /> : <FacilityLayer map={map} visible={facilityVisible} />}
+      {route && <RouteLayer map={map} view={route} />}
+      <FacilityLayer map={map} visible={route ? ROUTE_FACILITY_VISIBLE : facilityVisible} wide={inRoute} />
       {error && (
         <p className="map-error" role="alert">
           {error}

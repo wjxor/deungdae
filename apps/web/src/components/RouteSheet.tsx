@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import type { FacilityType, Route, RouteType } from '../../../../shared/types'
-import { FACILITY_TYPES } from '../lib/facilityIcon'
+import { FACILITY_TYPES, ROUTE_FACILITY_VISIBLE } from '../lib/facilityIcon'
 import { NEAR_M, countFacilitiesAlong, type FacilityCounts } from '../lib/routeFacilities'
 import {
   LEVEL_LABEL,
@@ -103,7 +103,8 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
       })
   }, [snap, routes])
   const near = counts?.[sameRoute ? 'safe' : selected]
-  const nearTypes = near ? FACILITY_TYPES.filter((type) => (near[type] ?? 0) > 0) : []
+  // 지도에 보이는 시설(안심벨·지구대)만 센다. CCTV는 경로 화면 지도에 안 보여서 개수도 말하지 않는다
+  const nearTypes = near ? FACILITY_TYPES.filter((type) => ROUTE_FACILITY_VISIBLE[type] && (near[type] ?? 0) > 0) : []
 
   const cycle = () => setSnap(ORDER[(index + 1) % ORDER.length])
   const step = (delta: number) => setSnap(ORDER[Math.min(ORDER.length - 1, Math.max(0, index + delta))])
@@ -295,9 +296,9 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
                   </li>
                 ))}
               </ul>
-              <p className="rs-note">안전점수에는 가로등·보안등도 반영돼요. 지도에는 표시하지 않아요.</p>
             </div>
           )}
+          <p className="rs-note rs-sec">안전점수에는 CCTV·가로등·보안등도 반영돼요. 경로 화면 지도에는 안심벨·지구대만 보여요.</p>
           <div className="rs-sec">
             <h3>
               구간 구성<small>{ROUTE_NAME[sameRoute ? 'safe' : selected]} {formatDistance(route.distanceM)}</small>

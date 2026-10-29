@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FacilityType, LatLng } from '../../../../shared/types'
+import { ROUTE_FACILITY_VISIBLE } from '../lib/facilityIcon'
 import { loadKakaoMaps } from '../lib/kakao'
 import FacilityLayer from './FacilityLayer'
 import RouteLayer, { type RouteView } from './RouteLayer'
@@ -13,10 +14,7 @@ type Props = {
   route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 안심벨·지구대만 보이며 도착지 핀은 RouteLayer가 그린다
 }
 
-// 경로 화면에서는 직접 도움을 받을 수 있는 안심벨·지구대만 늘 보인다 (CCTV는 바텀시트 개수로만)
-const ROUTE_FACILITY_VISIBLE: Record<FacilityType, boolean> = { cctv: false, emergency_bell: true, police: true }
-
-const toKakao =(p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
+const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 
 export default function KakaoMap({ center, myLocation, pin, originPin = null, facilityVisible, route }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)

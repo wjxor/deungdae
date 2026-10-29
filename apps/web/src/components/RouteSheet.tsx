@@ -295,6 +295,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
                   </li>
                 ))}
               </ul>
+              <p className="rs-note">안전점수에는 가로등·보안등도 반영돼요. 지도에는 표시하지 않아요.</p>
             </div>
           )}
           <div className="rs-sec">

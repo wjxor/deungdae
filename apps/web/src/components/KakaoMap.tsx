@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FacilityType, LatLng } from '../../../../shared/types'
+import { ROUTE_FACILITY_VISIBLE } from '../lib/facilityIcon'
 import { loadKakaoMaps } from '../lib/kakao'
 import FacilityLayer from './FacilityLayer'
 import RouteLayer, { type RouteView } from './RouteLayer'
@@ -10,7 +11,7 @@ type Props = {
   pin: LatLng | null
   originPin?: LatLng | null // 출발지 핀 (S2 미리보기)
   facilityVisible: Record<FacilityType, boolean>
-  route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 시설 아이콘과 도착지 핀은 숨긴다
+  route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 안심벨·지구대만 보이며 도착지 핀은 RouteLayer가 그린다
 }
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
@@ -103,7 +104,8 @@ export default function KakaoMap({ center, myLocation, pin, originPin = null, fa
   return (
     <>
       <div ref={containerRef} className="map" />
-      {route ? <RouteLayer map={map} view={route} /> : <FacilityLayer map={map} visible={facilityVisible} />}
+      {route && <RouteLayer map={map} view={route} />}
+      <FacilityLayer map={map} visible={route ? ROUTE_FACILITY_VISIBLE : facilityVisible} wide={inRoute} />
       {error && (
         <p className="map-error" role="alert">
           {error}

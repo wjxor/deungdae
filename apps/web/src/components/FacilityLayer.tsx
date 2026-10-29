@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { FacilityType } from '../../../../shared/types'
+import type { FacilityType, LatLng } from '../../../../shared/types'
 import { fetchFacilities } from '../lib/api'
 import { createFacilityIcon } from '../lib/facilityIcon'
 import { distanceM } from '../lib/geo'
@@ -10,13 +10,36 @@ import { distanceM } from '../lib/geo'
 const MAX_LEVEL = 5
 const BBOX_MAX_M = 4000
 
+const TILE_M = 3500
+const MAX_TILES = 30
+
+// 넓은 화면을 4km 이하 조각으로 나눈다. 조각이 너무 많으면(MAX_TILES 초과) 부르지 않는다
+function tiles(sw: LatLng, ne: LatLng): { sw: LatLng; ne: LatLng }[] {
+  const latStep = TILE_M / 110574
+  const lngStep = TILE_M / (111320 * Math.cos((((sw.lat + ne.lat) / 2) * Math.PI) / 180))
+  const rows = Math.ceil((ne.lat - sw.lat) / latStep)
+  const cols = Math.ceil((ne.lng - sw.lng) / lngStep)
+  if (rows * cols > MAX_TILES) return []
+  const out: { sw: LatLng; ne: LatLng }[] = []
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      out.push({
+        sw: { lat: sw.lat + r * latStep, lng: sw.lng + c * lngStep },
+        ne: { lat: Math.min(sw.lat + (r + 1) * latStep, ne.lat), lng: Math.min(sw.lng + (c + 1) * lngStep, ne.lng) },
+      })
+    }
+  }
+  return out
+}
+
 type Props = {
   map: kakao.maps.Map | null
   visible: Record<FacilityType, boolean> // 종류별 표시 여부 (안심시설 필터)
+  wide?: boolean // 경로 화면: 줌 레벨 제한 없이 넓은 화면도 조각으로 나눠 부른다
 }
 
 // 지도 위에 CCTV·안심벨·지구대 아이콘을 올린다 (FR-002)
-export default function FacilityLayer({ map, visible }: Props) {
+export default function FacilityLayer({ map, visible, wide = false }: Props) {
   const shown = useRef(new Map<number, { type: FacilityType; overlay: kakao.maps.CustomOverlay }>())
   // load()와 필터 effect가 같은 규칙으로 보이고 숨기려고 최신 값을 ref에 둔다
   const visibleRef = useRef(visible)
@@ -38,8 +61,8 @@ export default function FacilityLayer({ map, visible }: Props) {
 
     const load = async () => {
       // 아이콘 크기를 줌 레벨에 맞추려고 CSS가 읽을 수 있게 남긴다 (.map[data-level] 규칙)
-      map.getNode().dataset.level = String(map.getLevel())
-      levelOkRef.current = map.getLevel() <= MAX_LEVEL
+      map.getNode().dataset.level = String(Math.min(map.getLevel(), 5)) // 5 이상은 모두 점
+      levelOkRef.current = wide || map.getLevel() <= MAX_LEVEL
       apply()
       if (!levelOkRef.current) return
 
@@ -47,13 +70,15 @@ export default function FacilityLayer({ map, visible }: Props) {
       const sw = { lat: b.getSouthWest().getLat(), lng: b.getSouthWest().getLng() }
       const ne = { lat: b.getNorthEast().getLat(), lng: b.getNorthEast().getLng() }
       const span = Math.max(distanceM(sw, { lat: sw.lat, lng: ne.lng }), distanceM(sw, { lat: ne.lat, lng: sw.lng }))
-      if (span > BBOX_MAX_M) return
+      // wide(경로 화면)는 화면이 4km보다 넓어도 4km 이하 조각으로 나눠 부른다
+      const boxes = span <= BBOX_MAX_M ? [{ sw, ne }] : wide ? tiles(sw, ne) : []
+      if (boxes.length === 0) return
 
       const mine = ++seq
       try {
-        const { facilities } = await fetchFacilities({ sw, ne })
+        const results = await Promise.all(boxes.map((box) => fetchFacilities(box)))
         if (mine !== seq) return // 더 새 요청이 있으면 이 응답은 버린다
-        facilities.forEach((f) => {
+        results.flatMap((r) => r.facilities).forEach((f) => {
           if (layer.has(f.id)) return // 지도를 옮길 때 겹치는 시설은 id로 거른다
           const overlay = new kakao.maps.CustomOverlay({
             position: new kakao.maps.LatLng(f.location.lat, f.location.lng),
@@ -78,7 +103,7 @@ export default function FacilityLayer({ map, visible }: Props) {
       layer.forEach(({ overlay }) => overlay.setMap(null))
       layer.clear()
     }
-  }, [map])
+  }, [map, wide])
 
   return null
 }

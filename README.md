@@ -29,7 +29,7 @@
 ├── CLAUDE.md          # Claude Code 작업 규칙
 ├── README.md
 ├── .env.example       # 환경변수 이름만 (값은 팀 채널로 공유)
-├── docs/              # ROADMAP, REQUIREMENTS, API 명세, (ERD)
+├── docs/              # ROADMAP·HISTORY, REQUIREMENTS, API 명세, ERD, 외부 API, 실험 기록
 ├── shared/
 │   └── types.ts       # 프론트·백엔드 공용 API 타입 (docs/API.md 기준)
 ├── apps/
@@ -42,11 +42,14 @@
 
 ## 문서
 
-- [로드맵](docs/ROADMAP.md) — 현재 상태, 할 일, 주차별 일정, 미결정 사항
+- [로드맵](docs/ROADMAP.md) — 한눈에 보기, 지금 할 일, 팀에서 정해야 할 것, 결정된 것, 주차별 일정
+- [기록](docs/HISTORY.md) — 주차별로 한 일 (최신순)
 - [요구사항](docs/REQUIREMENTS.md) — FR/NFR, 화면, 데이터, 안전점수 규칙
 - [API 명세](docs/API.md) — 엔드포인트, 공용 타입
 - [ERD](docs/ERD.md) — DB 테이블 설계 (PostgreSQL + PostGIS)
+- [외부 API](docs/EXTERNAL_APIS.md) — 카카오·티맵 API 확인 사실, 카카오 앱 콘솔 설정
 - [route_mode 비교 실험](docs/route-mode-experiment.md) — 안심경로 방식 결정 근거 (카카오 도보 경로 3종의 겹침)
+- [안전점수 실험](docs/safety-score-experiment.md) — 귀갓길 60쌍으로 정한 안전점수·안심경로 MVP 임시값의 근거
 
 ## 실행 방법
 
@@ -69,8 +72,14 @@ node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
 ## 협업 규칙
 
 - `main` 직접 push 금지. 기능 브랜치에서 작업하고 PR로 합친다 (1명 이상 확인 후 merge)
-- 브랜치 이름: `feat/FR-004-shortest-route`, `fix/...`, `docs/...`
-- 커밋 메시지에 요구사항 ID를 붙인다: `FR-004 최단경로 API 구현`
+  - GitHub 룰셋 "main 보호"로 적용 (2026-09-26): 강제 push·`main` 삭제 금지, PR 필수 + 승인 1명
+  - 예외: 저장소 관리자(상협)는 **PR에서만** 승인 없이 merge 가능, 직접 push는 불가. collaborator가 없어 승인해 줄 사람이 없는 동안 작업이 막히지 않게 하려는 것
+  - 조원 합류 후 이 예외를 없앨지 팀 회의에서 정하려 했지만 다루지 않기로 함 (2026-10-18 상협). 룰셋은 지금 그대로이고, 바꿀 때는 저장소 Settings → Rules → Rulesets
+- 브랜치 이름: `feat/FR-004-shortest-route`, `fix/...`, `docs/...`. 3명 팀이라 `develop` 브랜치는 두지 않는다
+- merge는 **squash만** 허용하고, squash 커밋 제목은 PR 제목이다 (2026-10-22 상협, 저장소 Settings → General → Pull Requests). PR 하나가 `main`의 커밋 하나가 된다
+  - 기본값은 커밋이 1개인 PR이면 그 커밋 메시지를 제목으로 써서 #12가 `Update .gitignore`로 들어갔고, #25는 이 설정 전이라 merge commit으로 들어가 브랜치 커밋(`Add files via upload`)이 그대로 남았다
+- 머지된 PR의 브랜치는 GitHub가 자동으로 삭제한다 (저장소 설정 "Automatically delete head branches")
+- 커밋 메시지에 요구사항 ID를 붙인다: `FR-004 최단경로 API 구현`. PR 제목이 `main`의 커밋 메시지가 되므로 PR 제목에도 붙인다
 - **API 키·DB 접속 정보는 절대 커밋하지 않는다.** `.env`는 `.gitignore`에 들어 있다
 - 좌표는 항상 `{ lat, lng }` 객체, 좌표계는 WGS84(EPSG:4326)
 - 카카오 REST 키는 서버 환경변수로만. 프론트는 Supabase에 직접 붙지 않고 모든 요청은 NestJS를 거친다

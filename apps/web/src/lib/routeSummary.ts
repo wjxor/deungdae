@@ -44,7 +44,7 @@ export function formatDistance(distanceM: number): string {
 }
 
 // 안심경로가 최단경로와 얼마나 다른지 한 문장으로 말한다. 안전점수가 더 높지 않으면 말할 것이 없어 null.
-// 점수 차이가 얼마나 작을 때 말하지 않을지는 팀에서 정하지 않았다 (ROADMAP "팀 회의").
+// 점수 차이가 얼마나 작을 때 말하지 않을지는 팀에서 정하지 않았다 (ROADMAP "팀에서 정해야 할 것").
 export function compareSentence(shortest: Route, safe: Route): string | null {
   const scoreGain = safe.safetyScore - shortest.safetyScore
   if (scoreGain <= 0) return null

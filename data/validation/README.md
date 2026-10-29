@@ -95,4 +95,4 @@ python3 data/validation/check_address.py
 
 ## 정제 때 정할 것
 
-`docs/ROADMAP.md` "데이터 검증 > 정제 때 정할 것" 참고 — 4자리 비상벨 처리, 서구 CCTV 경도 보정(+0.0175°) 여부, 대전 밖 좌표 행을 버릴지 고칠지 등.
+처음 정리한 목록(4자리 비상벨 처리, 서구 CCTV 경도 보정(+0.0175°) 여부, 대전 밖 좌표 행을 버릴지 고칠지 등)은 PR #13 정제에서 처리했다 — `data/README.md` "정제". 처음 목록은 `docs/HISTORY.md` 5주차 "데이터 검증", 아직 정하지 않은 기준은 `docs/ROADMAP.md` "팀에서 정해야 할 것"의 "남은 정제 기준".

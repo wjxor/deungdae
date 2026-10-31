@@ -8,7 +8,7 @@ type Props = {
   onClose: () => void
 }
 
-// 회원의 [내 정보] 시트. 닉네임·이메일과 로그아웃만 둔다 (FR-011)
+// 회원의 [내 정보] 시트. 닉네임·이메일, 로그아웃, 회원 탈퇴 (FR-011)
 export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
   const [confirming, setConfirming] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -32,7 +32,13 @@ export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
               </p>
             )}
             <div className="myinfo-acts">
-              <button type="button" onClick={() => setConfirming(false)}>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false)
+                  setFailed(false)
+                }}
+              >
                 취소
               </button>
               <button type="button" className="danger" onClick={remove}>

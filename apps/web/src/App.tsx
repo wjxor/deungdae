@@ -39,6 +39,15 @@ export default function App() {
   const [pickedOrigin, setPickedOrigin] = useState<Place | null>(null)
   const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string; originPlace: Place | null } | null>(null)
 
+  // 로그아웃·탈퇴하면 그 사람이 고른 도착지·출발지·즐겨찾기가 다음 사람 화면에 남지 않게 비운다
+  const endSession = () => {
+    favorites.clear()
+    setDestination(null)
+    setPickedOrigin(null)
+    setTrip(null)
+    go('login', 'replace')
+  }
+
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   const origin: Origin | null = pickedOrigin
     ? { location: pickedOrigin.location, label: pickedOrigin.name }
@@ -120,15 +129,11 @@ export default function App() {
       }}
       onLogout={() => {
         auth.logout()
-        favorites.clear()
-        go('login', 'replace')
+        endSession()
       }}
       onDelete={async () => {
         const ok = await auth.deleteAccount()
-        if (ok) {
-          favorites.clear()
-          go('login', 'replace')
-        }
+        if (ok) endSession()
         return ok
       }}
     />

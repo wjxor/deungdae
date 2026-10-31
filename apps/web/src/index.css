@@ -518,18 +518,18 @@ button {
 }
 
 .acts button {
-  height: 52px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  font-size: 16px;
+  gap: 6px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .acts .report {
   flex: none;
-  width: 52px;
+  width: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--panel);
@@ -539,7 +539,7 @@ button {
 .acts .route {
   flex: 1;
   border: 0;
-  border-radius: 26px;
+  border-radius: 22px;
   background: var(--cta);
   color: var(--on-cta);
 }
@@ -1190,4 +1190,265 @@ button {
 .rs-fac b {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* 로그인 화면 */
+.login {
+  position: relative;
+  height: 100%;
+  display: grid;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.login-body {
+  align-self: center;
+  width: min(100%, 400px);
+  justify-self: center;
+  padding: 0 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.login-body h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.login-lead {
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+.login-buttons {
+  display: grid;
+  gap: 10px;
+}
+
+.social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 1px solid transparent;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 각 서비스의 브랜드 색 */
+.social.kakao {
+  background: #fee500;
+  color: #191919;
+}
+
+.social.naver {
+  background: #03c75a;
+  color: #fff;
+}
+
+.social.google {
+  background: #fff;
+  color: #1f1f1f;
+  border-color: #dadce0;
+}
+
+.login .notice {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.login-guest {
+  justify-self: center;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* 내 정보 시트 */
+.myinfo-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  align-items: end;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.myinfo {
+  width: min(100%, 440px);
+  justify-self: center;
+  padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.myinfo h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.myinfo p {
+  margin: 4px 0 18px;
+  color: var(--muted);
+}
+
+.myinfo-acts {
+  display: flex;
+  gap: 10px;
+}
+
+.myinfo-acts button {
+  flex: 1;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.myinfo-acts .logout {
+  border-color: transparent;
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+.myinfo-warn {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.myinfo-acts .danger {
+  border-color: transparent;
+  background: #d93025;
+  color: #fff;
+}
+
+.myinfo-delete {
+  display: block;
+  margin: 14px auto 0;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* 즐겨찾기 */
+.favpill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 17px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+}
+
+.favpill[aria-pressed='true'] svg,
+.route-head .star[aria-pressed='true'] {
+  color: var(--here);
+}
+
+.route-head .star {
+  flex: none;
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.fav-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.fav-tabs button {
+  flex: 1;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fav-tabs button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-color: transparent;
+}
+
+.fav-list {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  max-height: min(40dvh, 300px);
+  overflow-y: auto;
+}
+
+.fav-list li {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--line);
+}
+
+.fav-item {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  padding: 12px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fav-item span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fav-remove {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.myinfo p.fav-empty {
+  margin: 8px 0 18px;
 }

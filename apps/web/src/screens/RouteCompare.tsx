@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { LatLng, Mode, Place, Route, RouteSearchRequest, RouteType } from '../../../../shared/types'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
+import StarIcon from '../components/StarIcon'
 import RouteSheet from '../components/RouteSheet'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import { searchRoutes } from '../lib/api'
@@ -15,6 +16,7 @@ type Props = {
   myLocation: LatLng | null // 기기가 알려 준 현재 위치. 출발지와 다를 수 있다
   destination: Place
   daylight: ReturnType<typeof useDaylightMode>
+  favorite?: { on: boolean; onToggle: () => void } // 회원만. 이 경로(출발지→도착지)를 자주 가는 경로로 담는다
   onBack: () => void
 }
 
@@ -32,7 +34,7 @@ const SLOW_MS = 3000
 const FALLBACK_MESSAGE = '경로를 찾지 못했어요. 잠시 후 다시 시도해 주세요.'
 
 // S3 경로 비교 (FR-007). 들어올 때 경로를 한 번만 받고, 경로 선택과 낮/밤 전환은 받은 경로의 표시만 바꾼다.
-export default function RouteCompare({ origin, originLabel, myLocation, destination, daylight, onBack }: Props) {
+export default function RouteCompare({ origin, originLabel, myLocation, destination, daylight, favorite, onBack }: Props) {
   const { mode, sunrise, sunset, setMode } = daylight
 
   // 요청은 들어올 때 값으로 한 번만 보낸다. 이후 낮/밤을 바꿔도 다시 부르지 않는다
@@ -94,6 +96,11 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
             <span className="from">{originLabel}</span>
             <span className="arrow" aria-hidden="true">→</span>
             <strong className="to">{destination.name}</strong>
+            {favorite && (
+              <button type="button" className="star" aria-pressed={favorite.on} aria-label="자주 가는 경로로 즐겨찾기" onClick={favorite.onToggle}>
+                <StarIcon filled={favorite.on} />
+              </button>
+            )}
           </div>
           <div className="toprow">
             <ModeToggle mode={mode} sunrise={sunrise} sunset={sunset} onChange={changeMode} />

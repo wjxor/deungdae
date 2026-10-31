@@ -266,14 +266,15 @@ async function report() {
       if (!S || !B) continue;
       const s = await score(S);
       const b = { ...(await score(B)), label: '큰길' };
+      const overlap = overlapOf(S, B);
       const vias = [];
-      for (const base of BASES) {
+      // --when 규칙에 맞는 경유지 응답만 쓴다 (다른 규칙으로 받아 둔 파일이 섞이지 않게)
+      for (const base of basesFor(overlap)) {
         const w = loadWalk(pair.id, viaTag(base));
         if (w) vias.push({ ...(await score(w)), label: base.label });
       }
       const now = pickSafe(s, [b]); // 지금 서버 (B안)
       const next = pickSafe(s, [b, ...vias]); // 경유지 후보를 더한 결과
-      const overlap = overlapOf(S, B);
       rows.push({ id: pair.id, overlap, sameWay: overlap >= OVERLAP_SAME, s, b, vias, nowChanged: now !== s, nextChanged: next !== s, picked: next === s ? null : next.label, gain: next.safetyScore - s.safetyScore, detour: (100 * (next.distanceM - s.distanceM)) / s.distanceM });
     }
   } finally {

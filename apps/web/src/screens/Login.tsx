@@ -37,7 +37,7 @@ export default function Login({ onLogin, onGuest }: Props) {
         )}
 
         <button type="button" className="login-guest" onClick={onGuest}>
-          로그인 없이 둘러보기
+          로그인 없이 시작하기
         </button>
       </div>
     </main>

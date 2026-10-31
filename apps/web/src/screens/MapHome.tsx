@@ -17,6 +17,7 @@ type Props = {
   daylight: ReturnType<typeof useDaylightMode>
   destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
   onPickDestination: (place: Place) => void
+  onClearDestination: () => void // 검색창을 비우면 도착지도 해제한다
   user: User | null // 로그인한 회원. null이면 비회원이라 [안심 경로 찾기]만 보인다
   favorites: Favorites
   onPickFavoriteRoute: (route: FavoriteRoute) => void // 즐겨찾은 경로를 고르면 출발지·도착지가 채워진 S2로 간다
@@ -26,7 +27,7 @@ type Props = {
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user, favorites, onPickFavoriteRoute, onLogout, onDelete }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, favorites, onPickFavoriteRoute, onLogout, onDelete }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -35,6 +36,8 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
   const toggleFacility = (type: FacilityType) => setFacilityVisible((v) => ({ ...v, [type]: !v[type] }))
   const [myInfoOpen, setMyInfoOpen] = useState(false)
   const [favoritesOpen, setFavoritesOpen] = useState(false)
+  // 즐겨찾기에서 장소를 고르면 검색창이 그 이름으로 다시 그려지게 한다 (타이핑 중에는 바꾸지 않아 입력이 끊기지 않는다)
+  const [searchKey, setSearchKey] = useState(0)
   const pin = destination?.location ?? null
   const center = recenter ?? pin ?? myLocation ?? DAEJEON_CENTER
   const { mode, sunrise, sunset, setMode } = daylight
@@ -59,7 +62,13 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
 
         {/* 검색창은 위쪽에 둔다. 아래에 두면 폰 키보드가 입력칸과 결과 목록을 가린다 */}
         <header className="top">
-          <PlaceSearch near={myLocation} onPick={pick} />
+          <PlaceSearch
+            key={searchKey}
+            near={myLocation}
+            onPick={pick}
+            initialQuery={destination?.name}
+            onQueryChange={(text) => !text.trim() && onClearDestination()}
+          />
           <div className="toprow">
             <ModeToggle
               mode={mode}
@@ -140,6 +149,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
           routes={favorites.routes}
           onPickPlace={(place) => {
             pick(place)
+            setSearchKey((n) => n + 1)
             setFavoritesOpen(false)
           }}
           onPickRoute={onPickFavoriteRoute}

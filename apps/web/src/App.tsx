@@ -119,6 +119,7 @@ export default function App() {
       daylight={daylight}
       destination={destination}
       onPickDestination={setDestination}
+      onClearDestination={() => setDestination(null)}
       onFindRoute={() => go('origin')}
       user={auth.user}
       favorites={favorites}

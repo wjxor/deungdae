@@ -1,23 +1,28 @@
 /**
  * A 보강 경유지 실험 — "안심시설 밀집 지점" 방식 (docs/waypoint-experiment.md)
  *
- * 최단경로와 넓은 길 우선 경로 근처에서 시설 가중치가 몰린 지점을 경유지로 넣은 후보가
- * 지금 규칙(B안: 5점 이상·우회 20% 이하)으로 안심경로가 되는지, 얼마나 더 나은지 본다.
+ * 최단경로는 카카오 최단 그대로 보여 주고, 안심경로 후보에 경유지를 넣은 길을 더해
+ * 지금 규칙(B안: 최단보다 5점 이상 높고 우회 20% 이하)으로 안심경로가 어떻게 달라지는지 본다.
+ *
+ * 안심경로 후보 (최단과 비교해 고른다)
+ *   B        : 넓은 길 우선 (지금)
+ *   S+경유   : 최단 경로 모드 + 경유지 1개 (경유지는 최단경로에서 벗어난 시설 밀집 지점)
+ *   B+경유   : 넓은 길 우선 모드 + 경유지 1개 (경유지는 넓은 길 경로에서 벗어난 시설 밀집 지점)
  *
  * 실행 (레포 루트에서):
  *   (cd apps/api && npm run build)                        # 서버 코드를 그대로 쓰려고 dist를 import한다
  *   node --env-file=.env scripts/waypoint-experiment.mjs baseline    # 최단·넓은 길 우선을 카카오에서 받아 저장 (쌍마다 2건)
  *   node --env-file=.env scripts/waypoint-experiment.mjs candidates  # 경유지 후보를 DB에서 고른다 (카카오 안 부름)
- *   node --env-file=.env scripts/waypoint-experiment.mjs probe       # 경유지 파라미터 형식 확인 (카카오 1~2건)
- *   node --env-file=.env scripts/waypoint-experiment.mjs route       # 경유지를 넣은 경로를 받아 저장 (쌍마다 최대 2건)
+ *   node --env-file=.env scripts/waypoint-experiment.mjs route       # 경유지를 넣은 경로를 받아 저장 (쌍마다 2건)
  *   node --env-file=.env scripts/waypoint-experiment.mjs report      # 점수를 매기고 지금 결과와 비교 (카카오 안 부름)
  *
  * 옵션
+ *   --pairs a.json,b.json   쌍 파일 (기본: scripts/route-pairs.json, scripts/route-pairs-score.json — 안전점수 실험과 같다)
  *   --ids a,b,c      이 쌍만 (처음에는 몇 쌍으로 시험해 보는 용도)
  *   --types cctv,emergency_bell,police   밀집 지점을 셀 시설 종류 (기본: 5종 전부). 안심시설만 세는 변형을 보려는 것
  *   --max-calls N    이 실행에서 카카오를 부를 최대 건수 (기본 150). 하루 한도 1,000건은 팀이 같이 쓴다
  *
- * - 쌍: scripts/route-pairs.json(9월 장면 10쌍) + scripts/route-pairs-score.json(무작위 50쌍) — 안전점수 실험과 같다
+ * - 쌍 파일 형식: [{ id, origin: { location: { lat, lng } }, destination: { location: { lat, lng } } }]
  * - 카카오 좌표는 서버처럼 소수 4자리로 반올림해 부른다. 응답은 scripts/output/waypoint/ 에 저장해 다시 부르지 않는다 (gitignore)
  * - 점수·구간 나누기·고르는 규칙은 서버(apps/api/src/routes) 함수를 그대로 쓴다. 시설은 DB facilities 테이블(읽기만)
  * - 필요: .env의 KAKAO_REST_API_KEY, DIRECT_URL
@@ -39,14 +44,17 @@ const { splitPath } = await load('routes/segments.js');
 const { segmentScoreQuery } = await load('routes/safety-score.query.js');
 const { toSegmentScore, toRouteScore, pickSafe, SAFE_MIN_GAIN, SAFE_MAX_DETOUR } = await load('routes/safety.js');
 
-// ── 실험 값 (이 문서에서 바꿔 가며 본다) ───────────────────────
+// ── 실험 값 (이 값을 바꿔 가며 본다) ───────────────────────
 const CORRIDOR_M = 250; // 최단·넓은 길 우선 경로에서 이 안의 시설을 경유지 후보로 본다
-const OFF_ROUTE_M = 60; // 최단경로 위(이 안)의 지점은 경로를 바꾸지 못하므로 뺀다
+const OFF_ROUTE_M = 60; // 기준 경로 위(이 안)의 지점은 길을 바꾸지 못하므로 뺀다
 const DENSITY_M = 50; // 밀집도 = 후보 지점 반경 이 안 시설의 가중치 합
 const END_MARGIN_M = 150; // 출발·도착에서 이만큼은 떨어진 지점만 (끝에서 되돌아오는 경유지 방지)
-const SEPARATION_M = 150; // 경유지끼리 이만큼은 떨어뜨린다
-const MAX_VIA_DETOUR = 1.4; // 출발→경유지→도착 직선 합이 최단 거리의 이 배를 넘으면 부르지 않는다 (호출 아끼기)
-const KS = [1, 2]; // 경유지 개수별 후보
+const MAX_VIA_DETOUR = 1.4; // 출발→경유지→도착 직선 합이 최단 거리의 이 배를 넘으면 쓰지 않는다 (호출 아끼기)
+// 경유지 후보는 기준 모드마다 따로 고른다 (기준 경로에서 벗어난 지점이어야 길이 바뀐다)
+const BASES = [
+  { key: 'S', mode: 'SHORTEST', label: 'S+경유' },
+  { key: 'B', mode: 'BROAD_FIRST', label: 'B+경유' },
+];
 
 // ── 인자 ──────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -58,11 +66,10 @@ const opt = (name) => {
 const IDS = opt('--ids')?.split(',');
 const TYPES = opt('--types')?.split(',');
 const MAX_CALLS = Number(opt('--max-calls') ?? 150);
+const PAIR_FILES = opt('--pairs')?.split(',') ?? ['scripts/route-pairs.json', 'scripts/route-pairs-score.json'];
+const SUFFIX = TYPES ? `-${TYPES.join('+')}` : '';
 
-const pairs = [
-  ...JSON.parse(readFileSync(join(ROOT, 'scripts/route-pairs.json'), 'utf8')),
-  ...JSON.parse(readFileSync(join(ROOT, 'scripts/route-pairs-score.json'), 'utf8')),
-].filter((p) => !IDS || IDS.includes(p.id));
+const pairs = PAIR_FILES.flatMap((f) => JSON.parse(readFileSync(join(ROOT, f), 'utf8'))).filter((p) => !IDS || IDS.includes(p.id));
 
 // ── 작은 도구 ──────────────────────────────────────────
 const round4 = (v) => Number(v.toFixed(4));
@@ -77,10 +84,12 @@ const meters = (a, b) => {
 const r1 = (x) => Math.round(x * 10) / 10;
 const sorted = (a) => [...a].sort((x, y) => x - y);
 const median = (a) => (a.length ? sorted(a)[Math.floor((a.length - 1) / 2)] : null);
-const dirOf = (id) => join(OUT, id);
-const fileOf = (id, tag) => join(dirOf(id), `walk-${tag}.json`);
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
+const fileOf = (id, tag) => join(OUT, id, `walk-${tag}.json`);
+const candidateFile = () => join(OUT, `candidates${SUFFIX}.json`);
+const viaTag = (base) => `via${base.key}1${SUFFIX}`;
 const lineWkt = (paths) => `SRID=4326;MULTILINESTRING(${paths.map((p) => `(${p.map((q) => `${q.lng} ${q.lat}`).join(', ')})`).join(', ')})`;
+const pointWkt = (p) => `SRID=4326;POINT(${p.lng} ${p.lat})`;
 
 // ── 카카오 ────────────────────────────────────────────
 let calls = 0;
@@ -99,7 +108,7 @@ async function fetchWalk(pair, tag, { mode, via = [] }) {
     route_mode: mode,
   });
   if (via.length) {
-    // 형식은 probe로 확인한다: 여러 개면 쉼표로 이어 붙인다
+    // 경유지 여러 개는 쉼표로 잇는다 (2026-10-31 확인: 경유지 1~2개 모두 경로가 4~11m 안을 지났다)
     params.set('via_x', via.map((v) => round4(v.lng)).join(','));
     params.set('via_y', via.map((v) => round4(v.lat)).join(','));
   }
@@ -111,13 +120,13 @@ async function fetchWalk(pair, tag, { mode, via = [] }) {
   const text = await res.text();
   if (!res.ok) throw new Error(`카카오 HTTP ${res.status} (${pair.id} ${tag}): ${text.slice(0, 200)}`);
   const body = JSON.parse(text);
-  mkdirSync(dirOf(pair.id), { recursive: true });
+  mkdirSync(join(OUT, pair.id), { recursive: true });
   writeFileSync(file, JSON.stringify(body));
   await new Promise((r) => setTimeout(r, 120));
   return body;
 }
 
-/** 저장된 응답 → { distanceM, path } (서버와 같은 변환) */
+/** 저장된 응답 → { distanceM, path } (서버와 같은 변환). 없으면 null */
 const loadWalk = (id, tag) => (existsSync(fileOf(id, tag)) ? toWalkRoute(readJson(fileOf(id, tag))) : null);
 
 // ── 단계 ──────────────────────────────────────────────
@@ -129,21 +138,19 @@ async function baseline() {
   console.log(`기준 경로 저장 완료: ${pairs.length}쌍, 카카오 ${calls}건 (저장돼 있던 것은 건너뜀)`);
 }
 
-/** 경유지 후보를 DB에서 고른다. 쌍마다 { pairId, via: [{lat, lng, density}...] } */
-async function pickCandidates(client, pair) {
-  const shortest = loadWalk(pair.id, 'SHORTEST');
-  const broad = loadWalk(pair.id, 'BROAD_FIRST');
-  if (!shortest || !broad) throw new Error(`${pair.id}: 기준 경로가 없다 (baseline 먼저)`);
+/**
+ * 기준 경로(base) 근처에서 시설이 가장 몰린 지점 하나를 고른다.
+ * 후보 = 최단·넓은 길 우선 경로 CORRIDOR_M 안의 시설 중, 기준 경로 위가 아니고 출발·도착에서 떨어진 것.
+ * 밀집도가 가장 높은 후보를 쓰되, 출발→경유지→도착이 너무 돌면 다음 후보로 넘어간다
+ */
+async function pickVia(client, pair, base, shortest, broad) {
+  const baseWalk = base.key === 'S' ? shortest : broad;
   const o = rounded(pair.origin.location);
   const d = rounded(pair.destination.location);
-  const point = (p) => `SRID=4326;POINT(${p.lng} ${p.lat})`;
-  const typeFilter = TYPES ? `AND f.type = ANY($7::text[])` : '';
-  const densityTypeFilter = TYPES ? `AND f2.type = ANY($7::text[])` : '';
-  const values = [lineWkt([shortest.path, broad.path]), CORRIDOR_M, point(o), END_MARGIN_M, point(d), DENSITY_M];
-  values.push(...(TYPES ? [TYPES] : []));
-  // $8 자리: 최단경로 선 (경로 위 제외용)
-  const idx = values.length + 1;
-  values.push(lineWkt([shortest.path]), OFF_ROUTE_M);
+  const values = [lineWkt([shortest.path, broad.path]), CORRIDOR_M, pointWkt(o), END_MARGIN_M, pointWkt(d), DENSITY_M, lineWkt([baseWalk.path]), OFF_ROUTE_M];
+  if (TYPES) values.push(TYPES);
+  const typeFilter = TYPES ? 'AND f.type = ANY($9::text[])' : '';
+  const densityTypeFilter = TYPES ? 'AND f2.type = ANY($9::text[])' : '';
   const { rows } = await client.query(
     `SELECT f.id, ST_Y(f.location::geometry) AS lat, ST_X(f.location::geometry) AS lng,
         (SELECT sum(ft2.weight)::int FROM facilities f2 JOIN facility_types ft2 ON ft2.code = f2.type
@@ -152,22 +159,13 @@ async function pickCandidates(client, pair) {
      WHERE ST_DWithin(f.location, ST_GeogFromText($1), $2::float8)
        AND NOT ST_DWithin(f.location, ST_GeogFromText($3), $4::float8)
        AND NOT ST_DWithin(f.location, ST_GeogFromText($5), $4::float8)
-       AND NOT ST_DWithin(f.location, ST_GeogFromText($${idx}), $${idx + 1}::float8)
+       AND NOT ST_DWithin(f.location, ST_GeogFromText($7), $8::float8)
        ${typeFilter}
      ORDER BY density DESC NULLS LAST LIMIT 300`,
     values,
   );
-  // 밀집도가 높은 순으로, 서로 떨어져 있고 너무 돌지 않는 지점을 고른다
-  const chosen = [];
-  for (const r of rows) {
-    const p = { lat: r.lat, lng: r.lng, density: r.density };
-    if (chosen.some((c) => meters(c, p) < SEPARATION_M)) continue;
-    if (meters(o, p) + meters(p, d) > shortest.distanceM * MAX_VIA_DETOUR) continue;
-    chosen.push(p);
-    if (chosen.length === Math.max(...KS)) break;
-  }
-  // 경로 순서(출발에 가까운 순)로 늘어놓는다. 한 개 후보는 밀집도가 가장 높은 지점이다
-  return { pairId: pair.id, best: chosen, candidates: rows.length };
+  const via = rows.find((r) => meters(o, r) + meters(r, d) <= shortest.distanceM * MAX_VIA_DETOUR);
+  return { via: via ? { lat: via.lat, lng: via.lng, density: via.density } : null, candidates: rows.length };
 }
 
 async function candidates() {
@@ -176,53 +174,29 @@ async function candidates() {
   const out = [];
   try {
     for (const pair of pairs) {
-      const c = await pickCandidates(client, pair);
-      const o = rounded(pair.origin.location);
-      c.best.sort((a, b) => meters(o, a) - meters(o, b)); // 출발에서 가까운 순 (2개일 때 경유 순서)
-      out.push(c);
-      console.log(`${pair.id.padEnd(22)} 후보 ${String(c.candidates).padStart(3)}곳 → ${c.best.map((p) => `${r1(p.lat * 1)},${r1(p.lng * 1)} 밀집 ${p.density}`).join(' | ') || '없음'}`);
+      const shortest = loadWalk(pair.id, 'SHORTEST');
+      const broad = loadWalk(pair.id, 'BROAD_FIRST');
+      if (!shortest || !broad) throw new Error(`${pair.id}: 기준 경로가 없다 (baseline 먼저)`);
+      const entry = { pairId: pair.id };
+      for (const base of BASES) entry[base.key] = await pickVia(client, pair, base, shortest, broad);
+      out.push(entry);
+      const show = (b) => (entry[b.key].via ? `${entry[b.key].via.lat.toFixed(4)},${entry[b.key].via.lng.toFixed(4)} 밀집 ${entry[b.key].via.density}` : '없음');
+      console.log(`${pair.id.padEnd(22)} ${BASES.map((b) => `${b.label} ${show(b)}`).join(' | ')}`);
     }
   } finally {
     await client.end();
   }
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, `candidates${TYPES ? `-${TYPES.join('+')}` : ''}.json`), JSON.stringify(out, null, 1));
-}
-
-const candidateFile = () => join(OUT, `candidates${TYPES ? `-${TYPES.join('+')}` : ''}.json`);
-const tagOf = (k) => `via${k}${TYPES ? `-${TYPES.join('+')}` : ''}`;
-
-/** 후보에서 경유지 k개: 밀집도 상위 k개를 고르고 출발에서 가까운 순으로 늘어놓는다 */
-const viaOf = (cand, pair, k) => {
-  const o = rounded(pair.origin.location);
-  const top = [...cand.best].sort((a, b) => b.density - a.density).slice(0, k);
-  return top.sort((a, b) => meters(o, a) - meters(o, b));
-};
-
-async function probe() {
-  const cands = readJson(candidateFile());
-  const pair = pairs.find((p) => cands.some((c) => c.pairId === p.id && c.best.length >= 2));
-  if (!pair) throw new Error('후보가 2개 이상인 쌍이 없다');
-  const cand = cands.find((c) => c.pairId === pair.id);
-  for (const k of [1, 2]) {
-    const via = viaOf(cand, pair, k);
-    const body = await fetchWalk(pair, `probe-via${k}`, { mode: 'SHORTEST', via });
-    const walk = toWalkRoute(body);
-    const base = loadWalk(pair.id, 'SHORTEST');
-    const near = via.map((v) => Math.round(Math.min(...walk.path.map((p) => meters(p, v)))));
-    console.log(`${pair.id} 경유지 ${k}개: status ${body.status}, ${base.distanceM}m → ${walk.distanceM}m, 경로가 경유지에 가장 가까워지는 거리(m) ${near.join(', ')}`);
-  }
-  console.log(`카카오 ${calls}건. 경유지 가까운 거리가 작으면(수십 m 이하) 파라미터가 먹은 것이다`);
+  writeFileSync(candidateFile(), JSON.stringify(out, null, 1));
 }
 
 async function route() {
   const cands = readJson(candidateFile());
   for (const pair of pairs) {
     const cand = cands.find((c) => c.pairId === pair.id);
-    if (!cand?.best.length) continue;
-    for (const k of KS) {
-      if (cand.best.length < k) continue;
-      await fetchWalk(pair, tagOf(k), { mode: 'SHORTEST', via: viaOf(cand, pair, k) });
+    for (const base of BASES) {
+      const via = cand?.[base.key]?.via;
+      if (via) await fetchWalk(pair, viaTag(base), { mode: base.mode, via: [via] });
     }
   }
   console.log(`경유지 경로 저장 완료, 카카오 ${calls}건 (저장돼 있던 것은 건너뜀)`);
@@ -237,7 +211,7 @@ async function report() {
     const q = segmentScoreQuery(pieces.map((p) => p.path));
     const raw = new Map((await client.query(q.text, q.values)).rows.map((r) => [r.i, r.raw]));
     const segs = pieces.map((p, i) => ({ distanceM: p.distanceM, safetyScore: toSegmentScore(raw.get(i) ?? 0) }));
-    return { distanceM: walk.distanceM, safetyScore: toRouteScore(segs), zeroShare: segs.filter((s) => s.safetyScore === 0).reduce((n, s) => n + s.distanceM, 0) / segs.reduce((n, s) => n + s.distanceM, 0) };
+    return { distanceM: walk.distanceM, safetyScore: toRouteScore(segs) };
   };
   const rows = [];
   try {
@@ -246,49 +220,51 @@ async function report() {
       const B = loadWalk(pair.id, 'BROAD_FIRST');
       if (!S || !B) continue;
       const s = await score(S);
-      const b = await score(B);
-      const vias = {};
-      for (const k of KS) {
-        const w = loadWalk(pair.id, tagOf(k));
-        if (w) vias[k] = await score(w);
+      const b = { ...(await score(B)), label: '큰길' };
+      const vias = [];
+      for (const base of BASES) {
+        const w = loadWalk(pair.id, viaTag(base));
+        if (w) vias.push({ ...(await score(w)), label: base.label });
       }
-      const base = pickSafe(s, [b]);
-      const withA = pickSafe(s, [b, ...Object.values(vias)]);
-      const pickedVia = Object.entries(vias).find(([, v]) => v === withA)?.[0] ?? null;
-      rows.push({ id: pair.id, s, b, vias, baseChanged: base !== s, aChanged: withA !== s, pickedVia, gain: withA.safetyScore - s.safetyScore, detour: (100 * (withA.distanceM - s.distanceM)) / s.distanceM });
+      const now = pickSafe(s, [b]); // 지금 서버 (B안)
+      const next = pickSafe(s, [b, ...vias]); // 경유지 후보를 더한 결과
+      rows.push({ id: pair.id, s, b, vias, nowChanged: now !== s, nextChanged: next !== s, picked: next === s ? null : next.label, gain: next.safetyScore - s.safetyScore, detour: (100 * (next.distanceM - s.distanceM)) / s.distanceM });
     }
   } finally {
     await client.end();
   }
 
   const fmt = (r) => (r ? `${r.safetyScore}점/${r.distanceM}m` : '-');
-  console.log('쌍'.padEnd(22), '최단'.padEnd(12), '넓은길'.padEnd(12), '경유1'.padEnd(12), '경유2'.padEnd(12), '지금', '→ A보강');
+  const viaOf = (r, label) => r.vias.find((v) => v.label === label);
+  console.log('쌍'.padEnd(22), '최단'.padEnd(12), '큰길'.padEnd(12), 'S+경유'.padEnd(12), 'B+경유'.padEnd(12), '지금 → 경유지 후보 더하면');
   for (const r of rows) {
     console.log(
-      r.id.padEnd(22), fmt(r.s).padEnd(12), fmt(r.b).padEnd(12), fmt(r.vias[1]).padEnd(12), fmt(r.vias[2]).padEnd(12),
-      r.baseChanged ? '고름 ' : '같음 ', '→', r.aChanged ? `고름(${r.pickedVia ? `경유${r.pickedVia}` : '넓은길'}) +${r.gain}점 우회 ${r1(r.detour)}%` : '같음',
+      r.id.padEnd(22), fmt(r.s).padEnd(12), fmt(r.b).padEnd(12), fmt(viaOf(r, 'S+경유')).padEnd(12), fmt(viaOf(r, 'B+경유')).padEnd(12),
+      r.nowChanged ? '고름' : '같음', '→', r.nextChanged ? `고름(${r.picked}) +${r.gain}점 우회 ${r1(r.detour)}%` : '같음',
     );
   }
   const n = rows.length;
-  const baseSame = rows.filter((r) => !r.baseChanged);
-  const flipped = baseSame.filter((r) => r.aChanged);
-  const viaPicked = rows.filter((r) => r.pickedVia);
-  const withVia = rows.filter((r) => Object.keys(r.vias).length);
+  const nowSame = rows.filter((r) => !r.nowChanged);
+  const flipped = nowSame.filter((r) => r.nextChanged);
+  const viaPicked = rows.filter((r) => r.picked && r.picked !== '큰길');
+  const better = rows.filter((r) => r.nowChanged && r.nextChanged && r.picked !== '큰길');
   console.log(`\n── 요약 (${n}쌍, 규칙 ${SAFE_MIN_GAIN}점 이상·우회 ${SAFE_MAX_DETOUR * 100}% 이하) ──`);
-  console.log(`지금(B안): 다른 길을 고른 쌍 ${rows.filter((r) => r.baseChanged).length}/${n}`);
-  console.log(`A 보강 후: 다른 길을 고른 쌍 ${rows.filter((r) => r.aChanged).length}/${n} (경유지 후보가 뽑힌 쌍 ${viaPicked.length}, 경유지 후보를 만든 쌍 ${withVia.length})`);
-  console.log(`지금 "같음" ${baseSame.length}쌍 중 A 보강으로 다른 길이 된 쌍: ${flipped.length}`);
+  console.log(`지금(큰길만): 다른 길을 고른 쌍 ${rows.filter((r) => r.nowChanged).length}/${n}`);
+  console.log(`경유지 후보를 더하면: ${rows.filter((r) => r.nextChanged).length}/${n} (경유지 후보가 뽑힌 쌍 ${viaPicked.length})`);
+  console.log(`지금 "같음" ${nowSame.length}쌍 중 다른 길이 된 쌍: ${flipped.length}`);
+  console.log(`지금도 다른 길인데 경유지 후보가 더 높아 바뀐 쌍: ${better.length}`);
   console.log(`경유지가 뽑힌 쌍의 점수 차 중앙값 ${median(viaPicked.map((r) => r.gain))}점, 우회 중앙값 ${median(viaPicked.map((r) => r1(r.detour)))}%`);
-  for (const k of KS) {
-    const ok = rows.filter((r) => r.vias[k]);
-    const gains = ok.map((r) => r.vias[k].safetyScore - r.s.safetyScore);
-    const detours = ok.map((r) => (100 * (r.vias[k].distanceM - r.s.distanceM)) / r.s.distanceM);
-    console.log(`경유지 ${k}개 후보: ${ok.length}쌍, 점수 차 중앙값 ${median(gains)}점(최대 ${Math.max(...gains)}) · 우회 중앙값 ${r1(median(detours))}%(최대 ${r1(Math.max(...detours))}) · 5점 이상 ${gains.filter((g) => g >= SAFE_MIN_GAIN).length}쌍 · 우회 20% 이하 ${detours.filter((x) => x <= SAFE_MAX_DETOUR * 100).length}쌍`);
+  for (const label of ['S+경유', 'B+경유']) {
+    const ok = rows.filter((r) => viaOf(r, label));
+    if (!ok.length) continue;
+    const gains = ok.map((r) => viaOf(r, label).safetyScore - r.s.safetyScore);
+    const detours = ok.map((r) => (100 * (viaOf(r, label).distanceM - r.s.distanceM)) / r.s.distanceM);
+    console.log(`${label}: ${ok.length}쌍, 점수 차 중앙값 ${median(gains)}점(최대 ${Math.max(...gains)}) · 우회 중앙값 ${r1(median(detours))}%(최대 ${r1(Math.max(...detours))}) · 5점 이상 ${gains.filter((g) => g >= SAFE_MIN_GAIN).length}쌍 · 우회 20% 이하 ${detours.filter((x) => x <= SAFE_MAX_DETOUR * 100).length}쌍`);
   }
-  writeFileSync(join(OUT, `report${TYPES ? `-${TYPES.join('+')}` : ''}.json`), JSON.stringify(rows, null, 1));
+  writeFileSync(join(OUT, `report${SUFFIX}.json`), JSON.stringify(rows, null, 1));
 }
 
-const stages = { baseline, candidates, probe, route, report };
+const stages = { baseline, candidates, route, report };
 if (!stages[stage]) {
   console.error(`단계를 고르세요: ${Object.keys(stages).join(' | ')}`);
   process.exit(1);

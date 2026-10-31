@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LatLng, Place } from '../../../shared/types'
 import { useDaylightMode } from './hooks/useDaylightMode'
 import { useGeolocation } from './hooks/useGeolocation'
@@ -11,6 +11,8 @@ import type { Origin } from './screens/OriginPick'
 import OriginPick from './screens/OriginPick'
 import RouteCompare from './screens/RouteCompare'
 
+type Screen = 'login' | 'home' | 'origin' | 'route'
+
 // 화면을 오가도 남겨야 하는 값(낮/밤, 현재 위치, 도착지, 출발지)은 여기서 들고 있고, 화면은 받아서 쓴다
 export default function App() {
   const geo = useGeolocation()
@@ -18,7 +20,21 @@ export default function App() {
   const auth = useAuth()
   const favorites = useFavorites()
   const [destination, setDestination] = useState<Place | null>(null)
-  const [screen, setScreen] = useState<'login' | 'home' | 'origin' | 'route'>('login')
+  const [screen, setScreen] = useState<Screen>('login')
+
+  // 화면 전환을 브라우저 기록에 남겨서 뒤로가기가 앱 밖이 아니라 앞 화면으로 돌아가게 한다.
+  // 로그인·로그아웃은 기록을 덮어써서 뒤로가기로 로그인 화면에 되돌아가지 않는다
+  const go = (next: Screen, how: 'push' | 'replace' = 'push') => {
+    if (how === 'push') history.pushState({ screen: next }, '')
+    else history.replaceState({ screen: next }, '')
+    setScreen(next)
+  }
+  useEffect(() => {
+    history.replaceState({ screen: 'login' }, '')
+    const onPop = (e: PopStateEvent) => setScreen((e.state as { screen?: Screen } | null)?.screen ?? 'login')
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
   // S2에서 검색해 고른 출발지. 없으면 현재 위치를 출발지로 쓴다
   const [pickedOrigin, setPickedOrigin] = useState<Place | null>(null)
   const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string; originPlace: Place | null } | null>(null)
@@ -34,7 +50,7 @@ export default function App() {
   const findRoute = () => {
     if (!origin) return
     setTrip({ origin: origin.location, originLabel: origin.label, originPlace: pickedOrigin })
-    setScreen('route')
+    go('route')
   }
 
   // 로그인하면 회원, "로그인 없이 시작하기"면 비회원(auth.user가 null)으로 지도 홈에 들어간다
@@ -43,10 +59,10 @@ export default function App() {
       <Login
         onLogin={async (provider) => {
           const ok = await auth.login(provider)
-          if (ok) setScreen('home')
+          if (ok) go('home', 'replace')
           return ok
         }}
-        onGuest={() => setScreen('home')}
+        onGuest={() => go('home', 'replace')}
       />
     )
   }
@@ -67,7 +83,7 @@ export default function App() {
               }
             : undefined
         }
-        onBack={() => setScreen('origin')}
+        onBack={() => history.back()}
       />
     )
   }
@@ -82,7 +98,7 @@ export default function App() {
         destination={destination}
         onPickOrigin={setPickedOrigin}
         onUseCurrent={() => setPickedOrigin(null)}
-        onBack={() => setScreen('home')}
+        onBack={() => history.back()}
         onFindRoute={findRoute}
       />
     )
@@ -94,24 +110,24 @@ export default function App() {
       daylight={daylight}
       destination={destination}
       onPickDestination={setDestination}
-      onFindRoute={() => setScreen('origin')}
+      onFindRoute={() => go('origin')}
       user={auth.user}
       favorites={favorites}
       onPickFavoriteRoute={(route: FavoriteRoute) => {
         setDestination(route.destination)
         setPickedOrigin(route.origin) // null이면 현재 위치에서 출발
-        setScreen('origin')
+        go('origin')
       }}
       onLogout={() => {
         auth.logout()
         favorites.clear()
-        setScreen('login')
+        go('login', 'replace')
       }}
       onDelete={async () => {
         const ok = await auth.deleteAccount()
         if (ok) {
           favorites.clear()
-          setScreen('login')
+          go('login', 'replace')
         }
         return ok
       }}

@@ -30,7 +30,7 @@ export default function FavoritesSheet({ places, routes, onPickPlace, onPickRout
 
         {tab === 'route' ? (
           routes.length === 0 ? (
-            <p className="fav-empty">경로를 찾은 뒤 위쪽 별을 누르면 여기에 담겨요.</p>
+            <p className="fav-empty">즐겨찾기한 경로가 없어요.</p>
           ) : (
             <ul className="fav-list">
               {routes.map((r) => (
@@ -46,7 +46,7 @@ export default function FavoritesSheet({ places, routes, onPickPlace, onPickRout
             </ul>
           )
         ) : places.length === 0 ? (
-          <p className="fav-empty">장소를 고른 뒤 별 버튼을 누르면 여기에 담겨요.</p>
+          <p className="fav-empty">즐겨찾기한 장소가 없어요.</p>
         ) : (
           <ul className="fav-list">
             {places.map((p) => (

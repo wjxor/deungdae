@@ -1342,3 +1342,109 @@ button {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* 즐겨찾기 */
+.favpill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 17px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+}
+
+.favpill[aria-pressed='true'] svg,
+.route-head .star[aria-pressed='true'] {
+  color: var(--here);
+}
+
+.route-head .star {
+  flex: none;
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.fav-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.fav-tabs button {
+  flex: 1;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fav-tabs button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-color: transparent;
+}
+
+.fav-list {
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  max-height: min(40dvh, 300px);
+  overflow-y: auto;
+}
+
+.fav-list li {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--line);
+}
+
+.fav-item {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  padding: 12px 4px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fav-item span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fav-remove {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.myinfo p.fav-empty {
+  margin: 8px 0 18px;
+}

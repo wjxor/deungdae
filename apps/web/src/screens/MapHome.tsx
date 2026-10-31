@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import type { FacilityType, LatLng, Place, User } from '../../../../shared/types'
 import FacilityFilter from '../components/FacilityFilter'
+import FavoritesSheet from '../components/FavoritesSheet'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import MyInfo from '../components/MyInfo'
 import PlaceSearch from '../components/PlaceSearch'
+import StarIcon from '../components/StarIcon'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import type { useGeolocation } from '../hooks/useGeolocation'
+import type { FavoriteRoute, Favorites } from '../lib/favorites'
 import { DAEJEON_CENTER } from '../lib/geo'
 
 type Props = {
@@ -15,13 +18,15 @@ type Props = {
   destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
   onPickDestination: (place: Place) => void
   user: User | null // 로그인한 회원. null이면 비회원이라 [안심 경로 찾기]만 보인다
+  favorites: Favorites
+  onPickFavoriteRoute: (route: FavoriteRoute) => void // 즐겨찾은 경로를 고르면 출발지·도착지가 채워진 S2로 간다
   onLogout: () => void
   onDelete: () => Promise<boolean>
   onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user, onLogout, onDelete }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user, favorites, onPickFavoriteRoute, onLogout, onDelete }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -29,6 +34,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
   const [facilityVisible, setFacilityVisible] = useState<Record<FacilityType, boolean>>({ cctv: true, emergency_bell: true, police: true })
   const toggleFacility = (type: FacilityType) => setFacilityVisible((v) => ({ ...v, [type]: !v[type] }))
   const [myInfoOpen, setMyInfoOpen] = useState(false)
+  const [favoritesOpen, setFavoritesOpen] = useState(false)
   const pin = destination?.location ?? null
   const center = recenter ?? pin ?? myLocation ?? DAEJEON_CENTER
   const { mode, sunrise, sunset, setMode } = daylight
@@ -63,6 +69,12 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
             />
             <FacilityFilter visible={facilityVisible} onToggle={toggleFacility} />
           </div>
+          {user && destination && (
+            <button type="button" className="favpill" aria-pressed={favorites.hasPlace(destination)} onClick={() => favorites.togglePlace(destination)}>
+              <StarIcon filled={favorites.hasPlace(destination)} size={16} />
+              {destination.name}
+            </button>
+          )}
           {notice && (
             <p className="notice" role="status">
               {notice}
@@ -91,7 +103,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
 
       <section className="sheet" aria-label="경로">
         <div className="acts">
-          {/* 회원만: 제보·즐겨찾기·내 정보. 제보(FR-009)는 13주차, 즐겨찾기(FR-012)는 아직 안 만들어서 비활성 */}
+          {/* 회원만: 제보·즐겨찾기·내 정보. 제보(FR-009)는 13주차라 비활성 */}
           {user && (
             <button type="button" className="report" disabled aria-label="제보하기">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -108,10 +120,8 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
           </button>
           {user && (
             <>
-              <button type="button" className="report" disabled aria-label="즐겨찾기">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
-                </svg>
+              <button type="button" className="report" aria-label="즐겨찾기" onClick={() => setFavoritesOpen(true)}>
+                <StarIcon size={22} />
               </button>
               <button type="button" className="report" aria-label="내 정보" onClick={() => setMyInfoOpen(true)}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -124,6 +134,20 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
         </div>
       </section>
 
+      {user && favoritesOpen && (
+        <FavoritesSheet
+          places={favorites.places}
+          routes={favorites.routes}
+          onPickPlace={(place) => {
+            pick(place)
+            setFavoritesOpen(false)
+          }}
+          onPickRoute={onPickFavoriteRoute}
+          onRemovePlace={favorites.togglePlace}
+          onRemoveRoute={favorites.removeRoute}
+          onClose={() => setFavoritesOpen(false)}
+        />
+      )}
       {user && myInfoOpen && <MyInfo user={user} onLogout={onLogout} onDelete={onDelete} onClose={() => setMyInfoOpen(false)} />}
     </main>
   )

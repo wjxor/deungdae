@@ -3,6 +3,8 @@ import type { LatLng, Place } from '../../../shared/types'
 import { useDaylightMode } from './hooks/useDaylightMode'
 import { useGeolocation } from './hooks/useGeolocation'
 import { useAuth } from './lib/auth'
+import type { FavoriteRoute } from './lib/favorites'
+import { useFavorites } from './lib/favorites'
 import Login from './screens/Login'
 import MapHome from './screens/MapHome'
 import type { Origin } from './screens/OriginPick'
@@ -14,11 +16,12 @@ export default function App() {
   const geo = useGeolocation()
   const daylight = useDaylightMode()
   const auth = useAuth()
+  const favorites = useFavorites()
   const [destination, setDestination] = useState<Place | null>(null)
   const [screen, setScreen] = useState<'login' | 'home' | 'origin' | 'route'>('login')
   // S2에서 검색해 고른 출발지. 없으면 현재 위치를 출발지로 쓴다
   const [pickedOrigin, setPickedOrigin] = useState<Place | null>(null)
-  const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string } | null>(null)
+  const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string; originPlace: Place | null } | null>(null)
 
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   const origin: Origin | null = pickedOrigin
@@ -30,7 +33,7 @@ export default function App() {
   // [경로 찾기]를 누른 순간의 출발지. 이후 위치가 잡혀도 요청·상단 이름·지도 중심이 같은 값을 쓴다
   const findRoute = () => {
     if (!origin) return
-    setTrip({ origin: origin.location, originLabel: origin.label })
+    setTrip({ origin: origin.location, originLabel: origin.label, originPlace: pickedOrigin })
     setScreen('route')
   }
 
@@ -56,6 +59,14 @@ export default function App() {
         myLocation={myLocation}
         destination={destination}
         daylight={daylight}
+        favorite={
+          auth.user
+            ? {
+                on: favorites.hasRoute(trip.originPlace, destination),
+                onToggle: () => favorites.toggleRoute(trip.originPlace, trip.originLabel, destination),
+              }
+            : undefined
+        }
         onBack={() => setScreen('origin')}
       />
     )
@@ -85,13 +96,23 @@ export default function App() {
       onPickDestination={setDestination}
       onFindRoute={() => setScreen('origin')}
       user={auth.user}
+      favorites={favorites}
+      onPickFavoriteRoute={(route: FavoriteRoute) => {
+        setDestination(route.destination)
+        setPickedOrigin(route.origin) // null이면 현재 위치에서 출발
+        setScreen('origin')
+      }}
       onLogout={() => {
         auth.logout()
+        favorites.clear()
         setScreen('login')
       }}
       onDelete={async () => {
         const ok = await auth.deleteAccount()
-        if (ok) setScreen('login')
+        if (ok) {
+          favorites.clear()
+          setScreen('login')
+        }
         return ok
       }}
     />

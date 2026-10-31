@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { LatLng, Place } from '../../../shared/types'
 import { useDaylightMode } from './hooks/useDaylightMode'
 import { useGeolocation } from './hooks/useGeolocation'
+import { useAuth } from './lib/auth'
+import Login from './screens/Login'
 import MapHome from './screens/MapHome'
 import type { Origin } from './screens/OriginPick'
 import OriginPick from './screens/OriginPick'
@@ -11,8 +13,9 @@ import RouteCompare from './screens/RouteCompare'
 export default function App() {
   const geo = useGeolocation()
   const daylight = useDaylightMode()
+  const auth = useAuth()
   const [destination, setDestination] = useState<Place | null>(null)
-  const [screen, setScreen] = useState<'home' | 'origin' | 'route'>('home')
+  const [screen, setScreen] = useState<'login' | 'home' | 'origin' | 'route'>('login')
   // S2에서 검색해 고른 출발지. 없으면 현재 위치를 출발지로 쓴다
   const [pickedOrigin, setPickedOrigin] = useState<Place | null>(null)
   const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string } | null>(null)
@@ -29,6 +32,20 @@ export default function App() {
     if (!origin) return
     setTrip({ origin: origin.location, originLabel: origin.label })
     setScreen('route')
+  }
+
+  // 로그인하면 회원, "로그인 없이 둘러보기"면 비회원(auth.user가 null)으로 지도 홈에 들어간다
+  if (screen === 'login') {
+    return (
+      <Login
+        onLogin={async (provider) => {
+          const ok = await auth.login(provider)
+          if (ok) setScreen('home')
+          return ok
+        }}
+        onGuest={() => setScreen('home')}
+      />
+    )
   }
 
   if (screen === 'route' && destination && trip) {

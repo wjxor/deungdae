@@ -1191,3 +1191,78 @@ button {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+/* 로그인 화면 */
+.login {
+  position: relative;
+  height: 100%;
+  display: grid;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.login-body {
+  align-self: center;
+  width: min(100%, 400px);
+  justify-self: center;
+  padding: 0 24px;
+  display: grid;
+  gap: 14px;
+}
+
+.login-body h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.login-lead {
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+
+.login-buttons {
+  display: grid;
+  gap: 10px;
+}
+
+.social {
+  height: 48px;
+  border: 1px solid transparent;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 각 서비스의 브랜드 색 */
+.social.kakao {
+  background: #fee500;
+  color: #191919;
+}
+
+.social.naver {
+  background: #03c75a;
+  color: #fff;
+}
+
+.social.google {
+  background: #fff;
+  color: #1f1f1f;
+  border-color: #dadce0;
+}
+
+.login .notice {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.login-guest {
+  justify-self: center;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}

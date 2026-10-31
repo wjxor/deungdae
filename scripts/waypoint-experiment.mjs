@@ -9,6 +9,10 @@
  *   S+경유   : 최단 경로 모드 + 경유지 1개 (경유지는 최단경로에서 벗어난 시설 밀집 지점)
  *   B+경유   : 넓은 길 우선 모드 + 경유지 1개 (경유지는 넓은 길 경로에서 벗어난 시설 밀집 지점)
  *
+ * 경유지를 언제 쓰나 (--when)
+ *   same(기본): 최단과 넓은 길 우선이 같은 길일 때만 (겹침 OVERLAP_SAME 이상). 이때만 S+경유 한 건을 더 부른다 — 같은 길이라 B+경유는 같다
+ *   all       : 늘 S+경유·B+경유 둘 다 (앞선 6쌍 실험처럼)
+ *
  * 실행 (레포 루트에서):
  *   (cd apps/api && npm run build)                        # 서버 코드를 그대로 쓰려고 dist를 import한다
  *   node --env-file=.env scripts/waypoint-experiment.mjs baseline    # 최단·넓은 길 우선을 카카오에서 받아 저장 (쌍마다 2건)
@@ -20,6 +24,7 @@
  *   --pairs a.json,b.json   쌍 파일 (기본: scripts/route-pairs.json, scripts/route-pairs-score.json — 안전점수 실험과 같다)
  *   --ids a,b,c      이 쌍만 (처음에는 몇 쌍으로 시험해 보는 용도)
  *   --types cctv,emergency_bell,police   밀집 지점을 셀 시설 종류 (기본: 5종 전부). 안심시설만 세는 변형을 보려는 것
+ *   --when same|all  경유지 후보를 만드는 조건 (위 설명)
  *   --max-calls N    이 실행에서 카카오를 부를 최대 건수 (기본 150). 하루 한도 1,000건은 팀이 같이 쓴다
  *
  * - 쌍 파일 형식: [{ id, origin: { location: { lat, lng } }, destination: { location: { lat, lng } } }]
@@ -51,6 +56,8 @@ const DENSITY_M = 50; // 밀집도 = 후보 지점 반경 이 안 시설의 가�
 const END_MARGIN_M = 150; // 출발·도착에서 이만큼은 떨어진 지점만 (끝에서 되돌아오는 경유지 방지)
 const MAX_VIA_DETOUR = 1.4; // 출발→경유지→도착 직선 합이 최단 거리의 이 배를 넘으면 쓰지 않는다 (호출 아끼기)
 // 경유지 후보는 기준 모드마다 따로 고른다 (기준 경로에서 벗어난 지점이어야 길이 바뀐다)
+const OVERLAP_TOLERANCE_M = 20; // 두 경로가 이 안이면 같은 길로 센다 (docs/route-mode-experiment.md와 같은 기준)
+const OVERLAP_SAME = 0.98; // 겹침이 이 이상이면 같은 길 (docs/safety-score-experiment.md 7번)
 const BASES = [
   { key: 'S', mode: 'SHORTEST', label: 'S+경유' },
   { key: 'B', mode: 'BROAD_FIRST', label: 'B+경유' },
@@ -66,8 +73,10 @@ const opt = (name) => {
 const IDS = opt('--ids')?.split(',');
 const TYPES = opt('--types')?.split(',');
 const MAX_CALLS = Number(opt('--max-calls') ?? 150);
+const WHEN = opt('--when') ?? 'same';
+if (!['same', 'all'].includes(WHEN)) throw new Error('--when은 same 또는 all');
 const PAIR_FILES = opt('--pairs')?.split(',') ?? ['scripts/route-pairs.json', 'scripts/route-pairs-score.json'];
-const SUFFIX = TYPES ? `-${TYPES.join('+')}` : '';
+const SUFFIX = `${WHEN === 'all' ? '-all' : ''}${TYPES ? `-${TYPES.join('+')}` : ''}`;
 
 const pairs = PAIR_FILES.flatMap((f) => JSON.parse(readFileSync(join(ROOT, f), 'utf8'))).filter((p) => !IDS || IDS.includes(p.id));
 
@@ -90,6 +99,40 @@ const candidateFile = () => join(OUT, `candidates${SUFFIX}.json`);
 const viaTag = (base) => `via${base.key}1${SUFFIX}`;
 const lineWkt = (paths) => `SRID=4326;MULTILINESTRING(${paths.map((p) => `(${p.map((q) => `${q.lng} ${q.lat}`).join(', ')})`).join(', ')})`;
 const pointWkt = (p) => `SRID=4326;POINT(${p.lng} ${p.lat})`;
+
+/** a 경로 위 점(5m 간격) 중 b 경로에서 OVERLAP_TOLERANCE_M 안인 비율 */
+function coverage(a, b) {
+  const kx = 111320 * Math.cos(rad(a[0].lat)); // 경도 1도 ≈ m
+  const ky = 110574; // 위도 1도 ≈ m
+  const xy = (p) => [p.lng * kx, p.lat * ky];
+  const B = b.map(xy);
+  const dist = (pt) => {
+    let best = Infinity;
+    for (let i = 0; i + 1 < B.length; i++) {
+      const [x1, y1] = B[i];
+      const [x2, y2] = B[i + 1];
+      const dx = x2 - x1, dy = y2 - y1;
+      const t = dx || dy ? Math.max(0, Math.min(1, ((pt[0] - x1) * dx + (pt[1] - y1) * dy) / (dx * dx + dy * dy))) : 0;
+      best = Math.min(best, Math.hypot(pt[0] - (x1 + t * dx), pt[1] - (y1 + t * dy)));
+    }
+    return best;
+  };
+  let near = 0, total = 0;
+  for (let i = 0; i + 1 < a.length; i++) {
+    const [x1, y1] = xy(a[i]);
+    const [x2, y2] = xy(a[i + 1]);
+    const steps = Math.max(1, Math.round(Math.hypot(x2 - x1, y2 - y1) / 5));
+    for (let k = 0; k < steps; k++) {
+      total++;
+      if (dist([x1 + ((x2 - x1) * k) / steps, y1 + ((y2 - y1) * k) / steps]) <= OVERLAP_TOLERANCE_M) near++;
+    }
+  }
+  return total ? near / total : 1;
+}
+/** 최단과 넓은 길 우선의 겹침 (양방향 중 작은 값) */
+const overlapOf = (s, b) => Math.min(coverage(s.path, b.path), coverage(b.path, s.path));
+/** 이 쌍에서 경유지 후보를 만들 기준 모드들 */
+const basesFor = (overlap) => (WHEN === 'all' ? BASES : overlap >= OVERLAP_SAME ? [BASES[0]] : []);
 
 // ── 카카오 ────────────────────────────────────────────
 let calls = 0;
@@ -177,11 +220,13 @@ async function candidates() {
       const shortest = loadWalk(pair.id, 'SHORTEST');
       const broad = loadWalk(pair.id, 'BROAD_FIRST');
       if (!shortest || !broad) throw new Error(`${pair.id}: 기준 경로가 없다 (baseline 먼저)`);
-      const entry = { pairId: pair.id };
-      for (const base of BASES) entry[base.key] = await pickVia(client, pair, base, shortest, broad);
+      const overlap = overlapOf(shortest, broad);
+      const entry = { pairId: pair.id, overlap: r1(overlap * 100) };
+      const bases = basesFor(overlap);
+      for (const base of bases) entry[base.key] = await pickVia(client, pair, base, shortest, broad);
       out.push(entry);
       const show = (b) => (entry[b.key].via ? `${entry[b.key].via.lat.toFixed(4)},${entry[b.key].via.lng.toFixed(4)} 밀집 ${entry[b.key].via.density}` : '없음');
-      console.log(`${pair.id.padEnd(22)} ${BASES.map((b) => `${b.label} ${show(b)}`).join(' | ')}`);
+      console.log(`${pair.id.padEnd(22)} 최단·큰길 겹침 ${String(entry.overlap).padStart(5)}% ${bases.length ? bases.map((b) => `${b.label} ${show(b)}`).join(' | ') : '→ 다른 길이라 경유지 안 씀'}`);
     }
   } finally {
     await client.end();
@@ -228,7 +273,8 @@ async function report() {
       }
       const now = pickSafe(s, [b]); // 지금 서버 (B안)
       const next = pickSafe(s, [b, ...vias]); // 경유지 후보를 더한 결과
-      rows.push({ id: pair.id, s, b, vias, nowChanged: now !== s, nextChanged: next !== s, picked: next === s ? null : next.label, gain: next.safetyScore - s.safetyScore, detour: (100 * (next.distanceM - s.distanceM)) / s.distanceM });
+      const overlap = overlapOf(S, B);
+      rows.push({ id: pair.id, overlap, sameWay: overlap >= OVERLAP_SAME, s, b, vias, nowChanged: now !== s, nextChanged: next !== s, picked: next === s ? null : next.label, gain: next.safetyScore - s.safetyScore, detour: (100 * (next.distanceM - s.distanceM)) / s.distanceM });
     }
   } finally {
     await client.end();
@@ -249,6 +295,8 @@ async function report() {
   const viaPicked = rows.filter((r) => r.picked && r.picked !== '큰길');
   const better = rows.filter((r) => r.nowChanged && r.nextChanged && r.picked !== '큰길');
   console.log(`\n── 요약 (${n}쌍, 규칙 ${SAFE_MIN_GAIN}점 이상·우회 ${SAFE_MAX_DETOUR * 100}% 이하) ──`);
+  const sameWay = rows.filter((r) => r.sameWay);
+  console.log(`최단과 큰길이 같은 길(겹침 ${OVERLAP_SAME * 100}% 이상): ${sameWay.length}/${n}쌍 — 경유지 후보를 만든 쌍 ${sameWay.filter((r) => r.vias.length).length}, 그중 다른 길이 된 쌍 ${sameWay.filter((r) => r.nextChanged).length}`);
   console.log(`지금(큰길만): 다른 길을 고른 쌍 ${rows.filter((r) => r.nowChanged).length}/${n}`);
   console.log(`경유지 후보를 더하면: ${rows.filter((r) => r.nextChanged).length}/${n} (경유지 후보가 뽑힌 쌍 ${viaPicked.length})`);
   console.log(`지금 "같음" ${nowSame.length}쌍 중 다른 길이 된 쌍: ${flipped.length}`);

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FacilityType, LatLng, Place } from '../../../../shared/types'
+import type { FacilityType, LatLng, Place, User } from '../../../../shared/types'
 import FacilityFilter from '../components/FacilityFilter'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
@@ -13,11 +13,12 @@ type Props = {
   daylight: ReturnType<typeof useDaylightMode>
   destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
   onPickDestination: (place: Place) => void
+  user: User | null // 로그인한 회원. null이면 비회원이라 [안심 경로 찾기]만 보인다
   onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -86,13 +87,22 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
 
       <section className="sheet" aria-label="경로">
         <div className="acts">
-          {/* 제보(FR-009)는 Could라 13주차에 만든다 */}
-          <button type="button" className="report" disabled aria-label="제보하기">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 3l10 18H2z" />
-              <path d="M12 10v5M12 18v.5" />
-            </svg>
-          </button>
+          {/* 회원만: 제보(FR-009)는 13주차, 즐겨찾기(FR-012)는 아직 안 만들어서 둘 다 비활성 */}
+          {user && (
+            <>
+              <button type="button" className="report" disabled aria-label="제보하기">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3l10 18H2z" />
+                  <path d="M12 10v5M12 18v.5" />
+                </svg>
+              </button>
+              <button type="button" className="report" disabled aria-label="즐겨찾기">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
+                </svg>
+              </button>
+            </>
+          )}
           <button type="button" className="route" disabled={!destination} onClick={onFindRoute}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M3 11l18-8-8 18-2-8-8-2z" />

@@ -84,6 +84,7 @@ export default function App() {
       destination={destination}
       onPickDestination={setDestination}
       onFindRoute={() => setScreen('origin')}
+      user={auth.user}
     />
   )
 }

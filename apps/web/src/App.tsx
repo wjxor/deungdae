@@ -89,6 +89,11 @@ export default function App() {
         auth.logout()
         setScreen('login')
       }}
+      onDelete={async () => {
+        const ok = await auth.deleteAccount()
+        if (ok) setScreen('login')
+        return ok
+      }}
     />
   )
 }

@@ -16,11 +16,12 @@ type Props = {
   onPickDestination: (place: Place) => void
   user: User | null // 로그인한 회원. null이면 비회원이라 [안심 경로 찾기]만 보인다
   onLogout: () => void
+  onDelete: () => Promise<boolean>
   onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user, onLogout }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user, onLogout, onDelete }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -123,7 +124,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
         </div>
       </section>
 
-      {user && myInfoOpen && <MyInfo user={user} onLogout={onLogout} onClose={() => setMyInfoOpen(false)} />}
+      {user && myInfoOpen && <MyInfo user={user} onLogout={onLogout} onDelete={onDelete} onClose={() => setMyInfoOpen(false)} />}
     </main>
   )
 }

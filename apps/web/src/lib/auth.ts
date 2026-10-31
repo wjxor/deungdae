@@ -19,6 +19,11 @@ async function requestSocialLogin(provider: SocialProvider): Promise<User | null
   return null
 }
 
+// 회원 탈퇴도 서버(상협) 담당이다. 성공하면 true. 서버가 없는 지금은 개발 서버에서만 성공한다
+async function requestDeleteAccount(): Promise<boolean> {
+  return import.meta.env.DEV
+}
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
 
@@ -29,6 +34,11 @@ export function useAuth() {
     return u !== null
   }
   const logout = () => setUser(null)
+  const deleteAccount = async () => {
+    const ok = await requestDeleteAccount()
+    if (ok) setUser(null)
+    return ok
+  }
 
-  return { user, login, logout }
+  return { user, login, logout, deleteAccount }
 }

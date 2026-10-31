@@ -1318,3 +1318,27 @@ button {
   background: var(--ink);
   color: var(--on-ink);
 }
+
+.myinfo-warn {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.myinfo-acts .danger {
+  border-color: transparent;
+  background: #d93025;
+  color: #fff;
+}
+
+.myinfo-delete {
+  display: block;
+  margin: 14px auto 0;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}

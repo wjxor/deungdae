@@ -3,6 +3,7 @@ import type { FacilityType, LatLng, Place, User } from '../../../../shared/types
 import FacilityFilter from '../components/FacilityFilter'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
+import MyInfo from '../components/MyInfo'
 import PlaceSearch from '../components/PlaceSearch'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import type { useGeolocation } from '../hooks/useGeolocation'
@@ -14,17 +15,19 @@ type Props = {
   destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
   onPickDestination: (place: Place) => void
   user: User | null // 로그인한 회원. null이면 비회원이라 [안심 경로 찾기]만 보인다
+  onLogout: () => void
   onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onFindRoute, user, onLogout }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
   // 안심시설 종류별 표시 여부. 처음엔 모두 켠다
   const [facilityVisible, setFacilityVisible] = useState<Record<FacilityType, boolean>>({ cctv: true, emergency_bell: true, police: true })
   const toggleFacility = (type: FacilityType) => setFacilityVisible((v) => ({ ...v, [type]: !v[type] }))
+  const [myInfoOpen, setMyInfoOpen] = useState(false)
   const pin = destination?.location ?? null
   const center = recenter ?? pin ?? myLocation ?? DAEJEON_CENTER
   const { mode, sunrise, sunset, setMode } = daylight
@@ -87,21 +90,14 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
 
       <section className="sheet" aria-label="경로">
         <div className="acts">
-          {/* 회원만: 제보(FR-009)는 13주차, 즐겨찾기(FR-012)는 아직 안 만들어서 둘 다 비활성 */}
+          {/* 회원만: 제보·즐겨찾기·내 정보. 제보(FR-009)는 13주차, 즐겨찾기(FR-012)는 아직 안 만들어서 비활성 */}
           {user && (
-            <>
-              <button type="button" className="report" disabled aria-label="제보하기">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 3l10 18H2z" />
-                  <path d="M12 10v5M12 18v.5" />
-                </svg>
-              </button>
-              <button type="button" className="report" disabled aria-label="즐겨찾기">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
-                </svg>
-              </button>
-            </>
+            <button type="button" className="report" disabled aria-label="제보하기">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3l10 18H2z" />
+                <path d="M12 10v5M12 18v.5" />
+              </svg>
+            </button>
           )}
           <button type="button" className="route" disabled={!destination} onClick={onFindRoute}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -109,8 +105,25 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
             </svg>
             안심 경로 찾기
           </button>
+          {user && (
+            <>
+              <button type="button" className="report" disabled aria-label="즐겨찾기">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />
+                </svg>
+              </button>
+              <button type="button" className="report" aria-label="내 정보" onClick={() => setMyInfoOpen(true)}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
+              </button>
+            </>
+          )}
         </div>
       </section>
+
+      {user && myInfoOpen && <MyInfo user={user} onLogout={onLogout} onClose={() => setMyInfoOpen(false)} />}
     </main>
   )
 }

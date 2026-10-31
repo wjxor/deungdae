@@ -34,7 +34,7 @@ export default function App() {
     setScreen('route')
   }
 
-  // 로그인하면 회원, "로그인 없이 둘러보기"면 비회원(auth.user가 null)으로 지도 홈에 들어간다
+  // 로그인하면 회원, "로그인 없이 시작하기"면 비회원(auth.user가 null)으로 지도 홈에 들어간다
   if (screen === 'login') {
     return (
       <Login
@@ -85,6 +85,10 @@ export default function App() {
       onPickDestination={setDestination}
       onFindRoute={() => setScreen('origin')}
       user={auth.user}
+      onLogout={() => {
+        auth.logout()
+        setScreen('login')
+      }}
     />
   )
 }

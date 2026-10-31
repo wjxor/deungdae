@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { SocialProvider } from '../lib/auth'
 import { PROVIDERS } from '../lib/auth'
+import SocialLogo from '../components/SocialLogo'
 
 type Props = {
   onLogin: (provider: SocialProvider) => Promise<boolean>
@@ -25,7 +26,8 @@ export default function Login({ onLogin, onGuest }: Props) {
         <div className="login-buttons">
           {PROVIDERS.map((p) => (
             <button key={p.value} type="button" className={`social ${p.value}`} onClick={() => pick(p.value)}>
-              {p.label}
+              <SocialLogo provider={p.value} />
+              <span>{p.label}</span>
             </button>
           ))}
         </div>

@@ -1226,6 +1226,10 @@ button {
 }
 
 .social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   height: 48px;
   border: 1px solid transparent;
   border-radius: 24px;

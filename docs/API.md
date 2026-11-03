@@ -268,6 +268,8 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 
 ## 5. 인증
 
+소셜 로그인은 서버가 처리하고 카카오부터 붙인다 (2026-11-04 상협, PR #48 댓글 — ROADMAP "지금 할 일"의 서버 소셜 로그인). 아래 이메일·비밀번호 명세는 초안 그대로이고 서버를 만들 때 이 장을 고친다 (`User.email` null 허용·`provider`, 탈퇴 `DELETE /api/auth/me`).
+
 ### POST /api/auth/signup
 ```json
 { "email": "a@b.com", "password": "********", "nickname": "상협" }

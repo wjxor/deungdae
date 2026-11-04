@@ -24,6 +24,7 @@ export class FacilitiesService {
   /**
    * 지도 범위 안의 CCTV·안심벨·지구대 (API.md 4장, FR-002).
    * 가로등·보안등은 합쳐 7만 개가 넘어 지도에 띄우지 않고 안전점수에만 쓴다.
+   * 종류와 좌표가 모두 같은 시설은 마커 하나로 묶고 `id`는 그 좌표의 가장 작은 id다 (2026-11-04 승민 제안·상협 동의, PR #50).
    * DB가 없거나 실패하면 502 EXTERNAL_API_ERROR
    */
   async findInBbox({ sw, ne }: Bbox): Promise<FacilitiesResponse> {
@@ -33,16 +34,23 @@ export class FacilitiesService {
     try {
       // location의 GIST 인덱스를 쓰도록 geography끼리 비교한다. 남·북 변이 위도선이 아니라 대원이라
       // 생기는 차이는 4km 범위에서 0.3m보다 작다 (2026-10-25 각 변 0.3m 안·밖 점, 정제 데이터 203개 범위로 확인)
+      // 같은 곳은 반올림하지 않고 ST_AsBinary가 같을 때만이다 (점수 쿼리 segmentScoreQuery와 같은 규칙).
+      // 같은 좌표의 행은 bbox에 같이 들어오거나 같이 빠져서, 범위가 겹쳐도 같은 자리는 늘 같은 id다
       rows = await this.prisma.$queryRaw<FacilityRow[]>`
-        SELECT id, type,
-               ST_Y(location::geometry) AS lat,
-               ST_X(location::geometry) AS lng
-        FROM facilities
-        WHERE type IN ('cctv', 'emergency_bell', 'police')
-          AND ST_Intersects(
-                location,
-                ST_MakeEnvelope(${sw.lng}::float8, ${sw.lat}::float8, ${ne.lng}::float8, ${ne.lat}::float8, 4326)::geography
-              )
+        SELECT id, type, lat, lng
+        FROM (
+          SELECT DISTINCT ON (type, ST_AsBinary(location))
+                 id, type,
+                 ST_Y(location::geometry) AS lat,
+                 ST_X(location::geometry) AS lng
+          FROM facilities
+          WHERE type IN ('cctv', 'emergency_bell', 'police')
+            AND ST_Intersects(
+                  location,
+                  ST_MakeEnvelope(${sw.lng}::float8, ${sw.lat}::float8, ${ne.lng}::float8, ${ne.lat}::float8, 4326)::geography
+                )
+          ORDER BY type, ST_AsBinary(location), id
+        ) AS spot
         ORDER BY id`;
     } catch (e) {
       // 지도 범위는 사용자 위치 근처라 로그에 남기지 않는다

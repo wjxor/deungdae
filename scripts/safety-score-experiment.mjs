@@ -101,7 +101,7 @@ const pairs = [
 
 const client = new pg.Client({ connectionString: process.env.DIRECT_URL });
 await client.connect();
-/** routes[쌍 id][MODE] = { distanceM, segments: [{ distanceM, raw, counts: { 종류: 개수 }, spots: { 종류: 같은 좌표를 하나로 센 개수 } }] } */
+/** routes[쌍 id][MODE] = { distanceM, segments: [{ distanceM, raw, counts: { 종류: 개수(행) }, spots: { 종류: 같은 좌표를 하나로 센 개수 } }] } */
 const routes = {};
 let weights = {};
 let queryMs = 0;
@@ -129,7 +129,7 @@ try {
       const raw = await client.query(q.text, q.values);
       queryMs += performance.now() - started;
       queries++;
-      // spots: 같은 좌표에 여러 대인 CCTV·안심벨을 한 곳으로 센 개수 (가중치 후보 "지점 기준")
+      // spots: 종류별로 같은 좌표를 한 곳으로 센 개수 — 서버 원점수와 같은 규칙 (2026-11-04부터). n은 행(대수)으로 센 개수
       const byType = await client.query(
         `SELECT s.i, f.type, count(*)::int AS n, count(DISTINCT ST_AsBinary(f.location))::int AS spots
          FROM unnest($1::int[], $2::text[]) AS s(i, wkt)
@@ -143,8 +143,8 @@ try {
         segments[r.i].spots[r.type] = r.spots;
       }
       for (const s of segments) {
-        const check = Object.entries(s.counts).reduce((sum, [type, n]) => sum + n * weights[type], 0);
-        if (check !== s.raw) throw new Error(`${pair.id} ${mode}: 서버 SQL 원점수 ${s.raw} ≠ 종류별 합 ${check}`);
+        const check = Object.entries(s.spots).reduce((sum, [type, n]) => sum + n * weights[type], 0);
+        if (check !== s.raw) throw new Error(`${pair.id} ${mode}: 서버 SQL 원점수 ${s.raw} ≠ 종류별 지점 합 ${check}`);
       }
       routes[pair.id][mode] = { distanceM: walk.distanceM, segments };
     }
@@ -244,7 +244,7 @@ console.log('\n## 4. 종류별 기여 (최단경로 구간 — 원점수 합 중
 const totalRaw = shortestSegs.reduce((a, s) => a + s.raw, 0);
 summary.types = {};
 for (const t of TYPES) {
-  const contrib = shortestSegs.reduce((a, s) => a + (s.counts[t] ?? 0) * weights[t], 0);
+  const contrib = shortestSegs.reduce((a, s) => a + (s.spots[t] ?? 0) * weights[t], 0);
   const present = shortestSegs.filter((s) => s.counts[t]).length;
   summary.types[t] = { share: contrib / totalRaw, present: present / shortestSegs.length };
   console.log(`${KO[t]}: ${share(contrib, totalRaw)} · ${share(present, shortestSegs.length)}`);
@@ -344,10 +344,11 @@ console.log(`같은 경로로 답하는 ${same.length}쌍 중 넓은 길 우선�
 console.log('\n## 10. 가중치 후보 (서버 정규화·규칙, 후보 2개 — 서버와 같음. DB 가중치는 그대로)');
 /**
  * 가중치 후보 하나로 구간 원점수를 종류 묶음별로 나눠 센다.
- * lightCap: 가로등·보안등을 합쳐 구간당 그 개수까지만 센다 (둘의 가중치가 같을 때만), spotTypes: 같은 좌표는 한 곳으로 센다
+ * 서버처럼 종류별로 같은 좌표는 한 곳으로 센다.
+ * lightCap: 가로등·보안등을 합쳐 구간당 그 개수까지만 센다 (둘의 가중치가 같을 때만), byRow: 같은 좌표도 행마다 센다 (2026-11-04 전 서버)
  */
-const rawParts = (w, { lightCap = Infinity, spotTypes = [] } = {}) => (s) => {
-  const n = (t) => (spotTypes.includes(t) ? s.spots[t] : s.counts[t]) ?? 0;
+const rawParts = (w, { lightCap = Infinity, byRow = false } = {}) => (s) => {
+  const n = (t) => (byRow ? s.counts[t] : s.spots[t]) ?? 0;
   return {
     lights: Math.min(lightCap, n('street_light') + n('security_light')) * w.street_light,
     cctv: n('cctv') * w.cctv,
@@ -362,7 +363,7 @@ const WEIGHT_SETS = [
   ['가로등·보안등 합쳐 구간당 3개까지', weights, { lightCap: 3 }],
   ['가로등·보안등 합쳐 구간당 5개까지', weights, { lightCap: 5 }],
   ['드문 시설 상향 (CCTV 5 · 안심벨 10 · 지구대 20)', { ...weights, cctv: 5, emergency_bell: 10, police: 20 }, {}],
-  ['CCTV·안심벨 지점 기준 (같은 좌표는 한 곳)', weights, { spotTypes: ['cctv', 'emergency_bell'] }],
+  ['대수로 세기 (같은 좌표도 따로 — 2026-11-04 전 서버)', weights, { byRow: true }],
 ];
 summary.weightSets = {};
 for (const [name, w, opts] of WEIGHT_SETS) {

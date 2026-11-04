@@ -9,6 +9,8 @@ type Props = {
   onClose: () => void
 }
 
+const PROVIDER_LABEL = { kakao: '카카오', naver: '네이버', google: 'Google' } as const
+
 // 회원의 [내 정보] 시트. 닉네임·이메일, 로그아웃, 회원 탈퇴 (FR-011)
 export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
   const { ref, dismiss } = useSheet(onClose)
@@ -24,7 +26,7 @@ export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
     <div className="myinfo-backdrop" onClick={() => dismiss()}>
       <section ref={ref} tabIndex={-1} className="myinfo" role="dialog" aria-modal="true" aria-label="내 정보" onClick={(e) => e.stopPropagation()}>
         <h2>{user.nickname}</h2>
-        <p>{user.email}</p>
+        <p>{user.email ?? `${PROVIDER_LABEL[user.provider]}로 로그인함`}</p>
         {confirming ? (
           <>
             <p className="myinfo-warn">탈퇴하면 계정과 즐겨찾기가 지워져요. 되돌릴 수 없어요.</p>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import type { User } from '../../../../shared/types'
+import type { SocialProvider, User } from '../../../../shared/types'
 
-export type SocialProvider = 'kakao' | 'naver' | 'google'
+export type { SocialProvider }
 
 export const PROVIDERS: { value: SocialProvider; label: string }[] = [
   { value: 'kakao', label: '카카오로 시작하기' },
@@ -9,12 +9,13 @@ export const PROVIDERS: { value: SocialProvider; label: string }[] = [
   { value: 'google', label: 'Google로 시작하기' },
 ]
 
-// 소셜 로그인 처리는 서버(상협) 담당이다. 방식이 정해지면(API.md 5장) 이 함수 안만 바꾼다.
+// 소셜 로그인 처리는 서버(상협) 담당이다. 서버가 카카오 동의 화면으로 보내고 우리 토큰을 돌려주는 흐름이라 이 함수 안만 바꾼다.
+// 카카오를 먼저 붙이고 네이버·구글은 뒤에 붙이므로, 그 전까지 두 버튼은 항상 실패(준비 중)다.
 // 화면은 이 함수와 useAuth가 돌려주는 user만 안다.
 // 지금은 서버가 없어서 개발 서버(npm run dev)에서만 가짜 회원으로 로그인되고, 배포본에서는 실패(null)로 돌아간다.
 async function requestSocialLogin(provider: SocialProvider): Promise<User | null> {
-  if (import.meta.env.DEV) {
-    return { id: 0, email: `${provider}@example.com`, nickname: '테스트 회원' }
+  if (import.meta.env.DEV && provider === 'kakao') {
+    return { id: 0, email: null, nickname: '테스트 회원', provider }
   }
   return null
 }

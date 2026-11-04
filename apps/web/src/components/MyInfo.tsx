@@ -25,7 +25,7 @@ export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
         <p>{user.email}</p>
         {confirming ? (
           <>
-            <p className="myinfo-warn">탈퇴하면 계정과 제보·즐겨찾기 기록이 지워져요. 되돌릴 수 없어요.</p>
+            <p className="myinfo-warn">탈퇴하면 계정과 즐겨찾기가 지워져요. 되돌릴 수 없어요.</p>
             {failed && (
               <p className="myinfo-warn" role="status">
                 탈퇴는 아직 준비 중이에요.

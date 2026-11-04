@@ -120,7 +120,7 @@ apps/api/
     ├── health/             # GET /api/health
     ├── daylight/           # GET /api/daylight (천문연 출몰시각 호출, sun_times 캐시) (KASI_API_KEY)
     ├── places/             # GET /api/places
-    ├── facilities/         # GET /api/facilities (지도 범위 안의 CCTV·안심벨·지구대)
+    ├── facilities/         # GET /api/facilities (지도 범위 안의 CCTV·안심벨·지구대, 종류·좌표가 같으면 하나로 묶음)
     └── routes/             # POST /api/routes/search (약 50m 구간, 안전점수, 안심경로 고르기 — 값은 safety.ts)
 test/
 ├── *.e2e-spec.ts           # DB·카카오·천문연을 가짜로 바꾼 e2e

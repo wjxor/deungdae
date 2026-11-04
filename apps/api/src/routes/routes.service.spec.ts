@@ -72,7 +72,7 @@ describe('RoutesService', () => {
     expect(rawScores.mock.calls[0][0]).toHaveLength(SEGMENTS * 2);
   });
 
-  it('넓은 길이 5점 이상 높고 20% 안으로 돌아가면 안심경로', async () => {
+  it('넓은 길이 5점 이상 높고 30% 안으로 돌아가면 안심경로', async () => {
     // 원점수 1 → 29점, 5 → 75점. 380m는 342m보다 11% 김
     const { service } = setup({ shortestRaw: 1, broadRaw: 5 });
     const res = await service.search(REQ);
@@ -110,9 +110,9 @@ describe('RoutesService', () => {
     expect(shortest.safetyScore).toBe(96);
   });
 
-  it('넓은 길이 20%를 넘게 돌아가면 점수가 높아도 고르지 않는다', async () => {
+  it('넓은 길이 30%를 넘게 돌아가면 점수가 높아도 고르지 않는다', async () => {
     const { service } = setup({
-      broadRoute: Promise.resolve(broad(428)), // 25% 김
+      broadRoute: Promise.resolve(broad(445)), // 30.1% 김
       shortestRaw: 0,
       broadRaw: 10,
     });

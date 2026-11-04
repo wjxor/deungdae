@@ -38,7 +38,7 @@ type ScoredRoute = {
  * 경로 검색 (API.md 3장, FR-004·006·007). 안심경로는 B안 — 카카오 `route_mode` 후보를 구간별 안전점수로 비교한다.
  * 1. 최단(`SHORTEST`)과 넓은 길 우선(`BROAD_FIRST`)을 함께 부른다
  * 2. 후보마다 약 50m 구간으로 나눠 반경 30m 안 시설로 점수를 매긴다
- * 3. 최단보다 5점 이상 높고 20% 넘게 돌아가지 않는 후보가 있으면 안심경로, 없으면 최단경로가 곧 안심경로(`sameRoute`)
+ * 3. 최단보다 5점 이상 높고 30% 넘게 돌아가지 않는 후보가 있으면 안심경로, 없으면 최단경로가 곧 안심경로(`sameRoute`)
  */
 @Injectable()
 export class RoutesService {

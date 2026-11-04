@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-10-21 (보안등·지구대 임시 가중치) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-11-04 (`users.email` null 허용) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -214,7 +214,7 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | `id` | integer | PK | API `User.id` |
-| `email` | text | UNIQUE, NOT NULL | |
+| `email` | text | UNIQUE | 카카오는 사용자가 동의하지 않으면 없어서 null 허용 (2026-11-04, PR #48 — API `User.email`) |
 | `password_hash` | text | | bcrypt. 소셜 로그인 사용자는 null |
 | `nickname` | text | NOT NULL | |
 | `provider` | text | NOT NULL, 기본 `email` | 소셜 로그인 대비 |

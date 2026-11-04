@@ -125,7 +125,10 @@ export type Report = {
   createdAt: string;
 };
 
-export type User = { id: number; email: string; nickname: string };
+export type SocialProvider = "kakao" | "naver" | "google";
+
+// 카카오는 사용자가 동의하지 않으면 이메일이 없다 (PR #48, 2026-11-04)
+export type User = { id: number; nickname: string; email: string | null; provider: SocialProvider };
 ```
 
 ## 1. 상태 확인
@@ -268,7 +271,7 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 
 ## 5. 인증
 
-소셜 로그인은 서버가 처리하고 카카오부터 붙인다 (2026-11-04 상협, PR #48 댓글 — ROADMAP "지금 할 일"의 서버 소셜 로그인). 아래 이메일·비밀번호 명세는 초안 그대로이고 서버를 만들 때 이 장을 고친다 (`User.email` null 허용·`provider`, 탈퇴 `DELETE /api/auth/me`).
+소셜 로그인은 서버가 처리하고 카카오부터 붙인다 (2026-11-04 상협, PR #48 댓글 — ROADMAP "지금 할 일"의 서버 소셜 로그인). 아래 이메일·비밀번호 명세는 초안 그대로이고 서버를 만들 때 이 장을 고친다 (탈퇴 `DELETE /api/auth/me` 등). `User`는 로그인 화면(PR #48)에 맞춰 `email` null 허용·`provider`로 먼저 바꿨다 (공용 타입).
 
 ### POST /api/auth/signup
 ```json

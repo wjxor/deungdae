@@ -156,7 +156,6 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
           onPickPlace={(place) => {
             pick(place)
             setSearchKey((n) => n + 1)
-            setFavoritesOpen(false)
           }}
           onPickRoute={onPickFavoriteRoute}
           onRemovePlace={favorites.togglePlace}

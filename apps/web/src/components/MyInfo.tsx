@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSheet } from '../hooks/useSheet'
 import type { User } from '../../../../shared/types'
 
 type Props = {
@@ -10,6 +11,7 @@ type Props = {
 
 // 회원의 [내 정보] 시트. 닉네임·이메일, 로그아웃, 회원 탈퇴 (FR-011)
 export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
+  const { ref, dismiss } = useSheet(onClose)
   const [confirming, setConfirming] = useState(false)
   const [failed, setFailed] = useState(false)
 
@@ -19,8 +21,8 @@ export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
   }
 
   return (
-    <div className="myinfo-backdrop" onClick={onClose}>
-      <section className="myinfo" role="dialog" aria-label="내 정보" onClick={(e) => e.stopPropagation()}>
+    <div className="myinfo-backdrop" onClick={() => dismiss()}>
+      <section ref={ref} tabIndex={-1} className="myinfo" role="dialog" aria-modal="true" aria-label="내 정보" onClick={(e) => e.stopPropagation()}>
         <h2>{user.nickname}</h2>
         <p>{user.email}</p>
         {confirming ? (
@@ -49,7 +51,7 @@ export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
         ) : (
           <>
             <div className="myinfo-acts">
-              <button type="button" onClick={onClose}>
+              <button type="button" onClick={() => dismiss()}>
                 닫기
               </button>
               <button type="button" className="logout" onClick={onLogout}>

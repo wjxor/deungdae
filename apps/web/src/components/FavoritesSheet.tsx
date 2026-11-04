@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSheet } from '../hooks/useSheet'
 import type { Place } from '../../../../shared/types'
 import type { FavoriteRoute } from '../lib/favorites'
 
@@ -14,11 +15,12 @@ type Props = {
 
 // 즐겨찾기 목록 시트. 자주 가는 경로와 장소를 탭으로 나눈다 (FR-012)
 export default function FavoritesSheet({ places, routes, onPickPlace, onPickRoute, onRemovePlace, onRemoveRoute, onClose }: Props) {
+  const { ref, dismiss } = useSheet(onClose)
   const [tab, setTab] = useState<'route' | 'place'>('route')
 
   return (
-    <div className="myinfo-backdrop" onClick={onClose}>
-      <section className="myinfo" role="dialog" aria-label="즐겨찾기" onClick={(e) => e.stopPropagation()}>
+    <div className="myinfo-backdrop" onClick={() => dismiss()}>
+      <section ref={ref} tabIndex={-1} className="myinfo" role="dialog" aria-modal="true" aria-label="즐겨찾기" onClick={(e) => e.stopPropagation()}>
         <div className="fav-tabs" role="tablist">
           <button type="button" role="tab" aria-selected={tab === 'route'} onClick={() => setTab('route')}>
             경로 {routes.length}
@@ -35,7 +37,7 @@ export default function FavoritesSheet({ places, routes, onPickPlace, onPickRout
             <ul className="fav-list">
               {routes.map((r) => (
                 <li key={r.id}>
-                  <button type="button" className="fav-item" onClick={() => onPickRoute(r)}>
+                  <button type="button" className="fav-item" onClick={() => dismiss(() => onPickRoute(r))}>
                     {r.name}
                   </button>
                   <button type="button" className="fav-remove" aria-label={`${r.name} 즐겨찾기 해제`} onClick={() => onRemoveRoute(r.id)}>
@@ -51,7 +53,7 @@ export default function FavoritesSheet({ places, routes, onPickPlace, onPickRout
           <ul className="fav-list">
             {places.map((p) => (
               <li key={p.id}>
-                <button type="button" className="fav-item" onClick={() => onPickPlace(p)}>
+                <button type="button" className="fav-item" onClick={() => dismiss(() => onPickPlace(p))}>
                   <strong>{p.name}</strong>
                   <span>{p.address}</span>
                 </button>
@@ -64,7 +66,7 @@ export default function FavoritesSheet({ places, routes, onPickPlace, onPickRout
         )}
 
         <div className="myinfo-acts">
-          <button type="button" onClick={onClose}>
+          <button type="button" onClick={() => dismiss()}>
             닫기
           </button>
         </div>

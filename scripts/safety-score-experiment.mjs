@@ -5,10 +5,13 @@
  *   (cd apps/api && npm run build)                       # 서버 코드를 그대로 쓰려고 빌드 결과(dist)를 import한다
  *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json --round         # 처음 한 번 (도보 API 30건)
  *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs-score.json --round   # 처음 한 번 (도보 API 150건)
+ *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs-score-extra.json --round   # 처음 한 번 (도보 API 420건)
  *   node --env-file=.env scripts/safety-score-experiment.mjs          # 정제 결과(data/processed)로
  *   node --env-file=.env scripts/safety-score-experiment.mjs --db     # DB에 적재한 facilities 테이블로
  *
- * - 쌍: scripts/route-pairs.json(9월 장면 10쌍) + scripts/route-pairs-score.json(무작위 50쌍, make-score-pairs.py)
+ * - 쌍: scripts/route-pairs.json(9월 장면 10쌍) + scripts/route-pairs-score.json(무작위 50쌍) +
+ *   scripts/route-pairs-score-extra.json(무작위 140쌍, 2026-10-31 200쌍으로 늘림). 무작위 쌍은 make-score-pairs.py
+ * - 가중치 후보(10번)는 구간마다 센 종류별 개수에 다른 가중치를 곱해 다시 매긴다. DB 가중치는 바꾸지 않는다
  * - 경로: scripts/output/rounded/<쌍 id>/walk-<MODE>.json (kakao-walk-test.ts --round가 저장한 카카오 응답).
  *   서버처럼 좌표를 소수 4자리로 반올림해 받은 것이라 서버가 같은 쌍에 주는 경로와 같다. 카카오를 다시 부르지 않는다
  * - 구간 나누기·점수·고르는 규칙·구간 점수 SQL은 서버(apps/api/src/routes) 함수를 그대로 쓴다
@@ -49,6 +52,8 @@ const pct = (s, p) => {
 };
 const r1 = (x) => Math.round(x * 10) / 10;
 const share = (n, total) => `${r1((100 * n) / total)}%`;
+/** k/n 비율과 95% 오차(정규 근사, %p) */
+const ci95 = (k, n) => `${r1((100 * k) / n)}% ± ${r1(196 * Math.sqrt(((k / n) * (1 - k / n)) / n))}%p`;
 
 /** RFC 4180 CSV (따옴표 안 줄바꿈·"" 이스케이프). 정제 결과의 attributes 열에 줄바꿈이 있다 */
 function parseCsv(text) {
@@ -85,14 +90,18 @@ async function loadTempFacilities(client) {
 
 // ── 구간 원점수 세기 ────────────────────────────────────
 
+// set은 쌍을 고른 방법, batch는 언제 더한 쌍인지 (처음 60쌍 = 9월 10 + 무작위 50)
+const readPairs = (file, set, batch) =>
+  JSON.parse(readFileSync(join(ROOT, file), 'utf8')).map((p) => ({ ...p, set, batch }));
 const pairs = [
-  ...JSON.parse(readFileSync(join(ROOT, 'scripts/route-pairs.json'), 'utf8')).map((p) => ({ ...p, set: '9월 장면' })),
-  ...JSON.parse(readFileSync(join(ROOT, 'scripts/route-pairs-score.json'), 'utf8')).map((p) => ({ ...p, set: '무작위' })),
+  ...readPairs('scripts/route-pairs.json', '9월 장면', '처음 60쌍'),
+  ...readPairs('scripts/route-pairs-score.json', '무작위', '처음 60쌍'),
+  ...readPairs('scripts/route-pairs-score-extra.json', '무작위', '추가 140쌍'),
 ];
 
 const client = new pg.Client({ connectionString: process.env.DIRECT_URL });
 await client.connect();
-/** routes[쌍 id][MODE] = { distanceM, segments: [{ distanceM, raw, counts: { 종류: 개수 } }] } */
+/** routes[쌍 id][MODE] = { distanceM, segments: [{ distanceM, raw, counts: { 종류: 개수 }, spots: { 종류: 같은 좌표를 하나로 센 개수 } }] } */
 const routes = {};
 let weights = {};
 let queryMs = 0;
@@ -120,14 +129,19 @@ try {
       const raw = await client.query(q.text, q.values);
       queryMs += performance.now() - started;
       queries++;
+      // spots: 같은 좌표에 여러 대인 CCTV·안심벨을 한 곳으로 센 개수 (가중치 후보 "지점 기준")
       const byType = await client.query(
-        `SELECT s.i, f.type, count(*)::int AS n FROM unnest($1::int[], $2::text[]) AS s(i, wkt)
+        `SELECT s.i, f.type, count(*)::int AS n, count(DISTINCT ST_AsBinary(f.location))::int AS spots
+         FROM unnest($1::int[], $2::text[]) AS s(i, wkt)
          JOIN facilities f ON ST_DWithin(f.location, ST_GeogFromText(s.wkt), $3::float8) GROUP BY s.i, f.type`,
         q.values,
       );
-      const segments = pieces.map((p) => ({ distanceM: p.distanceM, raw: 0, counts: {} }));
+      const segments = pieces.map((p) => ({ distanceM: p.distanceM, raw: 0, counts: {}, spots: {} }));
       for (const r of raw.rows) segments[r.i].raw = r.raw;
-      for (const r of byType.rows) segments[r.i].counts[r.type] = r.n;
+      for (const r of byType.rows) {
+        segments[r.i].counts[r.type] = r.n;
+        segments[r.i].spots[r.type] = r.spots;
+      }
       for (const s of segments) {
         const check = Object.entries(s.counts).reduce((sum, [type, n]) => sum + n * weights[type], 0);
         if (check !== s.raw) throw new Error(`${pair.id} ${mode}: 서버 SQL 원점수 ${s.raw} ≠ 종류별 합 ${check}`);
@@ -141,9 +155,12 @@ try {
 
 // ── 점수 매기기 (정규화 함수를 바꿔 끼울 수 있게) ─────
 
-/** 정규화 함수로 후보 하나의 구간 점수·경로 점수를 매긴다. 경로 점수는 서버처럼 반올림한 구간 점수의 거리 가중 평균 */
-const scoreRoute = (route, normalize) => {
-  const segments = route.segments.map((s) => ({ distanceM: s.distanceM, safetyScore: Math.round(normalize(s.raw)) }));
+/**
+ * 정규화 함수로 후보 하나의 구간 점수·경로 점수를 매긴다. 경로 점수는 서버처럼 반올림한 구간 점수의 거리 가중 평균.
+ * rawOf를 주면 구간 원점수를 그 함수로 다시 센다 (가중치 후보)
+ */
+const scoreRoute = (route, normalize, rawOf = (s) => s.raw) => {
+  const segments = route.segments.map((s) => ({ distanceM: s.distanceM, safetyScore: Math.round(normalize(rawOf(s))) }));
   return { distanceM: route.distanceM, safetyScore: toRouteScore(segments), segments };
 };
 
@@ -151,9 +168,9 @@ const scoreRoute = (route, normalize) => {
  * 쌍마다 안심경로를 고른다. 기본 규칙은 서버 pickSafe, `rule`을 주면 그 조건(점수 차·우회)으로 고른다
  * @returns [{ pair, shortest, safe, mode }]
  */
-const choose = (normalize, { modes = ['BROAD_FIRST', 'ACCESSIBLE'], rule } = {}) =>
+const choose = (normalize, { modes = ['BROAD_FIRST', 'ACCESSIBLE'], rule, rawOf } = {}) =>
   pairs.map((pair) => {
-    const scored = Object.fromEntries(MODES.map((m) => [m, { ...scoreRoute(routes[pair.id][m], normalize), mode: m }]));
+    const scored = Object.fromEntries(MODES.map((m) => [m, { ...scoreRoute(routes[pair.id][m], normalize, rawOf), mode: m }]));
     const shortest = scored.SHORTEST;
     const others = modes.map((m) => scored[m]);
     let safe = shortest;
@@ -205,7 +222,7 @@ for (const set of ['9월 장면', '무작위']) {
 let seed = 11;
 const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 const randomIds = pairs.filter((p) => p.set === '무작위').map((p) => p.id);
-for (const k of [10, 30]) {
+for (const k of [10, 30, 100]) {
   const p90 = [], p95 = [];
   for (let t = 0; t < 200; t++) {
     const pick = new Set([...randomIds].sort(() => rand() - 0.5).slice(0, k));
@@ -299,6 +316,79 @@ for (const p of best) {
   console.log(
     `${p.pair.id} (${p.pair.district}, ${p.pair.set}) 최단 ${p.shortest.distanceM}m ${p.shortest.safetyScore}점(0점 구간 ${zeroShare(p.shortest)})` +
       ` → ${KO_MODE[p.mode]} ${p.safe.safetyScore}점(0점 구간 ${zeroShare(p.safe)}), 우회 +${r1(detour)}% · 서버 규칙으로 ${picked ? '고름' : '안 고름'}`,
+  );
+}
+
+console.log('\n## 9. 표본 크기 — 서버 규칙(후보 2개)으로 다른 길을 고르는 쌍과 95% 오차');
+summary.sample = {};
+for (const [name, filter] of [
+  ['처음 60쌍', (p) => p.batch === '처음 60쌍'],
+  ['  그중 9월 장면 10쌍', (p) => p.set === '9월 장면'],
+  ['  그중 무작위 50쌍', (p) => p.batch === '처음 60쌍' && p.set === '무작위'],
+  ['추가 140쌍', (p) => p.batch === '추가 140쌍'],
+  [`전체 ${pairs.length}쌍`, () => true],
+  ...DISTRICTS.map((d) => [d, (p) => p.district === d]),
+]) {
+  const ps = two.filter((p) => filter(p.pair));
+  const k = ps.filter((p) => p.safe !== p.shortest).length;
+  summary.sample[name.trim()] = { changed: k, pairs: ps.length };
+  console.log(`${name}: 다른 길 ${k}/${ps.length}쌍 (${ci95(k, ps.length)})`);
+}
+// 같은 경로로 답하는 쌍 중 넓은 길 우선의 점수가 더 높은 쌍 (기준 5점·20%를 못 넘어서) — S3 같은 경로 안내 문구 (API.md 3장)
+const same = two.filter((p) => p.safe === p.shortest);
+const higher = same.filter((p) => scoreRoute(routes[p.pair.id].BROAD_FIRST, toSegmentScore).safetyScore > p.shortest.safetyScore);
+summary.sameButHigher = { same: same.length, higher: higher.length };
+summary.changedIds = two.filter((p) => p.safe !== p.shortest).map((p) => p.pair.id);
+console.log(`같은 경로로 답하는 ${same.length}쌍 중 넓은 길 우선의 점수가 더 높은 쌍 ${higher.length}`);
+
+console.log('\n## 10. 가중치 후보 (서버 정규화·규칙, 후보 2개 — 서버와 같음. DB 가중치는 그대로)');
+/**
+ * 가중치 후보 하나로 구간 원점수를 종류 묶음별로 나눠 센다.
+ * lightCap: 가로등·보안등을 합쳐 구간당 그 개수까지만 센다 (둘의 가중치가 같을 때만), spotTypes: 같은 좌표는 한 곳으로 센다
+ */
+const rawParts = (w, { lightCap = Infinity, spotTypes = [] } = {}) => (s) => {
+  const n = (t) => (spotTypes.includes(t) ? s.spots[t] : s.counts[t]) ?? 0;
+  return {
+    lights: Math.min(lightCap, n('street_light') + n('security_light')) * w.street_light,
+    cctv: n('cctv') * w.cctv,
+    emergency_bell: n('emergency_bell') * w.emergency_bell,
+    police: n('police') * w.police,
+  };
+};
+const PART_KO = { lights: '가로등·보안등', cctv: 'CCTV', emergency_bell: '안심벨', police: '지구대' };
+if (weights.street_light !== weights.security_light) throw new Error('가로등·보안등 가중치가 달라 상한 후보를 셀 수 없어요');
+const WEIGHT_SETS = [
+  ['지금 (facility_types)', weights, {}],
+  ['가로등·보안등 합쳐 구간당 3개까지', weights, { lightCap: 3 }],
+  ['가로등·보안등 합쳐 구간당 5개까지', weights, { lightCap: 5 }],
+  ['드문 시설 상향 (CCTV 5 · 안심벨 10 · 지구대 20)', { ...weights, cctv: 5, emergency_bell: 10, police: 20 }, {}],
+  ['CCTV·안심벨 지점 기준 (같은 좌표는 한 곳)', weights, { spotTypes: ['cctv', 'emergency_bell'] }],
+];
+summary.weightSets = {};
+for (const [name, w, opts] of WEIGHT_SETS) {
+  const partsOf = rawParts(w, opts);
+  const rawOf = (s) => Object.values(partsOf(s)).reduce((a, b) => a + b, 0);
+  if (name.startsWith('지금') && shortestSegs.some((s) => rawOf(s) !== s.raw)) throw new Error('지금 가중치로 다시 센 원점수가 서버 SQL과 달라요');
+  const picks = choose(toSegmentScore, { modes: ['BROAD_FIRST'], rawOf });
+  const d = describe(picks);
+  const totals = { lights: 0, cctv: 0, emergency_bell: 0, police: 0 };
+  for (const s of shortestSegs) for (const [k, v] of Object.entries(partsOf(s))) totals[k] += v;
+  const sum = Object.values(totals).reduce((a, b) => a + b, 0);
+  const levels = { safe: 0, caution: 0, danger: 0 };
+  for (const s of shortestSegs) levels[toSafetyLevel(Math.round(toSegmentScore(rawOf(s))))]++;
+  const routeScores = sorted(picks.map((p) => p.shortest.safetyScore));
+  const differ = picks.filter((p, k) => p.mode !== two[k].mode).length;
+  const byDistrict = Object.fromEntries(DISTRICTS.map((g) => [g, picks.filter((p) => p.pair.district === g && p.safe !== p.shortest).length]));
+  summary.weightSets[name] = { ...d, differFromNow: differ, levels, shares: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, v / sum])), byDistrict };
+  console.log(
+    `${name}: 다른 길 ${d.changed}/${pairs.length}쌍 (${ci95(d.changed, pairs.length)}) · 점수 +${d.gainMedian}/+${d.gainMax} · 우회 +${d.detourMedian}%/+${d.detourMax}%` +
+      ` · 지금과 고른 길이 다른 쌍 ${differ}`,
+  );
+  console.log(
+    `  기여 ${Object.entries(totals).map(([k, v]) => `${PART_KO[k]} ${share(v, sum)}`).join(' · ')}` +
+      ` · 구간 색 초록 ${share(levels.safe, shortestSegs.length)} 노랑 ${share(levels.caution, shortestSegs.length)} 빨강 ${share(levels.danger, shortestSegs.length)}` +
+      ` · 최단경로 점수 P25/중앙/P75 ${Math.round(pct(routeScores, 0.25))}/${Math.round(pct(routeScores, 0.5))}/${Math.round(pct(routeScores, 0.75))}` +
+      ` · 구별 다른 길 ${DISTRICTS.map((g) => `${g} ${byDistrict[g]}`).join(' ')}`,
   );
 }
 

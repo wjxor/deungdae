@@ -1,0 +1,2662 @@
+[
+  {
+    "id": "score-dong-11",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 4851",
+      "location": {
+        "lat": 36.34554315,
+        "lng": 127.4420028
+      }
+    },
+    "destination": {
+      "name": "보안등 자양동099",
+      "location": {
+        "lat": 36.342671,
+        "lng": 127.451228
+      }
+    }
+  },
+  {
+    "id": "score-dong-12",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 17018",
+      "location": {
+        "lat": 36.3305728,
+        "lng": 127.433095
+      }
+    },
+    "destination": {
+      "name": "보안등 원동019",
+      "location": {
+        "lat": 36.3261519997,
+        "lng": 127.436791
+      }
+    }
+  },
+  {
+    "id": "score-dong-13",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 15718",
+      "location": {
+        "lat": 36.34973797,
+        "lng": 127.4490823
+      }
+    },
+    "destination": {
+      "name": "보안등 가양동835",
+      "location": {
+        "lat": 36.3535770002,
+        "lng": 127.453271
+      }
+    }
+  },
+  {
+    "id": "score-dong-14",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 15787",
+      "location": {
+        "lat": 36.31112135,
+        "lng": 127.4478043
+      }
+    },
+    "destination": {
+      "name": "보안등 천동015",
+      "location": {
+        "lat": 36.3177259999,
+        "lng": 127.444352
+      }
+    }
+  },
+  {
+    "id": "score-dong-15",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 2503",
+      "location": {
+        "lat": 36.33794792,
+        "lng": 127.4218244
+      }
+    },
+    "destination": {
+      "name": "보안등 삼성동592",
+      "location": {
+        "lat": 36.3423690001,
+        "lng": 127.419342
+      }
+    }
+  },
+  {
+    "id": "score-dong-16",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 13828",
+      "location": {
+        "lat": 36.27875736,
+        "lng": 127.453844
+      }
+    },
+    "destination": {
+      "name": "보안등 이사동063",
+      "location": {
+        "lat": 36.2797610004,
+        "lng": 127.444349
+      }
+    }
+  },
+  {
+    "id": "score-dong-17",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 15427",
+      "location": {
+        "lat": 36.33219666,
+        "lng": 127.4558783
+      }
+    },
+    "destination": {
+      "name": "보안등 용운동326",
+      "location": {
+        "lat": 36.337667,
+        "lng": 127.45781
+      }
+    }
+  },
+  {
+    "id": "score-dong-18",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 18043",
+      "location": {
+        "lat": 36.34806534,
+        "lng": 127.4341968
+      }
+    },
+    "destination": {
+      "name": "보안등 용전동402",
+      "location": {
+        "lat": 36.3521570002,
+        "lng": 127.438833
+      }
+    }
+  },
+  {
+    "id": "score-dong-19",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 17311",
+      "location": {
+        "lat": 36.3416627,
+        "lng": 127.4423258
+      }
+    },
+    "destination": {
+      "name": "보안등 중동057",
+      "location": {
+        "lat": 36.3323140003,
+        "lng": 127.430758
+      }
+    }
+  },
+  {
+    "id": "score-dong-20",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 15232",
+      "location": {
+        "lat": 36.32380569,
+        "lng": 127.4624363
+      }
+    },
+    "destination": {
+      "name": "보안등 삼정동067",
+      "location": {
+        "lat": 36.3178070003,
+        "lng": 127.476496
+      }
+    }
+  },
+  {
+    "id": "score-dong-21",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 1541",
+      "location": {
+        "lat": 36.32107778,
+        "lng": 127.4463484
+      }
+    },
+    "destination": {
+      "name": "보안등 천동045",
+      "location": {
+        "lat": 36.3100069997,
+        "lng": 127.449776
+      }
+    }
+  },
+  {
+    "id": "score-dong-22",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 13563",
+      "location": {
+        "lat": 36.27180946,
+        "lng": 127.4689581
+      }
+    },
+    "destination": {
+      "name": "보안등 낭월동014",
+      "location": {
+        "lat": 36.2842819998,
+        "lng": 127.466983999
+      }
+    }
+  },
+  {
+    "id": "score-dong-23",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 14086",
+      "location": {
+        "lat": 36.28700396,
+        "lng": 127.4576828
+      }
+    },
+    "destination": {
+      "name": "보안등 대별동109",
+      "location": {
+        "lat": 36.2773209998,
+        "lng": 127.45763
+      }
+    }
+  },
+  {
+    "id": "score-dong-24",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 14872",
+      "location": {
+        "lat": 36.31980179,
+        "lng": 127.4712873
+      }
+    },
+    "destination": {
+      "name": "보안등 용운동254",
+      "location": {
+        "lat": 36.3303070003,
+        "lng": 127.462631
+      }
+    }
+  },
+  {
+    "id": "score-dong-25",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 16855",
+      "location": {
+        "lat": 36.33788467,
+        "lng": 127.4443529
+      }
+    },
+    "destination": {
+      "name": "보안등 삼성동335",
+      "location": {
+        "lat": 36.34051,
+        "lng": 127.428926
+      }
+    }
+  },
+  {
+    "id": "score-dong-26",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 14162",
+      "location": {
+        "lat": 36.29916279,
+        "lng": 127.4611623
+      }
+    },
+    "destination": {
+      "name": "보안등 이사동021",
+      "location": {
+        "lat": 36.2917670004,
+        "lng": 127.451099
+      }
+    }
+  },
+  {
+    "id": "score-dong-27",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 13540",
+      "location": {
+        "lat": 36.2725486,
+        "lng": 127.4678061
+      }
+    },
+    "destination": {
+      "name": "보안등 구도동017",
+      "location": {
+        "lat": 36.2657359996,
+        "lng": 127.479977
+      }
+    }
+  },
+  {
+    "id": "score-dong-28",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 14842",
+      "location": {
+        "lat": 36.3176225,
+        "lng": 127.4725807
+      }
+    },
+    "destination": {
+      "name": "보안등 삼정동006",
+      "location": {
+        "lat": 36.330273,
+        "lng": 127.478089
+      }
+    }
+  },
+  {
+    "id": "score-dong-29",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 13641",
+      "location": {
+        "lat": 36.27917987,
+        "lng": 127.4709434
+      }
+    },
+    "destination": {
+      "name": "보안등 대별동099",
+      "location": {
+        "lat": 36.2840130004,
+        "lng": 127.458039
+      }
+    }
+  },
+  {
+    "id": "score-dong-30",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 5820",
+      "location": {
+        "lat": 36.34367668,
+        "lng": 127.4331653
+      }
+    },
+    "destination": {
+      "name": "보안등 가양동687",
+      "location": {
+        "lat": 36.3490410004,
+        "lng": 127.44631
+      }
+    }
+  },
+  {
+    "id": "score-dong-31",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 13621",
+      "location": {
+        "lat": 36.27412234,
+        "lng": 127.4643522
+      }
+    },
+    "destination": {
+      "name": "보안등 삼괴동107",
+      "location": {
+        "lat": 36.2570790002,
+        "lng": 127.479632
+      }
+    }
+  },
+  {
+    "id": "score-dong-32",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 13530",
+      "location": {
+        "lat": 36.27051472,
+        "lng": 127.4699941
+      }
+    },
+    "destination": {
+      "name": "보안등 삼괴동025",
+      "location": {
+        "lat": 36.249382,
+        "lng": 127.479476
+      }
+    }
+  },
+  {
+    "id": "score-dong-33",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 15399",
+      "location": {
+        "lat": 36.33262071,
+        "lng": 127.4773781
+      }
+    },
+    "destination": {
+      "name": "보안등 신상동043",
+      "location": {
+        "lat": 36.3481510002,
+        "lng": 127.494828
+      }
+    }
+  },
+  {
+    "id": "score-dong-34",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 15678",
+      "location": {
+        "lat": 36.34884961,
+        "lng": 127.4540626
+      }
+    },
+    "destination": {
+      "name": "보안등 주산동052",
+      "location": {
+        "lat": 36.3516960001,
+        "lng": 127.481457
+      }
+    }
+  },
+  {
+    "id": "score-dong-35",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 16439",
+      "location": {
+        "lat": 36.32844627,
+        "lng": 127.4448946
+      }
+    },
+    "destination": {
+      "name": "보안등 판암동232",
+      "location": {
+        "lat": 36.3164489997,
+        "lng": 127.454303
+      }
+    }
+  },
+  {
+    "id": "score-dong-36",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 13807",
+      "location": {
+        "lat": 36.27761892,
+        "lng": 127.4555678
+      }
+    },
+    "destination": {
+      "name": "보안등 낭월동074",
+      "location": {
+        "lat": 36.2797250002,
+        "lng": 127.475366
+      }
+    }
+  },
+  {
+    "id": "score-dong-37",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 300",
+      "location": {
+        "lat": 36.32810976,
+        "lng": 127.4740803
+      }
+    },
+    "destination": {
+      "name": "보안등 세천동095",
+      "location": {
+        "lat": 36.3402749996,
+        "lng": 127.495469
+      }
+    }
+  },
+  {
+    "id": "score-dong-38",
+    "district": "동구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 14173",
+      "location": {
+        "lat": 36.29648394,
+        "lng": 127.4600361
+      }
+    },
+    "destination": {
+      "name": "보안등 이사동096",
+      "location": {
+        "lat": 36.2860099996,
+        "lng": 127.438365
+      }
+    }
+  },
+  {
+    "id": "score-jung-11",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 40833",
+      "location": {
+        "lat": 36.32273041,
+        "lng": 127.4314117
+      }
+    },
+    "destination": {
+      "name": "보안등 문창동198",
+      "location": {
+        "lat": 36.31700897,
+        "lng": 127.4366608
+      }
+    }
+  },
+  {
+    "id": "score-jung-12",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 3887",
+      "location": {
+        "lat": 36.28276897,
+        "lng": 127.3761213
+      }
+    },
+    "destination": {
+      "name": "보안등 안영동087",
+      "location": {
+        "lat": 36.2870597798,
+        "lng": 127.3797226
+      }
+    }
+  },
+  {
+    "id": "score-jung-13",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 41142",
+      "location": {
+        "lat": 36.31918442,
+        "lng": 127.4026209
+      }
+    },
+    "destination": {
+      "name": "보안등 문화동016",
+      "location": {
+        "lat": 36.3199768102,
+        "lng": 127.413414
+      }
+    }
+  },
+  {
+    "id": "score-jung-14",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 40834",
+      "location": {
+        "lat": 36.32243831,
+        "lng": 127.4315706
+      }
+    },
+    "destination": {
+      "name": "보안등 대사동048",
+      "location": {
+        "lat": 36.3146057101,
+        "lng": 127.4275589
+      }
+    }
+  },
+  {
+    "id": "score-jung-15",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 18240",
+      "location": {
+        "lat": 36.2925774,
+        "lng": 127.3824764
+      }
+    },
+    "destination": {
+      "name": "보안등 사정동113",
+      "location": {
+        "lat": 36.2969703703,
+        "lng": 127.3890381
+      }
+    }
+  },
+  {
+    "id": "score-jung-16",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 42387",
+      "location": {
+        "lat": 36.31548196,
+        "lng": 127.394746
+      }
+    },
+    "destination": {
+      "name": "보안등 문화동397",
+      "location": {
+        "lat": 36.3117866497,
+        "lng": 127.402290299
+      }
+    }
+  },
+  {
+    "id": "score-jung-17",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 39944",
+      "location": {
+        "lat": 36.27684393,
+        "lng": 127.3770392
+      }
+    },
+    "destination": {
+      "name": "보안등 안영동143",
+      "location": {
+        "lat": 36.2719192504,
+        "lng": 127.3790665
+      }
+    }
+  },
+  {
+    "id": "score-jung-18",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 17239",
+      "location": {
+        "lat": 36.33475954,
+        "lng": 127.4223061
+      }
+    },
+    "destination": {
+      "name": "보안등 선화동012",
+      "location": {
+        "lat": 36.3356208804,
+        "lng": 127.4165039
+      }
+    }
+  },
+  {
+    "id": "score-jung-19",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 39936",
+      "location": {
+        "lat": 36.27726814,
+        "lng": 127.3979763
+      }
+    },
+    "destination": {
+      "name": "보안등 침산동065",
+      "location": {
+        "lat": 36.2666091201,
+        "lng": 127.3960407
+      }
+    }
+  },
+  {
+    "id": "score-jung-20",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 39864",
+      "location": {
+        "lat": 36.28720122,
+        "lng": 127.400958
+      }
+    },
+    "destination": {
+      "name": "보안등 무수동013",
+      "location": {
+        "lat": 36.2795753498,
+        "lng": 127.4073715
+      }
+    }
+  },
+  {
+    "id": "score-jung-21",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 20074",
+      "location": {
+        "lat": 36.33624236,
+        "lng": 127.4015372
+      }
+    },
+    "destination": {
+      "name": "보안등 선화동097",
+      "location": {
+        "lat": 36.3286590598,
+        "lng": 127.4140701
+      }
+    }
+  },
+  {
+    "id": "score-jung-22",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 40227",
+      "location": {
+        "lat": 36.29681226,
+        "lng": 127.3986062
+      }
+    },
+    "destination": {
+      "name": "보안등 산성동261",
+      "location": {
+        "lat": 36.3018760699,
+        "lng": 127.3840027
+      }
+    }
+  },
+  {
+    "id": "score-jung-23",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 21030",
+      "location": {
+        "lat": 36.31747886,
+        "lng": 127.3869534
+      }
+    },
+    "destination": {
+      "name": "보안등 유천동181",
+      "location": {
+        "lat": 36.3223190297,
+        "lng": 127.3993225
+      }
+    }
+  },
+  {
+    "id": "score-jung-24",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 6551",
+      "location": {
+        "lat": 36.28145197,
+        "lng": 127.3907674
+      }
+    },
+    "destination": {
+      "name": "보안등 목달동056",
+      "location": {
+        "lat": 36.2716026297,
+        "lng": 127.4010239
+      }
+    }
+  },
+  {
+    "id": "score-jung-25",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 4095",
+      "location": {
+        "lat": 36.29881485,
+        "lng": 127.4544198
+      }
+    },
+    "destination": {
+      "name": "보안등 호동120",
+      "location": {
+        "lat": 36.3027305604,
+        "lng": 127.4423141
+      }
+    }
+  },
+  {
+    "id": "score-jung-26",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 6544",
+      "location": {
+        "lat": 36.28003027,
+        "lng": 127.3775216
+      }
+    },
+    "destination": {
+      "name": "보안등 침산동024",
+      "location": {
+        "lat": 36.2683029204,
+        "lng": 127.3855133
+      }
+    }
+  },
+  {
+    "id": "score-jung-27",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 40626",
+      "location": {
+        "lat": 36.31316991,
+        "lng": 127.4146532
+      }
+    },
+    "destination": {
+      "name": "보안등 문화동155",
+      "location": {
+        "lat": 36.3056678798,
+        "lng": 127.4055023
+      }
+    }
+  },
+  {
+    "id": "score-jung-28",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 20240",
+      "location": {
+        "lat": 36.30446361,
+        "lng": 127.3846483
+      }
+    },
+    "destination": {
+      "name": "보안등 사정동045",
+      "location": {
+        "lat": 36.29349136,
+        "lng": 127.3798752
+      }
+    }
+  },
+  {
+    "id": "score-jung-29",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 3171",
+      "location": {
+        "lat": 36.32790163,
+        "lng": 127.4209485
+      }
+    },
+    "destination": {
+      "name": "보안등 문창동223",
+      "location": {
+        "lat": 36.3225441003,
+        "lng": 127.4327698
+      }
+    }
+  },
+  {
+    "id": "score-jung-30",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 40362",
+      "location": {
+        "lat": 36.31280237,
+        "lng": 127.4082498
+      }
+    },
+    "destination": {
+      "name": "보안등 대사동146",
+      "location": {
+        "lat": 36.3095207197,
+        "lng": 127.4192734
+      }
+    }
+  },
+  {
+    "id": "score-jung-31",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 6724",
+      "location": {
+        "lat": 36.28891804,
+        "lng": 127.4004558
+      }
+    },
+    "destination": {
+      "name": "보안등 구완동008",
+      "location": {
+        "lat": 36.2835388197,
+        "lng": 127.4274521
+      }
+    }
+  },
+  {
+    "id": "score-jung-32",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 39832",
+      "location": {
+        "lat": 36.27826615,
+        "lng": 127.4278248
+      }
+    },
+    "destination": {
+      "name": "보안등 목달동018",
+      "location": {
+        "lat": 36.2637901303,
+        "lng": 127.408844
+      }
+    }
+  },
+  {
+    "id": "score-jung-33",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 3877",
+      "location": {
+        "lat": 36.28128476,
+        "lng": 127.3759911
+      }
+    },
+    "destination": {
+      "name": "보안등 침산동049",
+      "location": {
+        "lat": 36.2720642104,
+        "lng": 127.392067
+      }
+    }
+  },
+  {
+    "id": "score-jung-34",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 39933",
+      "location": {
+        "lat": 36.27682041,
+        "lng": 127.3974146
+      }
+    },
+    "destination": {
+      "name": "보안등 정생동042",
+      "location": {
+        "lat": 36.2558517504,
+        "lng": 127.3983536
+      }
+    }
+  },
+  {
+    "id": "score-jung-35",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 41133",
+      "location": {
+        "lat": 36.31960108,
+        "lng": 127.401938
+      }
+    },
+    "destination": {
+      "name": "보안등 중촌동089",
+      "location": {
+        "lat": 36.33818436,
+        "lng": 127.4055252
+      }
+    }
+  },
+  {
+    "id": "score-jung-36",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 7930",
+      "location": {
+        "lat": 36.30154292,
+        "lng": 127.3910892
+      }
+    },
+    "destination": {
+      "name": "보안등 안영동161",
+      "location": {
+        "lat": 36.2805786097,
+        "lng": 127.3822937
+      }
+    }
+  },
+  {
+    "id": "score-jung-37",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 40149",
+      "location": {
+        "lat": 36.29007373,
+        "lng": 127.3953037
+      }
+    },
+    "destination": {
+      "name": "보안등 안영동117",
+      "location": {
+        "lat": 36.2894668597,
+        "lng": 127.3724747
+      }
+    }
+  },
+  {
+    "id": "score-jung-38",
+    "district": "중구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 39888",
+      "location": {
+        "lat": 36.29887841,
+        "lng": 127.4134667
+      }
+    },
+    "destination": {
+      "name": "보안등 구완동001",
+      "location": {
+        "lat": 36.2772064204,
+        "lng": 127.4183426
+      }
+    }
+  },
+  {
+    "id": "score-seo-11",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 21639",
+      "location": {
+        "lat": 36.32511417,
+        "lng": 127.3804456
+      }
+    },
+    "destination": {
+      "name": "보안등 내동309",
+      "location": {
+        "lat": 36.3314376503,
+        "lng": 127.3757467
+      }
+    }
+  },
+  {
+    "id": "score-seo-12",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 25522",
+      "location": {
+        "lat": 36.35115205,
+        "lng": 127.3548472
+      }
+    },
+    "destination": {
+      "name": "보안등 월평동314",
+      "location": {
+        "lat": 36.3433668199,
+        "lng": 127.3545646
+      }
+    }
+  },
+  {
+    "id": "score-seo-13",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 22006",
+      "location": {
+        "lat": 36.32795337,
+        "lng": 127.374874
+      }
+    },
+    "destination": {
+      "name": "보안등 내동319",
+      "location": {
+        "lat": 36.3349995003,
+        "lng": 127.3683811
+      }
+    }
+  },
+  {
+    "id": "score-seo-14",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 7123",
+      "location": {
+        "lat": 36.28829423,
+        "lng": 127.319819
+      }
+    },
+    "destination": {
+      "name": "보안등 봉곡동001",
+      "location": {
+        "lat": 36.2820446404,
+        "lng": 127.3121936
+      }
+    }
+  },
+  {
+    "id": "score-seo-15",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 21385",
+      "location": {
+        "lat": 36.31930257,
+        "lng": 127.3811196
+      }
+    },
+    "destination": {
+      "name": "보안등 도마1동533",
+      "location": {
+        "lat": 36.3117625901,
+        "lng": 127.3810329
+      }
+    }
+  },
+  {
+    "id": "score-seo-16",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 19425",
+      "location": {
+        "lat": 36.29998754,
+        "lng": 127.3453346
+      }
+    },
+    "destination": {
+      "name": "보안등 가수원동178",
+      "location": {
+        "lat": 36.3039277101,
+        "lng": 127.3519309
+      }
+    }
+  },
+  {
+    "id": "score-seo-17",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 23329",
+      "location": {
+        "lat": 36.34615421,
+        "lng": 127.3546753
+      }
+    },
+    "destination": {
+      "name": "보안등 월평동054",
+      "location": {
+        "lat": 36.3533393399,
+        "lng": 127.3557406
+      }
+    }
+  },
+  {
+    "id": "score-seo-18",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 22731",
+      "location": {
+        "lat": 36.34253449,
+        "lng": 127.3742201
+      }
+    },
+    "destination": {
+      "name": "보안등 괴정동270",
+      "location": {
+        "lat": 36.3383046996,
+        "lng": 127.3836622
+      }
+    }
+  },
+  {
+    "id": "score-seo-19",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 18745",
+      "location": {
+        "lat": 36.2515059,
+        "lng": 127.3396301
+      }
+    },
+    "destination": {
+      "name": "보안등 용촌동087",
+      "location": {
+        "lat": 36.2485441001,
+        "lng": 127.3234513
+      }
+    }
+  },
+  {
+    "id": "score-seo-20",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 19484",
+      "location": {
+        "lat": 36.29584267,
+        "lng": 127.3448719
+      }
+    },
+    "destination": {
+      "name": "보안등 괴곡동037",
+      "location": {
+        "lat": 36.2854903597,
+        "lng": 127.3535398
+      }
+    }
+  },
+  {
+    "id": "score-seo-21",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 18543",
+      "location": {
+        "lat": 36.30287033,
+        "lng": 127.3673668
+      }
+    },
+    "destination": {
+      "name": "보안등 복수동234",
+      "location": {
+        "lat": 36.2988292903,
+        "lng": 127.3811715
+      }
+    }
+  },
+  {
+    "id": "score-seo-22",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 22497",
+      "location": {
+        "lat": 36.34136063,
+        "lng": 127.3940086
+      }
+    },
+    "destination": {
+      "name": "보안등 둔산동001",
+      "location": {
+        "lat": 36.3467284297,
+        "lng": 127.3794328
+      }
+    }
+  },
+  {
+    "id": "score-seo-23",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 4458",
+      "location": {
+        "lat": 36.31094681,
+        "lng": 127.3746654
+      }
+    },
+    "destination": {
+      "name": "보안등 도마1동159",
+      "location": {
+        "lat": 36.3244326897,
+        "lng": 127.3744844
+      }
+    }
+  },
+  {
+    "id": "score-seo-24",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 42918",
+      "location": {
+        "lat": 36.35887793,
+        "lng": 127.3885058
+      }
+    },
+    "destination": {
+      "name": "보안등 만년동046",
+      "location": {
+        "lat": 36.3654869998,
+        "lng": 127.374233899
+      }
+    }
+  },
+  {
+    "id": "score-seo-25",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 18267",
+      "location": {
+        "lat": 36.29480191,
+        "lng": 127.3789846
+      }
+    },
+    "destination": {
+      "name": "보안등 정림동125",
+      "location": {
+        "lat": 36.3020328998,
+        "lng": 127.3667937
+      }
+    }
+  },
+  {
+    "id": "score-seo-26",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 18697",
+      "location": {
+        "lat": 36.25379663,
+        "lng": 127.3433579
+      }
+    },
+    "destination": {
+      "name": "보안등 흑석동128",
+      "location": {
+        "lat": 36.2630595504,
+        "lng": 127.3408226
+      }
+    }
+  },
+  {
+    "id": "score-seo-27",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 18975",
+      "location": {
+        "lat": 36.29231273,
+        "lng": 127.3419579
+      }
+    },
+    "destination": {
+      "name": "보안등 관저동088",
+      "location": {
+        "lat": 36.30155326,
+        "lng": 127.3400387
+      }
+    }
+  },
+  {
+    "id": "score-seo-28",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 23261",
+      "location": {
+        "lat": 36.34515774,
+        "lng": 127.3695901
+      }
+    },
+    "destination": {
+      "name": "보안등 월평동264",
+      "location": {
+        "lat": 36.3570682197,
+        "lng": 127.3646204
+      }
+    }
+  },
+  {
+    "id": "score-seo-29",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 18822",
+      "location": {
+        "lat": 36.29159301,
+        "lng": 127.3283669
+      }
+    },
+    "destination": {
+      "name": "보안등 흑석동177",
+      "location": {
+        "lat": 36.2787827203,
+        "lng": 127.332126
+      }
+    }
+  },
+  {
+    "id": "score-seo-30",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 8457",
+      "location": {
+        "lat": 36.34716904,
+        "lng": 127.4019311
+      }
+    },
+    "destination": {
+      "name": "보안등 둔산동132",
+      "location": {
+        "lat": 36.3554885004,
+        "lng": 127.3938528
+      }
+    }
+  },
+  {
+    "id": "score-seo-31",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 18779",
+      "location": {
+        "lat": 36.25680023,
+        "lng": 127.339499
+      }
+    },
+    "destination": {
+      "name": "보안등 흑석동189",
+      "location": {
+        "lat": 36.2695548498,
+        "lng": 127.3509559
+      }
+    }
+  },
+  {
+    "id": "score-seo-32",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 18748",
+      "location": {
+        "lat": 36.25397283,
+        "lng": 127.3396276
+      }
+    },
+    "destination": {
+      "name": "보안등 매노동026",
+      "location": {
+        "lat": 36.23369185,
+        "lng": 127.332052001
+      }
+    }
+  },
+  {
+    "id": "score-seo-33",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 18719",
+      "location": {
+        "lat": 36.25414005,
+        "lng": 127.340562
+      }
+    },
+    "destination": {
+      "name": "보안등 평촌동152",
+      "location": {
+        "lat": 36.2405814298,
+        "lng": 127.325347
+      }
+    }
+  },
+  {
+    "id": "score-seo-34",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 18705",
+      "location": {
+        "lat": 36.25047307,
+        "lng": 127.3421521
+      }
+    },
+    "destination": {
+      "name": "보안등 장안동021",
+      "location": {
+        "lat": 36.2292948498,
+        "lng": 127.3454499
+      }
+    }
+  },
+  {
+    "id": "score-seo-35",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 25682",
+      "location": {
+        "lat": 36.35593643,
+        "lng": 127.3807944
+      }
+    },
+    "destination": {
+      "name": "보안등 탄방동163",
+      "location": {
+        "lat": 36.3434801001,
+        "lng": 127.390497899
+      }
+    }
+  },
+  {
+    "id": "score-seo-36",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 18753",
+      "location": {
+        "lat": 36.2518575,
+        "lng": 127.3397749
+      }
+    },
+    "destination": {
+      "name": "보안등 용촌동012",
+      "location": {
+        "lat": 36.2486780999,
+        "lng": 127.3123632
+      }
+    }
+  },
+  {
+    "id": "score-seo-37",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 4440",
+      "location": {
+        "lat": 36.30870373,
+        "lng": 127.3691037
+      }
+    },
+    "destination": {
+      "name": "보안등 변동178",
+      "location": {
+        "lat": 36.3274914596,
+        "lng": 127.3842969
+      }
+    }
+  },
+  {
+    "id": "score-seo-38",
+    "district": "서구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 18748",
+      "location": {
+        "lat": 36.25397283,
+        "lng": 127.3396276
+      }
+    },
+    "destination": {
+      "name": "보안등 산직동050",
+      "location": {
+        "lat": 36.24263874,
+        "lng": 127.354334299
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-11",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 32341",
+      "location": {
+        "lat": 36.38851958,
+        "lng": 127.3766702
+      }
+    },
+    "destination": {
+      "name": "보안등 도룡동031",
+      "location": {
+        "lat": 36.3829682001,
+        "lng": 127.3795725
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-12",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 3841",
+      "location": {
+        "lat": 36.43894295,
+        "lng": 127.3813533
+      }
+    },
+    "destination": {
+      "name": "보안등 봉산동107",
+      "location": {
+        "lat": 36.4463736902,
+        "lng": 127.3828055
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-13",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 35721",
+      "location": {
+        "lat": 36.38108013,
+        "lng": 127.3435784
+      }
+    },
+    "destination": {
+      "name": "보안등 신성동017",
+      "location": {
+        "lat": 36.3872366399,
+        "lng": 127.3484493
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-14",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 37285",
+      "location": {
+        "lat": 36.36022165,
+        "lng": 127.2937215
+      }
+    },
+    "destination": {
+      "name": "보안등 갑동019",
+      "location": {
+        "lat": 36.3621566104,
+        "lng": 127.2875549
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-15",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 34625",
+      "location": {
+        "lat": 36.37046445,
+        "lng": 127.340491
+      }
+    },
+    "destination": {
+      "name": "보안등 장대동196",
+      "location": {
+        "lat": 36.3648465904,
+        "lng": 127.3395609
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-16",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 26296",
+      "location": {
+        "lat": 36.35733256,
+        "lng": 127.3542784
+      }
+    },
+    "destination": {
+      "name": "보안등 궁동026",
+      "location": {
+        "lat": 36.3625231299,
+        "lng": 127.351962501
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-17",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 34152",
+      "location": {
+        "lat": 36.36341988,
+        "lng": 127.3155443
+      }
+    },
+    "destination": {
+      "name": "보안등 구암동320",
+      "location": {
+        "lat": 36.3554684104,
+        "lng": 127.3156818
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-18",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 36913",
+      "location": {
+        "lat": 36.3907608,
+        "lng": 127.3378909
+      }
+    },
+    "destination": {
+      "name": "보안등 하기동012",
+      "location": {
+        "lat": 36.3925910602,
+        "lng": 127.3273172
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-19",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 6640",
+      "location": {
+        "lat": 36.47532398,
+        "lng": 127.3934355
+      }
+    },
+    "destination": {
+      "name": "보안등 대동011",
+      "location": {
+        "lat": 36.4855349999,
+        "lng": 127.395033
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-20",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 24784",
+      "location": {
+        "lat": 36.33254852,
+        "lng": 127.3444755
+      }
+    },
+    "destination": {
+      "name": "보안등 용계동004",
+      "location": {
+        "lat": 36.3309853604,
+        "lng": 127.330404
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-21",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 30368",
+      "location": {
+        "lat": 36.34275402,
+        "lng": 127.3001761
+      }
+    },
+    "destination": {
+      "name": "보안등 덕명동044",
+      "location": {
+        "lat": 36.3560963103,
+        "lng": 127.3003642
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-22",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 27764",
+      "location": {
+        "lat": 36.31270929,
+        "lng": 127.3181633
+      }
+    },
+    "destination": {
+      "name": "보안등 대정동016",
+      "location": {
+        "lat": 36.3161575896,
+        "lng": 127.333241401
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-23",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 27581",
+      "location": {
+        "lat": 36.29523864,
+        "lng": 127.3136033
+      }
+    },
+    "destination": {
+      "name": "보안등 성북동 신-155",
+      "location": {
+        "lat": 36.2961770503,
+        "lng": 127.297013
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-24",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 7777",
+      "location": {
+        "lat": 36.47100516,
+        "lng": 127.3683088
+      }
+    },
+    "destination": {
+      "name": "보안등 신동007",
+      "location": {
+        "lat": 36.4809506997,
+        "lng": 127.364745199
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-25",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 31418",
+      "location": {
+        "lat": 36.394297,
+        "lng": 127.4062589
+      }
+    },
+    "destination": {
+      "name": "보안등 전민동162",
+      "location": {
+        "lat": 36.4003122404,
+        "lng": 127.394101
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-26",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 18934",
+      "location": {
+        "lat": 36.28576356,
+        "lng": 127.3129196
+      }
+    },
+    "destination": {
+      "name": "보안등 방동050",
+      "location": {
+        "lat": 36.2776294099,
+        "lng": 127.299743
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-27",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 33643",
+      "location": {
+        "lat": 36.35833811,
+        "lng": 127.3018729
+      }
+    },
+    "destination": {
+      "name": "보안등 덕명동015",
+      "location": {
+        "lat": 36.3485189996,
+        "lng": 127.2935588
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-28",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 33507",
+      "location": {
+        "lat": 36.35898859,
+        "lng": 127.3141183
+      }
+    },
+    "destination": {
+      "name": "보안등 노은동163.",
+      "location": {
+        "lat": 36.3678195504,
+        "lng": 127.3188205
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-29",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 27749",
+      "location": {
+        "lat": 36.30317059,
+        "lng": 127.3162765
+      }
+    },
+    "destination": {
+      "name": "보안등 교촌동106",
+      "location": {
+        "lat": 36.3125649902,
+        "lng": 127.3113844
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-30",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 35574",
+      "location": {
+        "lat": 36.38689988,
+        "lng": 127.3433743
+      }
+    },
+    "destination": {
+      "name": "보안등 하기동027",
+      "location": {
+        "lat": 36.3943181499,
+        "lng": 127.3358211
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-31",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 19387",
+      "location": {
+        "lat": 36.29750335,
+        "lng": 127.3148266
+      }
+    },
+    "destination": {
+      "name": "보안등 성북동099",
+      "location": {
+        "lat": 36.3067108599,
+        "lng": 127.2922007
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-32",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 39373",
+      "location": {
+        "lat": 36.42652088,
+        "lng": 127.3900905
+      }
+    },
+    "destination": {
+      "name": "보안등 탑립동039",
+      "location": {
+        "lat": 36.4099411896,
+        "lng": 127.3977644
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-33",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 13120",
+      "location": {
+        "lat": 36.44174676,
+        "lng": 127.386552
+      }
+    },
+    "destination": {
+      "name": "보안등 구룡동034",
+      "location": {
+        "lat": 36.4470768899,
+        "lng": 127.3653231
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-34",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 8059",
+      "location": {
+        "lat": 36.31236537,
+        "lng": 127.2626833
+      }
+    },
+    "destination": {
+      "name": "보안등 세동029",
+      "location": {
+        "lat": 36.2934517303,
+        "lng": 127.2734737
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-35",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 12038",
+      "location": {
+        "lat": 36.4232091,
+        "lng": 127.4059275
+      }
+    },
+    "destination": {
+      "name": "보안등 송강동009",
+      "location": {
+        "lat": 36.4299327101,
+        "lng": 127.3817399
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-36",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 8027",
+      "location": {
+        "lat": 36.3100134,
+        "lng": 127.2595733
+      }
+    },
+    "destination": {
+      "name": "보안등 송정동041",
+      "location": {
+        "lat": 36.2895006896,
+        "lng": 127.2517803
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-37",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 31953",
+      "location": {
+        "lat": 36.37827762,
+        "lng": 127.3564902
+      }
+    },
+    "destination": {
+      "name": "보안등 하기동046",
+      "location": {
+        "lat": 36.3870911797,
+        "lng": 127.3364426
+      }
+    }
+  },
+  {
+    "id": "score-yuseong-38",
+    "district": "유성구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 36159",
+      "location": {
+        "lat": 36.38141598,
+        "lng": 127.3029417
+      }
+    },
+    "destination": {
+      "name": "보안등 외삼동020",
+      "location": {
+        "lat": 36.3975625504,
+        "lng": 127.3161674
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-11",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 12899",
+      "location": {
+        "lat": 36.44959958,
+        "lng": 127.4208505
+      }
+    },
+    "destination": {
+      "name": "보안등 신탄진동049",
+      "location": {
+        "lat": 36.4520762697,
+        "lng": 127.4309369
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-12",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 9303",
+      "location": {
+        "lat": 36.36133929,
+        "lng": 127.4485788
+      }
+    },
+    "destination": {
+      "name": "보안등 비래동156",
+      "location": {
+        "lat": 36.3561857304,
+        "lng": 127.4522221
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-13",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 8643",
+      "location": {
+        "lat": 36.35810886,
+        "lng": 127.4508078
+      }
+    },
+    "destination": {
+      "name": "보안등 비래동022",
+      "location": {
+        "lat": 36.3518488597,
+        "lng": 127.4456197
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-14",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 7293",
+      "location": {
+        "lat": 36.38431924,
+        "lng": 127.4125346
+      }
+    },
+    "destination": {
+      "name": "보안등 회덕동284",
+      "location": {
+        "lat": 36.3928192601,
+        "lng": 127.4136537
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-15",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 6966",
+      "location": {
+        "lat": 36.35128104,
+        "lng": 127.4195284
+      }
+    },
+    "destination": {
+      "name": "보안등 오정동005",
+      "location": {
+        "lat": 36.3542470702,
+        "lng": 127.4265557
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-16",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 11820",
+      "location": {
+        "lat": 36.41691817,
+        "lng": 127.4421103
+      }
+    },
+    "destination": {
+      "name": "보안등 회덕동528",
+      "location": {
+        "lat": 36.4163716596,
+        "lng": 127.447763
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-17",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 10755",
+      "location": {
+        "lat": 36.3757625,
+        "lng": 127.4084103
+      }
+    },
+    "destination": {
+      "name": "보안등 대화동302",
+      "location": {
+        "lat": 36.3695521699,
+        "lng": 127.4006402
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-18",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 0.5~1km",
+    "origin": {
+      "name": "가로등 12666",
+      "location": {
+        "lat": 36.44027632,
+        "lng": 127.4204996
+      }
+    },
+    "destination": {
+      "name": "보안등 덕암동226",
+      "location": {
+        "lat": 36.4347455404,
+        "lng": 127.4197066
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-19",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 11899",
+      "location": {
+        "lat": 36.42081234,
+        "lng": 127.4200591
+      }
+    },
+    "destination": {
+      "name": "보안등 회덕동456",
+      "location": {
+        "lat": 36.4107473899,
+        "lng": 127.4253615
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-20",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 13176",
+      "location": {
+        "lat": 36.45605683,
+        "lng": 127.4642211
+      }
+    },
+    "destination": {
+      "name": "보안등 신탄진동451",
+      "location": {
+        "lat": 36.4639855101,
+        "lng": 127.4720322
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-21",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 1699",
+      "location": {
+        "lat": 36.44834447,
+        "lng": 127.4007274
+      }
+    },
+    "destination": {
+      "name": "보안등 목상동051",
+      "location": {
+        "lat": 36.4473782198,
+        "lng": 127.4118819
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-22",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 11493",
+      "location": {
+        "lat": 36.40066188,
+        "lng": 127.4179942
+      }
+    },
+    "destination": {
+      "name": "보안등 회덕동375",
+      "location": {
+        "lat": 36.3984700304,
+        "lng": 127.4313587
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-23",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 11445",
+      "location": {
+        "lat": 36.44849134,
+        "lng": 127.4503011
+      }
+    },
+    "destination": {
+      "name": "보안등 신탄진동492",
+      "location": {
+        "lat": 36.4495377703,
+        "lng": 127.4657115
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-24",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 12779",
+      "location": {
+        "lat": 36.44822258,
+        "lng": 127.436191
+      }
+    },
+    "destination": {
+      "name": "보안등 덕암동446",
+      "location": {
+        "lat": 36.4376882904,
+        "lng": 127.4374018
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-25",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 10061",
+      "location": {
+        "lat": 36.36815792,
+        "lng": 127.4278134
+      }
+    },
+    "destination": {
+      "name": "보안등 송촌동229",
+      "location": {
+        "lat": 36.3644140103,
+        "lng": 127.4380343
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-26",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 1814",
+      "location": {
+        "lat": 36.4442278,
+        "lng": 127.4006979
+      }
+    },
+    "destination": {
+      "name": "보안등 목상동144",
+      "location": {
+        "lat": 36.4343089,
+        "lng": 127.4115586
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-27",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 8596",
+      "location": {
+        "lat": 36.35777976,
+        "lng": 127.4517369
+      }
+    },
+    "destination": {
+      "name": "보안등 비래동320",
+      "location": {
+        "lat": 36.3574108296,
+        "lng": 127.4645649
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-28",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 10317",
+      "location": {
+        "lat": 36.371979,
+        "lng": 127.4307406
+      }
+    },
+    "destination": {
+      "name": "보안등 회덕동204",
+      "location": {
+        "lat": 36.3852524396,
+        "lng": 127.4281516
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-29",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 5784",
+      "location": {
+        "lat": 36.44506659,
+        "lng": 127.4432002
+      }
+    },
+    "destination": {
+      "name": "보안등 신탄진동393",
+      "location": {
+        "lat": 36.43604705,
+        "lng": 127.448439
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-30",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1~1.5km",
+    "origin": {
+      "name": "가로등 10162",
+      "location": {
+        "lat": 36.36896917,
+        "lng": 127.4172855
+      }
+    },
+    "destination": {
+      "name": "보안등 오정동682",
+      "location": {
+        "lat": 36.3601715397,
+        "lng": 127.4063413
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-31",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 11714",
+      "location": {
+        "lat": 36.41455697,
+        "lng": 127.4418306
+      }
+    },
+    "destination": {
+      "name": "보안등 신탄진동519",
+      "location": {
+        "lat": 36.4093526604,
+        "lng": 127.4630812
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-32",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 10796",
+      "location": {
+        "lat": 36.38101946,
+        "lng": 127.4253295
+      }
+    },
+    "destination": {
+      "name": "보안등 회덕동598",
+      "location": {
+        "lat": 36.3957680696,
+        "lng": 127.4437301
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-33",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 18185",
+      "location": {
+        "lat": 36.36281267,
+        "lng": 127.4317586
+      }
+    },
+    "destination": {
+      "name": "보안등 비래동284",
+      "location": {
+        "lat": 36.3673148202,
+        "lng": 127.448974899
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-34",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 2104",
+      "location": {
+        "lat": 36.43470822,
+        "lng": 127.4082729
+      }
+    },
+    "destination": {
+      "name": "보안등 목상동107",
+      "location": {
+        "lat": 36.44749971,
+        "lng": 127.4004339
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-35",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 10255",
+      "location": {
+        "lat": 36.36729344,
+        "lng": 127.4007036
+      }
+    },
+    "destination": {
+      "name": "보안등 오정동281",
+      "location": {
+        "lat": 36.34845884,
+        "lng": 127.4108656
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-36",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 13390",
+      "location": {
+        "lat": 36.45430323,
+        "lng": 127.4205718
+      }
+    },
+    "destination": {
+      "name": "보안등 신탄진동269",
+      "location": {
+        "lat": 36.4458214697,
+        "lng": 127.4341325
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-37",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 12833",
+      "location": {
+        "lat": 36.44731676,
+        "lng": 127.4269619
+      }
+    },
+    "destination": {
+      "name": "보안등 덕암동419",
+      "location": {
+        "lat": 36.4291677003,
+        "lng": 127.4282365
+      }
+    }
+  },
+  {
+    "id": "score-daedeok-38",
+    "district": "대덕구",
+    "scene": "큰길(가로등) → 주택가(보안등), 직선 1.5~2.5km",
+    "origin": {
+      "name": "가로등 6669",
+      "location": {
+        "lat": 36.44351677,
+        "lng": 127.4433247
+      }
+    },
+    "destination": {
+      "name": "보안등 신탄진동409",
+      "location": {
+        "lat": 36.4425429304,
+        "lng": 127.466187201
+      }
+    }
+  }
+]

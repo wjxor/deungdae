@@ -19,7 +19,7 @@
  *
  * 실행 (레포 루트에서):
  *   (cd apps/api && npm run build)                        # 서버 코드를 그대로 쓰려고 dist를 import한다
- *   node --env-file=.env scripts/waypoint-experiment.mjs baseline    # 최단·넓은 길 우선을 카카오에서 받아 저장 (쌍마다 2건)
+ *   node --env-file=.env scripts/waypoint-experiment.mjs baseline    # 최단·넓은 길 우선을 저장 (쌍마다 2건. 안전점수 실험이 받아 둔 응답이 있으면 복사)
  *   node --env-file=.env scripts/waypoint-experiment.mjs candidates  # 경유지 후보를 DB에서 고른다 (카카오 안 부름)
  *   node --env-file=.env scripts/waypoint-experiment.mjs route       # 경유지를 넣은 경로를 받아 저장 (쌍마다 2건)
  *   node --env-file=.env scripts/waypoint-experiment.mjs report      # 점수를 매기고 지금 결과와 비교 (카카오 안 부름)
@@ -36,12 +36,14 @@
  *   --min-density N  이 밀집도(원점수) 미만인 지점은 경유지로 쓰지 않는다 (기본 5)
  *   --max-calls N    이 실행에서 카카오를 부를 최대 건수 (기본 150). 하루 한도는 앱 하나에 1,000건
  *
+ * docs/waypoint-experiment.md의 숫자는 기본값이 아니라 200쌍(--pairs 세 파일) · --when all · --corridor 100 · --max-retrace 10으로 낸 것이다
+ *
  * - 쌍 파일 형식: [{ id, origin: { location: { lat, lng } }, destination: { location: { lat, lng } } }]
  * - 카카오 좌표는 서버처럼 소수 4자리로 반올림해 부른다. 응답은 scripts/output/waypoint/ 에 저장해 다시 부르지 않는다 (gitignore)
  * - 점수·구간 나누기·고르는 규칙은 서버(apps/api/src/routes) 함수를 그대로 쓴다. 시설은 DB facilities 테이블(읽기만)
  * - 필요: .env의 KAKAO_REST_API_KEY, DIRECT_URL
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -218,11 +220,24 @@ const loadWalk = (id, tag) => (existsSync(fileOf(id, tag)) ? toWalkRoute(readJso
 
 // ── 단계 ──────────────────────────────────────────────
 
+/** 안전점수 실험(kakao-walk-test.ts --round)이 받아 둔 같은 반올림 응답 */
+const roundedFileOf = (id, mode) => join(ROOT, 'scripts/output/rounded', id, `walk-${mode}.json`);
+
 async function baseline() {
+  let reused = 0;
   for (const pair of pairs) {
-    for (const mode of ['SHORTEST', 'BROAD_FIRST']) await fetchWalk(pair, mode, { mode });
+    for (const mode of ['SHORTEST', 'BROAD_FIRST']) {
+      // 안전점수 실험 응답이 있으면 카카오를 부르지 않고 복사한다 (같은 반올림 좌표라 서버와 같은 경로, 200쌍이면 400건 아낌)
+      if (!existsSync(fileOf(pair.id, mode)) && existsSync(roundedFileOf(pair.id, mode))) {
+        mkdirSync(join(OUT, pair.id), { recursive: true });
+        copyFileSync(roundedFileOf(pair.id, mode), fileOf(pair.id, mode));
+        reused++;
+        continue;
+      }
+      await fetchWalk(pair, mode, { mode });
+    }
   }
-  console.log(`기준 경로 저장 완료: ${pairs.length}쌍, 카카오 ${calls}건 (저장돼 있던 것은 건너뜀)`);
+  console.log(`기준 경로 저장 완료: ${pairs.length}쌍, 카카오 ${calls}건 · 안전점수 실험 응답 복사 ${reused}건 (저장돼 있던 것은 건너뜀)`);
 }
 
 /** 기준 경로를 따라 간 거리(m): 점에서 가장 가까운 경로 꼭짓점까지 누적 거리 */

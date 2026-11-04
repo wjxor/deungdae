@@ -49,7 +49,7 @@
 - [ERD](docs/ERD.md) — DB 테이블 설계 (PostgreSQL + PostGIS)
 - [외부 API](docs/EXTERNAL_APIS.md) — 카카오·티맵 API 확인 사실, 카카오 앱 콘솔 설정
 - [route_mode 비교 실험](docs/route-mode-experiment.md) — 안심경로 방식 결정 근거 (카카오 도보 경로 3종의 겹침)
-- [안전점수 실험](docs/safety-score-experiment.md) — 귀갓길 60쌍으로 정한 안전점수·안심경로 MVP 임시값의 근거
+- [안전점수 실험](docs/safety-score-experiment.md) — 귀갓길 60쌍으로 정한 안전점수·안심경로 MVP 임시값의 근거, 200쌍 재확인과 가중치 후보 비교
 
 ## 실행 방법
 

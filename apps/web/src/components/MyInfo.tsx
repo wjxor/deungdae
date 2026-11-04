@@ -6,20 +6,22 @@ type Props = {
   user: User
   onLogout: () => void
   onDelete: () => Promise<boolean> // 탈퇴. 성공하면 true
+  onDeleted: () => void // 탈퇴가 끝난 뒤 화면 정리
   onClose: () => void
 }
 
 const PROVIDER_LABEL = { kakao: '카카오', naver: '네이버', google: 'Google' } as const
 
 // 회원의 [내 정보] 시트. 닉네임·이메일, 로그아웃, 회원 탈퇴 (FR-011)
-export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
+export default function MyInfo({ user, onLogout, onDelete, onDeleted, onClose }: Props) {
   const { ref, dismiss } = useSheet(onClose)
   const [confirming, setConfirming] = useState(false)
   const [failed, setFailed] = useState(false)
 
   const remove = async () => {
     setFailed(false)
-    if (!(await onDelete())) setFailed(true)
+    if (await onDelete()) dismiss(onDeleted)
+    else setFailed(true)
   }
 
   return (
@@ -56,7 +58,7 @@ export default function MyInfo({ user, onLogout, onDelete, onClose }: Props) {
               <button type="button" onClick={() => dismiss()}>
                 닫기
               </button>
-              <button type="button" className="logout" onClick={onLogout}>
+              <button type="button" className="logout" onClick={() => dismiss(onLogout)}>
                 로그아웃
               </button>
             </div>

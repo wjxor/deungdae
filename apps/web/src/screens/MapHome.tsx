@@ -24,11 +24,12 @@ type Props = {
   onPickFavoriteRoute: (route: FavoriteRoute) => void // 즐겨찾은 경로를 고르면 출발지·도착지가 채워진 S2로 간다
   onLogout: () => void
   onDelete: () => Promise<boolean>
+  onDeleted: () => void
   onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, onLogin, favorites, onPickFavoriteRoute, onLogout, onDelete }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, onLogin, favorites, onPickFavoriteRoute, onLogout, onDelete, onDeleted }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -163,7 +164,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
           onClose={() => setFavoritesOpen(false)}
         />
       )}
-      {user && myInfoOpen && <MyInfo user={user} onLogout={onLogout} onDelete={onDelete} onClose={() => setMyInfoOpen(false)} />}
+      {user && myInfoOpen && <MyInfo user={user} onLogout={onLogout} onDelete={onDelete} onDeleted={onDeleted} onClose={() => setMyInfoOpen(false)} />}
     </main>
   )
 }

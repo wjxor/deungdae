@@ -133,11 +133,8 @@ export default function App() {
         auth.logout()
         endSession()
       }}
-      onDelete={async () => {
-        const ok = await auth.deleteAccount()
-        if (ok) endSession()
-        return ok
-      }}
+      onDelete={() => auth.deleteAccount()}
+      onDeleted={endSession}
     />
   )
 }

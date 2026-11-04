@@ -59,3 +59,6 @@ docs/prompts.md
 
 # 발표자료 — 로컬에만 둔다
 pptx/
+
+# Archify 다이어그램 결과물 (작업 폴더·HTML·검사 기록) — 로컬에만 둔다
+.archify/

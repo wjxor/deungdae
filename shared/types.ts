@@ -91,4 +91,7 @@ export type Report = {
   createdAt: string;
 };
 
-export type User = { id: number; email: string; nickname: string };
+export type SocialProvider = "kakao" | "naver" | "google";
+
+// 카카오는 사용자가 동의하지 않으면 이메일을 주지 않아 email이 null일 수 있다
+export type User = { id: number; nickname: string; email: string | null; provider: SocialProvider };

@@ -1,0 +1,73 @@
+import { useState } from 'react'
+import { useSheet } from '../hooks/useSheet'
+import type { User } from '../../../../shared/types'
+
+type Props = {
+  user: User
+  onLogout: () => void
+  onDelete: () => Promise<boolean> // 탈퇴. 성공하면 true
+  onDeleted: () => void // 탈퇴가 끝난 뒤 화면 정리
+  onClose: () => void
+}
+
+const PROVIDER_LABEL = { kakao: '카카오', naver: '네이버', google: 'Google' } as const
+
+// 회원의 [내 정보] 시트. 닉네임·이메일, 로그아웃, 회원 탈퇴 (FR-011)
+export default function MyInfo({ user, onLogout, onDelete, onDeleted, onClose }: Props) {
+  const { ref, dismiss } = useSheet(onClose)
+  const [confirming, setConfirming] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  const remove = async () => {
+    setFailed(false)
+    if (await onDelete()) dismiss(onDeleted)
+    else setFailed(true)
+  }
+
+  return (
+    <div className="myinfo-backdrop" onClick={() => dismiss()}>
+      <section ref={ref} tabIndex={-1} className="myinfo" role="dialog" aria-modal="true" aria-label="내 정보" onClick={(e) => e.stopPropagation()}>
+        <h2>{user.nickname}</h2>
+        <p>{user.email ?? `${PROVIDER_LABEL[user.provider]}로 로그인함`}</p>
+        {confirming ? (
+          <>
+            <p className="myinfo-warn">탈퇴하면 계정과 즐겨찾기가 지워져요. 되돌릴 수 없어요.</p>
+            {failed && (
+              <p className="myinfo-warn" role="status">
+                탈퇴는 아직 준비 중이에요.
+              </p>
+            )}
+            <div className="myinfo-acts">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false)
+                  setFailed(false)
+                }}
+              >
+                취소
+              </button>
+              <button type="button" className="danger" onClick={remove}>
+                탈퇴하기
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="myinfo-acts">
+              <button type="button" onClick={() => dismiss()}>
+                닫기
+              </button>
+              <button type="button" className="logout" onClick={() => dismiss(onLogout)}>
+                로그아웃
+              </button>
+            </div>
+            <button type="button" className="myinfo-delete" onClick={() => setConfirming(true)}>
+              회원 탈퇴
+            </button>
+          </>
+        )}
+      </section>
+    </div>
+  )
+}

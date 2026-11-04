@@ -25,9 +25,9 @@ export default function Login({ onLogin, onGuest }: Props) {
 
         <div className="login-buttons">
           {PROVIDERS.map((p) => (
-            <button key={p.value} type="button" className={`social ${p.value}`} onClick={() => pick(p.value)}>
+            <button key={p.value} type="button" className={`social ${p.value}`} disabled={!p.ready} onClick={() => pick(p.value)}>
               <SocialLogo provider={p.value} />
-              <span>{p.label}</span>
+              <span>{p.ready ? p.label : '준비 중'}</span>
             </button>
           ))}
         </div>

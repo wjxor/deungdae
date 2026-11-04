@@ -39,7 +39,7 @@
   - 화면은 승민 PR #48로 들어갔다. 웹은 `apps/web/src/lib/auth.ts`의 `requestSocialLogin`·`requestDeleteAccount`만 서버 호출로 바꾸면 된다. 지금은 카카오 버튼만 눌리고 개발 서버(`npm run dev`)에서만 가짜 회원으로 로그인되며, 배포본은 "준비 중" 안내가 나온다. 네이버·구글 버튼은 "준비 중"으로 막혀 있다(`PROVIDERS`의 `ready`)
   - 서버가 처리한다. 토큰을 받을 때 REST 키와 클라이언트 시크릿이 필요하고 둘 다 서버에만 둔다 (CLAUDE.md). 서버 `GET /api/auth/kakao`가 카카오 동의 화면으로 보내고, 콜백에서 사용자를 찾거나 만들어 서버 JWT를 들고 웹으로 돌아간다. 웹에 토큰을 넘기는 방식은 배포 주소와 함께 정한다
   - 카카오 먼저 — "등대" 앱에 카카오 로그인을 켠다. 네이버·구글은 각 개발자 콘솔에 앱을 따로 등록해 같은 구조로 나중에
-  - 이메일·비밀번호 가입(API.md 5장 `signup`·`login`)은 화면에 없어서 지금은 만들지 않는다
+  - 이메일·비밀번호 가입(API.md 5장 `signup`·`login`)은 화면에 없어서 지금은 만들지 않는다. 만들게 되면 ERD `users.provider`의 기본값 `email`을 없애거나 `SocialProvider`에 `"email"`을 더한다 (지금 타입에는 없음, 승민 PR #52 댓글)
   - `User`는 `email: string | null`과 `provider`로 PR #48에서 바꿨고, API.md 공용 타입·ERD `users.email`(NOT NULL 풀기)도 맞췄다. 카카오는 사용자가 동의하지 않으면 이메일이 없고, 이메일 항목은 카카오에 따로 신청해야 한다
   - 탈퇴 `DELETE /api/auth/me`(204). 카카오 문서대로 탈퇴 과정에 연결 해제를 넣는다(어드민 키 + 회원번호). 네이버·구글은 해제할 때 그 서비스의 토큰이 필요해 붙일 때 저장 여부를 정한다
   - 바꾸면 API.md 5장·ERD `users`·`shared/types.ts`를 같이 고친다

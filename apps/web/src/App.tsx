@@ -20,18 +20,18 @@ export default function App() {
   const auth = useAuth()
   const favorites = useFavorites()
   const [destination, setDestination] = useState<Place | null>(null)
-  const [screen, setScreen] = useState<Screen>('login')
+  const [screen, setScreen] = useState<Screen>('home')
 
   // 화면 전환을 브라우저 기록에 남겨서 뒤로가기가 앱 밖이 아니라 앞 화면으로 돌아가게 한다.
-  // 로그인·로그아웃은 기록을 덮어써서 뒤로가기로 로그인 화면에 되돌아가지 않는다
+  // 앱은 S1에서 시작하고, 로그인 화면은 S1의 [로그인]으로 들어간다 (로그인 상태가 메모리에만 있어 새로고침마다 로그인 화면이 먼저 나오지 않게)
   const go = (next: Screen, how: 'push' | 'replace' = 'push') => {
     if (how === 'push') history.pushState({ screen: next }, '')
     else history.replaceState({ screen: next }, '')
     setScreen(next)
   }
   useEffect(() => {
-    history.replaceState({ screen: 'login' }, '')
-    const onPop = (e: PopStateEvent) => setScreen((e.state as { screen?: Screen } | null)?.screen ?? 'login')
+    history.replaceState({ screen: 'home' }, '')
+    const onPop = (e: PopStateEvent) => setScreen((e.state as { screen?: Screen } | null)?.screen ?? 'home')
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
@@ -45,7 +45,7 @@ export default function App() {
     setDestination(null)
     setPickedOrigin(null)
     setTrip(null)
-    go('login', 'replace')
+    go('home', 'replace')
   }
 
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
@@ -62,16 +62,16 @@ export default function App() {
     go('route')
   }
 
-  // 로그인하면 회원, "로그인 없이 시작하기"면 비회원(auth.user가 null)으로 지도 홈에 들어간다
+  // 로그인하면 회원, "로그인 없이 시작하기"면 비회원(auth.user가 null)으로 S1에 돌아간다. 로그인 화면은 S1 위에 쌓인 화면이라 뒤로 간다
   if (screen === 'login') {
     return (
       <Login
         onLogin={async (provider) => {
           const ok = await auth.login(provider)
-          if (ok) go('home', 'replace')
+          if (ok) history.back()
           return ok
         }}
-        onGuest={() => go('home', 'replace')}
+        onGuest={() => history.back()}
       />
     )
   }
@@ -122,6 +122,7 @@ export default function App() {
       onClearDestination={() => setDestination(null)}
       onFindRoute={() => go('origin')}
       user={auth.user}
+      onLogin={() => go('login')}
       favorites={favorites}
       onPickFavoriteRoute={(route: FavoriteRoute) => {
         setDestination(route.destination)

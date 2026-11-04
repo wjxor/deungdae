@@ -536,6 +536,15 @@ button {
   color: var(--ink);
 }
 
+.acts .login-link {
+  flex: none;
+  padding: 0 16px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
 .acts .route {
   flex: 1;
   border: 0;

@@ -19,6 +19,7 @@ type Props = {
   onPickDestination: (place: Place) => void
   onClearDestination: () => void // 검색창을 비우면 도착지도 해제한다
   user: User | null // 로그인한 회원. null이면 비회원이라 [안심 경로 찾기]만 보인다
+  onLogin: () => void // 비회원 하단의 [로그인]. 로그인 화면으로 간다
   favorites: Favorites
   onPickFavoriteRoute: (route: FavoriteRoute) => void // 즐겨찾은 경로를 고르면 출발지·도착지가 채워진 S2로 간다
   onLogout: () => void
@@ -27,7 +28,7 @@ type Props = {
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, favorites, onPickFavoriteRoute, onLogout, onDelete }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, onLogin, favorites, onPickFavoriteRoute, onLogout, onDelete }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -127,6 +128,11 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
             </svg>
             안심 경로 찾기
           </button>
+          {!user && (
+            <button type="button" className="login-link" onClick={onLogin}>
+              로그인
+            </button>
+          )}
           {user && (
             <>
               <button type="button" className="report" aria-label="즐겨찾기" onClick={() => setFavoritesOpen(true)}>

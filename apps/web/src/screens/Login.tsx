@@ -8,7 +8,7 @@ type Props = {
   onGuest: () => void // 로그인하지 않고 지도로 간다 (비회원)
 }
 
-// 소셜 로그인 화면 (FR-011). 앱을 켜면 S1보다 먼저 나온다. 로그인 처리는 서버가 하고, 여기는 버튼만 둔다
+// 소셜 로그인 화면 (FR-011). S1 하단의 [로그인]으로 들어온다. 로그인 처리는 서버가 하고, 여기는 버튼만 둔다
 export default function Login({ onLogin, onGuest }: Props) {
   const [failed, setFailed] = useState(false)
 

@@ -4,14 +4,16 @@
 
 ```bash
 (cd apps/api && npm run build)      # 스크립트가 서버의 점수·구간 나누기 코드를 dist에서 그대로 쓴다
-P="--pairs scripts/route-pairs.json,scripts/route-pairs-score.json,scripts/route-pairs-score-extra.json"   # 200쌍
-node --env-file=.env scripts/waypoint-experiment.mjs baseline   $P                                    # 최단·큰길을 카카오에서 받아 저장 (쌍마다 2건, 200쌍 400건)
-node --env-file=.env scripts/waypoint-experiment.mjs candidates $P --when all --corridor 100          # 경유지 후보를 DB에서 고름 (카카오 안 부름)
-node --env-file=.env scripts/waypoint-experiment.mjs route      $P --when all --corridor 100          # 경유지를 넣은 경로를 받아 저장 (이때 쓴 카카오 269건)
-node --env-file=.env scripts/waypoint-experiment.mjs report     $P --when all --corridor 100 --max-retrace 10   # 점수를 매기고 지금 규칙과 비교 (카카오 안 부름)
+# 200쌍. --pairs는 변수에 담지 않고 명령마다 그대로 쓴다 (zsh는 따옴표 없는 변수를 공백에서 나누지 않아 --pairs가 무시되고 기본 60쌍으로 돈다)
+node --env-file=.env scripts/waypoint-experiment.mjs baseline   --pairs scripts/route-pairs.json,scripts/route-pairs-score.json,scripts/route-pairs-score-extra.json   # 최단·큰길 기준 경로 (쌍마다 2건, 200쌍 400건. 안전점수 실험 응답이 있으면 그걸 씀)
+node --env-file=.env scripts/waypoint-experiment.mjs candidates --pairs scripts/route-pairs.json,scripts/route-pairs-score.json,scripts/route-pairs-score-extra.json --when all --corridor 100   # 경유지 후보를 DB에서 고름 (카카오 안 부름)
+node --env-file=.env scripts/waypoint-experiment.mjs route      --pairs scripts/route-pairs.json,scripts/route-pairs-score.json,scripts/route-pairs-score-extra.json --when all --corridor 100   # 경유지를 넣은 경로를 받아 저장 (이때 쓴 카카오 269건)
+node --env-file=.env scripts/waypoint-experiment.mjs report     --pairs scripts/route-pairs.json,scripts/route-pairs-score.json,scripts/route-pairs-score-extra.json --when all --corridor 100 --max-retrace 10   # 점수를 매기고 지금 규칙과 비교 (카카오 안 부름)
 ```
 
 카카오 키는 개인 앱의 REST 키를 `.env.mine`에 두고 `--env-file=.env --env-file=.env.mine`으로 넘겼다. 팀 앱의 하루 1,000건을 쓰지 않으려는 것이다. 응답은 `scripts/output/waypoint/`에 저장돼 다시 부르지 않는다(gitignore). 설정을 바꿔 경유지가 달라지면 새로 부른다.
+
+기준 경로(최단·큰길)는 안전점수 실험이 받아 둔 같은 반올림 응답(`scripts/output/rounded/<쌍 id>/walk-SHORTEST.json`·`walk-BROAD_FIRST.json`)이 있으면 카카오를 부르지 않고 그걸 복사해 쓴다 (2026-11-04 상협 리뷰). 이 문서의 숫자는 따로 받은 기준 경로로 낸 것이라, `rounded`로 돌리면 조금 다를 수 있다 (최단·큰길이 같은 쌍 76 → 75쌍, 지금 큰길만 32쌍은 같음).
 
 ## 목적
 

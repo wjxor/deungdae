@@ -80,7 +80,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
             <FacilityFilter visible={facilityVisible} onToggle={toggleFacility} />
           </div>
           {user && destination && (
-            <button type="button" className="favpill" aria-pressed={favorites.hasPlace(destination)} onClick={() => favorites.togglePlace(destination)}>
+            <button type="button" className="favpill" aria-label={`${destination.name} 즐겨찾기`} aria-pressed={favorites.hasPlace(destination)} onClick={() => favorites.togglePlace(destination)}>
               <StarIcon filled={favorites.hasPlace(destination)} size={16} />
               {destination.name}
             </button>

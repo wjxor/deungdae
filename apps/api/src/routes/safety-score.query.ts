@@ -12,6 +12,8 @@ export type SegmentScoreRow = { i: number; raw: number };
  * 배포 없이 DB에서 바꿀 수 있다 (ERD). `i`는 `paths`의 순서다.
  * 종류별로 같은 좌표는 한 곳으로 센다 — 같은 자리에 CCTV가 여러 대여도 한 번 (2026-11-04 팀 확정, ROADMAP "결정된 것").
  * 좌표는 반올림하지 않고 `ST_AsBinary`가 같을 때만 같은 곳이다 (`/facilities` 마커 묶기와 같은 규칙).
+ * 같은 좌표가 있는 것은 지금 CCTV(2,984 → 2,382곳)·안심벨(575 → 435곳)뿐이다. 규칙은 모든 종류에 걸려서,
+ * 가로등·보안등을 다시 적재해 같은 좌표가 생기면 그것도 한 곳으로 센다 (2026-11-04 승민 확인, PR #54)
  * 분석 스크립트(scripts/safety-score-experiment.mjs)도 이 함수로 같은 SQL을 돌린다
  */
 export function segmentScoreQuery(paths: readonly LatLng[][]): Prisma.Sql {

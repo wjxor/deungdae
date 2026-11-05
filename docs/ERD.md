@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-11-04 (`users.email` null 허용) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-11-04 (`users.email` null 허용, CCTV·안심벨 지점으로 세기) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -106,7 +106,7 @@ erDiagram
 |---|---|---|---|
 | `code` | text | PK | 아래 값. `/api/facilities` 응답의 `type`과 같다 (응답에는 지도에 표시하는 `cctv`·`emergency_bell`·`police`만, FR-002) |
 | `name` | text | NOT NULL | 화면 표시 이름 |
-| `weight` | integer | NOT NULL | 안전점수 가중치 (개·대당) |
+| `weight` | integer | NOT NULL | 안전점수 가중치. 가로등·보안등은 개당, CCTV·안심벨·지구대는 곳당 (같은 종류·같은 좌표는 한 곳, 2026-11-04) |
 
 | code | name | weight (REQUIREMENTS 초안) |
 |---|---|---|
@@ -116,7 +116,7 @@ erDiagram
 | `emergency_bell` | 안심벨(비상벨) | 5 |
 | `police` | 지구대·파출소 | 10 (**임시**, 사람이 상주해 안심벨보다 높게) |
 
-보안등·지구대는 REQUIREMENTS 점수 표에 없어서 9주차 MVP용 임시값을 넣었다 (2026-10-21 상협). 지구대는 처음 5(안심벨과 같게)로 잡았다가 승민 제안으로 10 (PR #21). 시설 데이터 적재 후 실제 후보 경로 점수를 보고 확정한다.
+보안등·지구대는 REQUIREMENTS 점수 표에 없어서 9주차 MVP용 임시값을 넣었다 (2026-10-21 상협). 지구대는 처음 5(안심벨과 같게)로 잡았다가 승민 제안으로 10 (PR #21). 200쌍 실험(2026-10-31, PR #49)에서는 가중치 숫자보다 가로등·보안등을 구간당 몇 개까지 셀지(상한)가 고르는 길을 바꿔서, 가중치는 상한과 함께 팀 회의에서 정한다 (ROADMAP "팀에서 정해야 할 것").
 
 제보 감점(−5/건, 최근 30일)은 시설이 아니라 `reports`에서 계산한다.
 
@@ -170,13 +170,13 @@ erDiagram
 
 정제 기준 미결정 항목을 이 구조로 열어 둔다 (ROADMAP "팀에서 정해야 할 것")
 
-- CCTV 같은 좌표 여러 대(461곳): 원본 행을 그대로 한 행씩 넣으면 대수로 셀지(`count(*)`), 지점으로 셀지(`count(DISTINCT location)`)를 조회에서 고를 수 있다
-- 화장실 비상벨·점검 불량 비상벨: `attributes`로 조회 때 거르거나, 적재 때 빼고 `data_sources.note`에 기록
-- 4자리 비상벨·서구 CCTV 경도 밀림·대전 밖 좌표: 고치면 `coord_source`에 `geocoded`·`corrected`로 남겨 원본과 구분
+- CCTV·안심벨 같은 좌표 여러 대(CCTV 461곳): 원본 행을 그대로 한 행씩 넣어 대수·지점 어느 쪽으로도 셀 수 있게 했다. 2026-11-04 지점으로 세기로 정해서, 행은 그대로 두고 점수 쿼리와 `/facilities`가 종류별로 좌표가 완전히 같은 행(`ST_AsBinary`)을 한 곳으로 센다 (API.md 3·4장)
+- 화장실 비상벨·점검 불량 비상벨: `attributes`로 조회 때 거르거나, 적재 때 빼고 `data_sources.note`에 기록 (아직 정하지 않아 모두 넣었다)
+- 4자리 비상벨·서구 CCTV 경도 밀림·대전 밖 좌표: PR #13·#25 정제에서 고쳐 `coord_source`에 남겼다 — CCTV `corrected` 95행, 안심벨 `geocoded` 29행·`corrected` 1행, 지구대 `geocoded` 31행 (`data/README.md` "정제")
 
 ### `route_cache` — 경로 API 응답 캐시
 
-카카오 도보 경로는 일 1,000건 무료이고 B안이면 검색 1회에 3번 호출한다. 같은 요청은 다시 부르지 않게 경로 API 응답을 저장한다. 서버 배포처(Vercel 서버리스/일반 서버)가 정해지지 않아 메모리 대신 DB에 둔다 — 어느 쪽이든 동작한다.
+카카오 도보 경로는 일 1,000건 무료이고 B안은 검색 1회에 2번(최단·넓은 길 우선) 호출한다 (2026-10-25, 편안한 길은 뺌). 같은 요청은 다시 부르지 않게 경로 API 응답을 저장한다. 서버 배포처(Vercel 서버리스/일반 서버)가 정해지지 않아 메모리 대신 DB에 둔다 — 어느 쪽이든 동작한다.
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
@@ -235,11 +235,12 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 
 ## 안전점수 계산에서 테이블을 쓰는 방식
 
-경로를 약 50m 구간으로 나누고, 구간마다 반경 30m 안의 시설을 종류별로 센 뒤 `facility_types.weight`를 곱한다 (REQUIREMENTS 안전점수 규칙).
+경로를 약 50m 구간으로 나누고, 구간마다 반경 30m 안의 시설을 종류별로 센 뒤 `facility_types.weight`를 곱한다 (REQUIREMENTS 안전점수 규칙). 같은 종류에 좌표가 완전히 같은 행은 한 곳으로 센다 (2026-11-04, 실제 쿼리는 `apps/api/src/routes/safety-score.query.ts`).
 
 ```sql
--- 구간 하나 주변 30m 안의 시설을 종류별로 세서 가중치를 곱한다
-SELECT f.type, count(*) AS n, count(*) * t.weight AS score
+-- 구간 하나 주변 30m 안의 시설을 종류별로 세서 가중치를 곱한다. 같은 종류·같은 좌표는 한 곳
+SELECT f.type, count(DISTINCT ST_AsBinary(f.location)) AS n,
+       count(DISTINCT ST_AsBinary(f.location)) * t.weight AS score
 FROM facilities f
 JOIN facility_types t ON t.code = f.type
 WHERE ST_DWithin(f.location, ST_GeogFromText($1), 30)   -- $1: 'LINESTRING(경도 위도, ...)'
@@ -256,7 +257,7 @@ GROUP BY f.type, t.weight;
 | 안심경로 계산 방식 — B 기본 + A 보강으로 확정 (2026-10-18) | 이 ERD 그대로 쓴다 (A 보강의 경유지는 `route_cache.waypoints`). MVP 뒤 **C안(자체 엔진)을 시도하면** OSM 보행자 도로망 테이블(노드·링크, 링크별 안전점수)을 추가해야 해서 지금은 그리지 않았다 |
 | 서버 배포처 | 영향 없음 (캐시를 DB에 둠) |
 | 정제 기준 | `attributes`·`coord_source`로 어느 쪽으로 정해도 담을 수 있게 둠 |
-| 보안등·지구대 가중치 | 임시값(보안등 1·지구대 10)으로 넣고, 정해지면 `facility_types.weight` 값만 바꾼다 |
+| 시설 가중치와 가로등·보안등 상한 | 가중치는 `facility_types.weight` 값만 바꾼다. 구간당 상한을 두면 테이블이 아니라 점수 쿼리를 바꾼다 |
 | 제보 로그인 필요 여부, 사진 첨부 | `reports.user_id`·`photo_url`을 null 허용으로 둠 |
 
 ## Prisma·PostGIS 메모
@@ -269,7 +270,7 @@ GROUP BY f.type, t.weight;
 
 ## 확인할 것
 
-- [ ] 보안등·지구대 가중치 (REQUIREMENTS 점수 표에 없음) — MVP용 임시값 보안등 1·지구대 10 (2026-10-21 상협, 지구대는 승민 제안으로 5 → 10, PR #21). 적재 후 후보 경로 점수를 보고 확정
+- [ ] 시설 가중치와 가로등·보안등 상한 — MVP용 임시값 보안등 1·지구대 10 (2026-10-21 상협, 지구대는 승민 제안으로 5 → 10, PR #21). 200쌍 실험(PR #49) 뒤 팀 회의에서 정한다 (ROADMAP "팀에서 정해야 할 것")
 - [ ] `route_cache` 좌표 반올림 자릿수(초안 4자리)·만료 시간(초안 24시간)
 - [x] 제보 유형: 화면 S4(조명 부족·CCTV 없음·우범지역)에 맞춰 `dark`/`no_cctv`/`suspicious`/`others`로 통일 (2026-10-10 승민 리뷰, 기타는 승민 의견대로 `others`. `shared/types.ts`·API 명세 함께 수정)
 - [x] 24시 시설 범위: 편의점·심야 약국 모두 제외하고 `store_24h` 행 삭제 (2026-10-10 승민 제안·상협 동의, PR #6)

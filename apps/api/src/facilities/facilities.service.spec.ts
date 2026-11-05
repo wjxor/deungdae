@@ -66,6 +66,19 @@ describe('FacilitiesService', () => {
     expect(sql).not.toMatch(/street_light|security_light/);
   });
 
+  it('종류와 좌표가 모두 같은 시설은 그 좌표의 가장 작은 id 하나로 묶고, id 순으로 준다', async () => {
+    const { service, queryRaw } = fakePrisma();
+    queryRaw.mockResolvedValue([]);
+    await service.findInBbox(BBOX);
+
+    const [strings] = queryRaw.mock.calls[0] as [TemplateStringsArray];
+    const sql = strings.join('?');
+    // 좌표는 반올림하지 않고 ST_AsBinary가 같을 때만 같은 곳 (점수 쿼리와 같은 규칙, API.md 4장)
+    expect(sql).toContain('DISTINCT ON (type, ST_AsBinary(location))');
+    expect(sql).toContain('ORDER BY type, ST_AsBinary(location), id');
+    expect(sql).toMatch(/\) AS spot\s+ORDER BY id\s*$/);
+  });
+
   it('결과가 없으면 빈 목록', async () => {
     const { service, queryRaw } = fakePrisma();
     queryRaw.mockResolvedValue([]);

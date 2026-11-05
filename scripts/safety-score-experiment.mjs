@@ -286,9 +286,9 @@ console.log(`원점수 → 점수(서버): ${[0, 1, 2, 3, 4, 5, 6, 8, 10].map((x
 console.log('\n## 6. 안심경로 고르는 규칙 (정규화는 서버)');
 const RULES = [
   ['1점이라도 높으면, 우회 상한 없음', { minGain: 1, maxDetour: Infinity }],
-  ['5점 이상, 우회 30% 이하', { minGain: 5, maxDetour: 0.3 }],
+  ['5점 이상, 우회 20% 이하 (2026-11-04 전 서버)', { minGain: 5, maxDetour: 0.2 }],
   [`${SAFE_MIN_GAIN}점 이상, 우회 ${SAFE_MAX_DETOUR * 100}% 이하 ← 서버`, null],
-  ['10점 이상, 우회 20% 이하', { minGain: 10, maxDetour: 0.2 }],
+  [`10점 이상, 우회 ${SAFE_MAX_DETOUR * 100}% 이하`, { minGain: 10, maxDetour: SAFE_MAX_DETOUR }],
 ];
 summary.rules = {};
 for (const [name, rule] of RULES) {

@@ -66,7 +66,7 @@ const DEFAULT_CORRIDOR_M = 250; // 최단·넓은 길 우선 경로에서 이 �
 const OFF_ROUTE_M = 60; // 기준 경로 위(이 안)의 지점은 길을 바꾸지 못하므로 뺀다
 const DENSITY_M = FACILITY_RADIUS_M; // 밀집도 = 후보 지점 반경 이 안 시설의 가중치 합 (서버 점수와 같은 30m)
 const END_MARGIN_M = 150; // 출발·도착에서 이만큼은 떨어진 지점만 (끝에서 되돌아오는 경유지 방지)
-const MAX_VIA_DETOUR = 1 + SAFE_MAX_DETOUR; // 출발→경유지들→도착 직선 합이 최단 거리의 이 배를 넘으면 쓰지 않는다. 직선은 실제 길보다 짧아서 넘으면 우회 20%도 반드시 넘는다 (호출 아끼기)
+const MAX_VIA_DETOUR = 1 + SAFE_MAX_DETOUR; // 출발→경유지들→도착 직선 합이 최단 거리의 이 배를 넘으면 쓰지 않는다. 직선은 실제 길보다 짧아서 넘으면 우회 한도도 반드시 넘는다 (호출 아끼기)
 // 경유지 후보는 기준 모드마다 따로 고른다 (기준 경로에서 벗어난 지점이어야 길이 바뀐다)
 const OVERLAP_TOLERANCE_M = 20; // 두 경로가 이 안이면 같은 길로 센다 (docs/route-mode-experiment.md와 같은 기준)
 const OVERLAP_SAME = 0.98; // 겹침이 이 이상이면 같은 길 (docs/safety-score-experiment.md 7번)
@@ -409,7 +409,7 @@ async function report() {
     console.log(`${label} 경유지 개수: ${[1, 2, 3, 4, 5].map((n) => [n, ok.filter((r) => viaOf(r, label).viaCount === n).length]).filter(([, c]) => c).map(([n, c]) => `${n}개 ${c}쌍`).join(', ')}`);
     const gains = ok.map((r) => viaOf(r, label).safetyScore - r.s.safetyScore);
     const detours = ok.map((r) => (100 * (viaOf(r, label).distanceM - r.s.distanceM)) / r.s.distanceM);
-    console.log(`${label}: ${ok.length}쌍, 점수 차 중앙값 ${median(gains)}점(최대 ${Math.max(...gains)}) · 우회 중앙값 ${r1(median(detours))}%(최대 ${r1(Math.max(...detours))}) · 5점 이상 ${gains.filter((g) => g >= SAFE_MIN_GAIN).length}쌍 · 우회 20% 이하 ${detours.filter((x) => x <= SAFE_MAX_DETOUR * 100).length}쌍`);
+    console.log(`${label}: ${ok.length}쌍, 점수 차 중앙값 ${median(gains)}점(최대 ${Math.max(...gains)}) · 우회 중앙값 ${r1(median(detours))}%(최대 ${r1(Math.max(...detours))}) · 5점 이상 ${gains.filter((g) => g >= SAFE_MIN_GAIN).length}쌍 · 우회 ${SAFE_MAX_DETOUR * 100}% 이하 ${detours.filter((x) => x <= SAFE_MAX_DETOUR * 100).length}쌍`);
   }
   writeFileSync(join(OUT, `report${REPORT_SUFFIX}.json`), JSON.stringify(rows, null, 1));
 }

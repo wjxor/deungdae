@@ -67,17 +67,17 @@ describe('pickSafe', () => {
     safetyScore,
   });
 
-  it('임시값: 5점 이상, 우회 20% 이하', () => {
+  it('5점 이상(임시값), 우회 30% 이하(2026-11-04 확정)', () => {
     expect(SAFE_MIN_GAIN).toBe(5);
-    expect(SAFE_MAX_DETOUR).toBe(0.2);
+    expect(SAFE_MAX_DETOUR).toBe(0.3);
   });
 
   it('후보가 없으면 최단경로', () => {
     expect(pickSafe(shortest, [])).toBe(shortest);
   });
 
-  it('5점 이상 높고 우회 20% 이하면 그 후보 (경계 포함)', () => {
-    const c = route('넓은길', 1200, 55);
+  it('5점 이상 높고 우회 30% 이하면 그 후보 (경계 포함)', () => {
+    const c = route('넓은길', 1300, 55);
     expect(pickSafe(shortest, [c])).toBe(c);
   });
 
@@ -85,8 +85,13 @@ describe('pickSafe', () => {
     expect(pickSafe(shortest, [route('넓은길', 1000, 54)])).toBe(shortest);
   });
 
-  it('20%를 넘게 돌아가면 점수가 높아도 최단경로', () => {
-    expect(pickSafe(shortest, [route('넓은길', 1201, 90)])).toBe(shortest);
+  it('우회가 20~30% 사이면 고른다 (2026-11-04 20% → 30%)', () => {
+    const c = route('넓은길', 1250, 60);
+    expect(pickSafe(shortest, [c])).toBe(c);
+  });
+
+  it('30%를 넘게 돌아가면 점수가 높아도 최단경로', () => {
+    expect(pickSafe(shortest, [route('넓은길', 1301, 90)])).toBe(shortest);
   });
 
   it('조건에 맞는 후보가 여럿이면 점수가 높은 것, 같으면 짧은 것', () => {

@@ -230,7 +230,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
           {sameRoute ? (
             <p className="same" role="status">
               <b>최단경로와 안심경로가 일치해요.</b>
-              가장 짧고 안전점수도 가장 높은 길이에요.
+              더 안전하게 돌아갈 만한 길이 없어서 가장 짧은 길로 안내해요.
             </p>
           ) : (
             <div className="rs-sum" role="group" aria-label={sentence ?? '두 경로의 차이'}>

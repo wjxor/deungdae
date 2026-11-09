@@ -4,13 +4,16 @@ import { fetchDaylight } from '../lib/api'
 import { isNightAt, isStale, nextCheckAt } from '../lib/daylight'
 
 // 주야간: 서버가 알려 준 일출·일몰이 기본이고, 사용자가 누르면 그 값이 우선한다 (FR-005).
-// 앱을 켜 둔 채 일몰·일출이 지나도 바뀌도록, 받아 둔 시각을 기기 시각과 비교해 다시 판별한다 (API.md 1-1장)
+// 앱을 켜 둔 채 일몰·일출이 지나도 바뀌도록, 받아 둔 시각을 기기 시각과 비교해 다시 판별한다 (API.md 1-1장).
+// 사용자가 고른 값은 일출·일몰이 지나 자동 값이 바뀌면 버리고 다시 자동으로 따른다
 export function useDaylightMode() {
   const [daylight, setDaylight] = useState<{ sunrise: string; sunset: string } | null>(null)
   const [now, setNow] = useState(() => Date.now())
-  const [manual, setManual] = useState<Mode | null>(null)
-  const auto: Mode | null = daylight ? (isNightAt(now, daylight.sunrise, daylight.sunset) ? 'night' : 'day') : null
-  const mode: Mode = manual ?? auto ?? 'day'
+  // 사용자가 고른 값과, 그때 보이던 자동 값. 자동 값이 그 뒤에 달라졌으면 선택은 끝난 것으로 본다
+  const [manual, setManual] = useState<{ mode: Mode; basedOn: Mode } | null>(null)
+  const auto: Mode = daylight ? (isNightAt(now, daylight.sunrise, daylight.sunset) ? 'night' : 'day') : 'day'
+  const mode: Mode = manual && manual.basedOn === auto ? manual.mode : auto
+  const setMode = useCallback((next: Mode) => setManual({ mode: next, basedOn: auto }), [auto])
 
   const load = useCallback(() => {
     fetchDaylight()
@@ -47,5 +50,5 @@ export function useDaylightMode() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
-  return { mode, sunrise: daylight?.sunrise ?? null, sunset: daylight?.sunset ?? null, setMode: setManual }
+  return { mode, sunrise: daylight?.sunrise ?? null, sunset: daylight?.sunset ?? null, setMode }
 }

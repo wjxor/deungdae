@@ -45,12 +45,13 @@ apps/web/src/
 │   └── Login.tsx        # 로그인
 ├── components/          # 지도·경로 레이어, 시트(RouteSheet·MyInfo·FavoritesSheet), 검색, 낮/밤 토글 등
 ├── hooks/
-│   ├── useDaylightMode.ts  # 서버 /daylight 값이 기본, 사용자가 누르면 그 값이 우선
+│   ├── useDaylightMode.ts  # 서버 /daylight의 일출·일몰을 기기 시각과 비교해 낮/밤 판별(켜 둔 채 일몰이 지나도 바뀜), 사용자가 누르면 그 값이 우선하고 자동 값이 바뀌면 다시 자동
 │   ├── useGeolocation.ts   # 현재 위치와 권한 상태
 │   └── useSheet.ts         # 바닥 시트(ESC·포커스·뒤로가기)
 └── lib/
     ├── api.ts, apiError.ts # 서버 호출, 에러 응답({ error: { code, message } })
     ├── kakao.ts            # 카카오맵 SDK 불러오기
+    ├── daylight.ts         # 일출·일몰 시각으로 낮/밤 판별, 다음 확인 시각 (서버 isNight와 같은 식)
     ├── auth.ts             # 로그인·탈퇴
     ├── favorites.ts        # 즐겨찾기
     └── geo.ts, routeSummary.ts, routeFacilities.ts, facilityIcon.ts

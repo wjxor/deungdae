@@ -325,6 +325,7 @@ button {
 }
 
 .top > .notice,
+.top > .install-hint,
 .top > .place-search {
   justify-self: stretch;
 }

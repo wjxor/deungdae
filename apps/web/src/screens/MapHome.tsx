@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FacilityType, LatLng, Place, User } from '../../../../shared/types'
 import FacilityFilter from '../components/FacilityFilter'
 import FavoritesSheet from '../components/FavoritesSheet'
+import InstallHint from '../components/InstallHint'
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import MyInfo from '../components/MyInfo'
@@ -96,6 +97,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
               )}
             </p>
           )}
+          <InstallHint />
         </header>
 
         <button

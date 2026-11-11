@@ -3,8 +3,13 @@ import type { LatLng, Mode, Place, Route, RouteSearchRequest, RouteType } from '
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import StarIcon from '../components/StarIcon'
+import NavPanel from '../components/NavPanel'
 import RouteSheet from '../components/RouteSheet'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
+import { WALK_SPEED_MPS, useSimulatedWalk } from '../hooks/useSimulatedWalk'
+import { routeProgress } from '../lib/progress'
+import { useHeading } from '../hooks/useHeading'
+import { useWatchPosition } from '../hooks/useWatchPosition'
 import { searchRoutes } from '../lib/api'
 import { ApiRequestError } from '../lib/apiError'
 import { NO_FACILITIES } from '../lib/facilityIcon'
@@ -44,6 +49,9 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
   // 사용자가 시트에서 고른 경로. 없으면 낮/밤에 따른 추천을 보여 주고, 낮/밤을 바꾸면 추천으로 돌아간다
   const [picked, setPicked] = useState<RouteType | null>(null)
   const selected = picked ?? recommendedOf(mode)
+  // 이동 중 화면. 받아 둔 경로를 따라 내 위치만 갱신하고 서버는 다시 부르지 않는다
+  const [navigating, setNavigating] = useState(false)
+  const real = useWatchPosition(navigating && WALK_SPEED_MPS === 0)
 
   useEffect(() => {
     // 화면을 떠나면(뒤로·취소) 늦게 온 응답은 버린다
@@ -74,16 +82,27 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
 
   const routes = state.status === 'ready' ? state.routes : null
   const sameRoute = state.status === 'ready' && state.sameRoute
+  // 개발 서버에서 ?walk를 붙이면 실제 위치 대신 경로를 따라 걷는 가짜 위치를 쓴다
+  const followed = routes ? routes[sameRoute ? 'safe' : selected] : null
+  const walk = useSimulatedWalk(navigating, followed?.path ?? null)
+  const watch = WALK_SPEED_MPS > 0 ? walk : real
+  // 지나온 길은 지도에서 지운다. 걷다가 되돌아가도 선이 다시 나오지 않게 가장 멀리 온 길이를 쓴다
+  const [farthestM, setFarthestM] = useState(0)
+  const alongNow = followed && navigating && watch.status === 'ready' ? routeProgress(watch.location, followed.path).alongM : 0
+  if (alongNow > farthestM) setFarthestM(alongNow)
+  const alongM = navigating ? farthestM : 0
+  const heading = useHeading(navigating && watch.status === 'ready' ? watch.location : null)
 
   return (
     <main className="map-home route-compare" data-mode={mode}>
       <div className="map-area">
         <KakaoMap
-          center={origin}
-          myLocation={myLocation}
+          center={navigating && watch.status === 'ready' ? watch.location : origin}
+          myLocation={navigating && watch.status === 'ready' ? watch.location : myLocation}
           pin={destination.location}
           facilityVisible={NO_FACILITIES}
-          route={routes ? { routes, selected, sameRoute, mode } : undefined}
+          heading={heading}
+          route={routes ? { routes, selected, sameRoute, mode, navigating, alongM } : undefined}
         />
 
         <header className="top">
@@ -103,13 +122,15 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
             )}
           </div>
           <div className="toprow">
-            <ModeToggle mode={mode} sunrise={sunrise} sunset={sunset} onChange={changeMode} />
+            {!navigating && <ModeToggle mode={mode} sunrise={sunrise} sunset={sunset} onChange={changeMode} />}
           </div>
         </header>
       </div>
 
-      {routes ? (
-        <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} />
+      {routes && navigating ? (
+        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} onStop={() => { setNavigating(false); setFarthestM(0) }} />
+      ) : routes ? (
+        <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} onStart={() => setNavigating(true)} />
       ) : (
         <section className="sheet" aria-label="경로 비교">
           {state.status === 'loading' && (

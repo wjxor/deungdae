@@ -24,6 +24,7 @@ type Props = {
   selected: RouteType
   sameRoute: boolean // 안심경로가 최단경로와 같으면 비교할 것이 없다
   onSelect: (type: RouteType) => void
+  onStart: () => void // 고른 경로를 따라가는 이동 중 화면으로
 }
 
 // 시트의 세 단계. 접힘은 지도를 가장 많이 남기고, 펼침은 자세한 구성까지 보여 준다
@@ -76,7 +77,7 @@ function LevelTable({ route }: { route: Route }) {
 
 // S3 경로 비교 바텀시트 (FR-007). 접힘·중간·펼침 세 단계이고, 손잡이를 끌거나 누르면 단계가 바뀐다.
 // 시트 높이가 바뀌면 지도 크기도 바뀌므로, RouteLayer가 크기 변화를 보고 경로를 다시 맞춘다.
-export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Props) {
+export default function RouteSheet({ routes, selected, sameRoute, onSelect, onStart }: Props) {
   const [snap, setSnap] = useState<Snap>('half')
   const [dy, setDy] = useState(0) // 끄는 동안 시트가 손가락을 따라가는 거리
   const startY = useRef<number | null>(null)
@@ -307,6 +308,10 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect }: Pr
           </div>
         </>
       )}
+
+      <button type="button" className="rs-start" onClick={onStart}>
+        안내 시작
+      </button>
     </section>
   )
 }

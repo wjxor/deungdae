@@ -1477,3 +1477,97 @@ button {
 .myinfo:focus {
   outline: none;
 }
+
+/* 이동 중 화면 (NavPanel). 시트 아래의 "안내 시작" 버튼과 같은 모양의 주 버튼을 쓴다 */
+.rs-start,
+.nav-stop {
+  height: 44px;
+  border: 0;
+  border-radius: 22px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rs-start {
+  background: var(--cta);
+  color: var(--on-cta);
+}
+
+.nav-stop {
+  background: var(--chip);
+  color: var(--ink);
+}
+
+.nav-nums {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+}
+
+.nav-nums > div + div {
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
+.nav-nums small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.nav-nums b {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.nav-msg {
+  margin: 0;
+  padding: 10px 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.nav-msg.arrived {
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.nav-off {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--chip);
+  color: var(--lv-danger-t);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 이동 중 진행 방향. 현재 위치 점 둘레를 도는 삼각형이고 위쪽이 0도(북쪽)다 */
+.my-location {
+  position: relative;
+}
+
+.my-location .heading {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+
+.my-location .heading::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: -30px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 14px solid var(--here);
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
+}

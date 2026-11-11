@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import type { LatLng, Mode, Route, RouteType, SafetyLevel } from '../../../../shared/types'
+import { pathFrom, pathLengthM } from '../lib/progress'
 import { ROUTE_NAME, formatDuration } from '../lib/routeSummary'
 
 export type RouteView = {
@@ -7,6 +8,8 @@ export type RouteView = {
   selected: RouteType
   sameRoute: boolean // 안심경로가 최단경로와 같으면 한 경로만 그린다
   mode: Mode
+  alongM?: number // 이동 중 경로 시작부터 지나온 길이(m). 이만큼은 지도에서 지운다
+  navigating?: boolean // 이동 중 화면: 고른 경로만 그리고, 지도는 내 위치를 따라가니 경로 전체로 맞추지 않는다
 }
 
 type Props = { map: kakao.maps.Map | null; view: RouteView }
@@ -19,6 +22,7 @@ const LEVEL_COLOR: Record<Mode, Record<SafetyLevel, string>> = {
 }
 const OUTLINE: Record<Mode, string> = { day: '#ffffff', night: '#10151a' } // 복잡한 지도 위에서 선이 묻히지 않게 두르는 테두리
 const OTHER_COLOR = '#7b838d'
+const NAV_OPACITY = 0.55 // 이동 중 경로 선의 투명도
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 const toKakaoPath = (path: LatLng[]) => path.map(toKakao)
@@ -40,11 +44,11 @@ function marker(text: '출발' | '도착'): HTMLElement {
 // 선택한 경로는 구간 색 실선, 다른 경로는 회색 점선이고 각각 "안심경로 11분" 말풍선이 붙는다.
 // 출발·도착 핀은 요청 좌표가 아니라 선택 경로의 처음·끝 점에 둬서, 경로선과 핀이 이어지게 한다.
 export default function RouteLayer({ map, view }: Props) {
-  const { routes, selected, sameRoute, mode } = view
+  const { routes, selected, sameRoute, mode, navigating = false, alongM = 0 } = view
 
   // 경로가 새로 오면 전체가 보이게 지도를 맞춘다. 시트에서 경로만 바꿀 때는 움직이지 않는다
   useEffect(() => {
-    if (!map) return
+    if (!map || navigating) return
     const bounds = new kakao.maps.LatLngBounds()
     routes.shortest.path.forEach((p) => bounds.extend(toKakao(p)))
     routes.safe.path.forEach((p) => bounds.extend(toKakao(p)))
@@ -66,19 +70,22 @@ export default function RouteLayer({ map, view }: Props) {
       observer.disconnect()
       window.clearTimeout(timer)
     }
-  }, [map, routes])
+  }, [map, routes, navigating])
 
   useEffect(() => {
     if (!map) return
     const polylines: kakao.maps.Polyline[] = []
     const overlays: kakao.maps.CustomOverlay[] = []
 
+    // 걸으며 볼 때는 선이 지도 글자를 덮지 않게 반투명으로 그린다
+    const opacity = navigating ? NAV_OPACITY : 1
+
     const line = (path: LatLng[], color: string, weight: number, zIndex: number, dashed = false) => {
       const p = new kakao.maps.Polyline({
         path: toKakaoPath(path),
         strokeColor: color,
         strokeWeight: weight,
-        strokeOpacity: 1,
+        strokeOpacity: opacity,
         strokeStyle: dashed ? 'dash' : 'solid',
         zIndex,
       })
@@ -101,25 +108,33 @@ export default function RouteLayer({ map, view }: Props) {
     }
 
     const other: RouteType = selected === 'safe' ? 'shortest' : 'safe'
-    if (!sameRoute) {
+    if (!sameRoute && !navigating) {
       line(routes[other].path, OUTLINE[mode], 9, 1)
       line(routes[other].path, OTHER_COLOR, 5, 2, true)
       bubble(routes[other], false)
     }
 
     const chosen = routes[selected]
-    line(chosen.path, OUTLINE[mode], 14, 3)
-    chosen.segments.forEach((s) => line(s.path, LEVEL_COLOR[mode][s.level], 8, 4))
-    bubble(chosen, true)
+    // 이동 중에는 지나온 길을 지우고 남은 길만 그린다
+    const remain = navigating ? pathFrom(chosen.path, alongM) : chosen.path
+    if (remain.length >= 2) line(remain, OUTLINE[mode], 14, 3)
+    let offset = 0
+    chosen.segments.forEach((s) => {
+      const len = pathLengthM(s.path)
+      const rest = navigating ? pathFrom(s.path, alongM - offset) : s.path
+      offset += len
+      if (rest.length >= 2) line(rest, LEVEL_COLOR[mode][s.level], 8, 4)
+    })
+    if (!navigating) bubble(chosen, true)
 
-    overlay(chosen.path[0], marker('출발'), 1, 8)
+    if (!navigating) overlay(chosen.path[0], marker('출발'), 1, 8)
     overlay(chosen.path[chosen.path.length - 1], marker('도착'), 1, 8)
 
     return () => {
       polylines.forEach((p) => p.setMap(null))
       overlays.forEach((o) => o.setMap(null))
     }
-  }, [map, routes, selected, sameRoute, mode])
+  }, [map, routes, selected, sameRoute, mode, navigating, alongM])
 
   return null
 }

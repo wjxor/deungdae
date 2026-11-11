@@ -4,7 +4,7 @@ React 19 + TypeScript + Vite + 카카오맵 JavaScript SDK. 모바일 웹앱(PWA
 
 ## 실행
 
-Node.js 22.13 이상. 명령은 모두 `apps/web`에서 실행한다.
+Node.js 22 (22.13 이상, 23 미만 — `engines` `^22.13.0`). 명령은 모두 `apps/web`에서 실행한다.
 
 ```bash
 npm ci

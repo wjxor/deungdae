@@ -4,7 +4,7 @@ NestJS 12 + Prisma 7 + PostgreSQL/PostGIS(Supabase). 명세는 [`docs/API.md`](.
 
 ## 실행
 
-Node.js 22.13 이상. 명령은 모두 `apps/api`에서 실행한다.
+Node.js 22 (22.13 이상, 23 미만 — `engines` `^22.13.0`). 명령은 모두 `apps/api`에서 실행한다.
 
 ```bash
 npm ci              # 설치하면서 Prisma Client도 만든다 (postinstall: prisma generate)

@@ -23,6 +23,7 @@ type Props = {
   daylight: ReturnType<typeof useDaylightMode>
   favorite?: { on: boolean; onToggle: () => void } // 회원만. 이 경로(출발지→도착지)를 자주 가는 경로로 담는다
   onBack: () => void
+  onArrived: () => void // 도착하고 닫았을 때. 지도 홈으로 나간다
 }
 
 type State =
@@ -39,7 +40,7 @@ const SLOW_MS = 3000
 const FALLBACK_MESSAGE = '경로를 찾지 못했어요. 잠시 후 다시 시도해 주세요.'
 
 // S3 경로 비교 (FR-007). 들어올 때 경로를 한 번만 받고, 경로 선택과 낮/밤 전환은 받은 경로의 표시만 바꾼다.
-export default function RouteCompare({ origin, originLabel, myLocation, destination, daylight, favorite, onBack }: Props) {
+export default function RouteCompare({ origin, originLabel, myLocation, destination, daylight, favorite, onBack, onArrived }: Props) {
   const { mode, sunrise, sunset, setMode } = daylight
 
   // 요청은 들어올 때 값으로 한 번만 보낸다. 이후 낮/밤을 바꿔도 다시 부르지 않는다
@@ -128,7 +129,7 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
       </div>
 
       {routes && navigating ? (
-        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} onStop={() => { setNavigating(false); setFarthestM(0) }} />
+        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} onStop={() => { setNavigating(false); setFarthestM(0) }} onArrived={onArrived} />
       ) : routes ? (
         <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} onStart={() => setNavigating(true)} />
       ) : (

@@ -29,6 +29,7 @@ curl 'http://localhost:3000/api/facilities?bbox=36.35,127.33,36.37,127.36'
 - `DATABASE_URL`이 없거나 DB에 못 붙어도 서버는 뜨고, `/api/health`가 `"db": "error"`로 알려 준다. 이때 `/api/facilities`는 502 `EXTERNAL_API_ERROR`로 답한다
 - `/api/facilities`는 DB `facilities` 테이블을 읽는다. 시설 데이터를 적재하기 전에는 늘 빈 목록이다
 - `/api/daylight`는 `KASI_API_KEY`(공공데이터포털 서비스 키, 천문연 출몰시각 활용 신청된 것)가 필요하다. 없으면 오늘 값이 DB `sun_times`에 있을 때만 답하고, 없으면 502 `EXTERNAL_API_ERROR`. 천문연은 하루에 한 번만 부른다 (같은 날은 서버 메모리, 다시 켜면 `sun_times`)
+- CORS는 개발 웹(`http://localhost:5173`)과 환경변수 `CORS_ORIGINS`(쉼표로 구분)에 적은 주소를 허용한다. 배포 서버(Vercel)에는 배포한 웹 주소를 넣는다. 로컬에서는 넣지 않아도 된다
 
 ## DB 연결 (Supabase)
 

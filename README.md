@@ -70,6 +70,19 @@ node --env-file=.env scripts/kakao-walk-test.ts "반석역" "노은도서관"
 node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
 ```
 
+## 배포
+
+웹·서버 모두 Vercel(상협 계정, Hobby 무료)에 이 저장소를 연결해 두었다 (2026-11-11, ROADMAP "결정된 것"). `main`에 merge하면 자동으로 다시 배포된다.
+
+| 프로젝트 | 주소 | Root Directory | Preset | 환경변수 |
+|---|---|---|---|---|
+| 서버 `deungdae-api` | https://deungdae-api.vercel.app/api | `apps/api` | NestJS (함수 지역 서울 `icn1`) | `DATABASE_URL`·`KAKAO_REST_API_KEY`·`KASI_API_KEY`·`CORS_ORIGINS` |
+| 웹 `deungdae-map` | 웹 배포 때 정해짐 | `apps/web` | Vite | `VITE_KAKAO_JS_KEY`·`VITE_API_BASE_URL` |
+
+- 환경변수 값은 Vercel 프로젝트 설정에만 넣고 저장소에는 두지 않는다. `CORS_ORIGINS`에는 배포한 웹 주소를 넣는다 (쉼표로 여러 개)
+- PR마다 Vercel이 미리보기 주소를 PR에 댓글로 단다. 미리보기는 Vercel 로그인이 필요해서 지금은 상협 계정으로만 열린다
+- Node 버전은 `package.json`의 `engines`(`^22.13.0`)를 따른다. Vercel 프로젝트 설정보다 이 값이 우선한다
+
 ## 협업 규칙
 
 - `main` 직접 push 금지. 기능 브랜치에서 작업하고 PR로 합친다 (1명 이상 확인 후 merge)

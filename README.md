@@ -80,6 +80,7 @@ node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
 - merge는 **squash만** 허용하고, squash 커밋 제목은 PR 제목이다 (2026-10-22 상협, 저장소 Settings → General → Pull Requests). PR 하나가 `main`의 커밋 하나가 된다
   - 기본값은 커밋이 1개인 PR이면 그 커밋 메시지를 제목으로 써서 #12가 `Update .gitignore`로 들어갔고, #25는 이 설정 전이라 merge commit으로 들어가 브랜치 커밋(`Add files via upload`)이 그대로 남았다
 - 머지된 PR의 브랜치는 GitHub가 자동으로 삭제한다 (저장소 설정 "Automatically delete head branches")
+- PR마다 GitHub Actions `CI`(`.github/workflows/ci.yml`)가 웹 build·lint, 서버 build·lint·test·test:e2e를 Node 22로 돌린다. `main`에 merge된 뒤에도 한 번 더 돈다. 서버 테스트는 DB와 카카오·천문연 호출을 가짜로 바꿔 돌아서 비밀값이 필요 없다
 - 커밋 메시지에 요구사항 ID를 붙인다: `FR-004 최단경로 API 구현`. PR 제목이 `main`의 커밋 메시지가 되므로 PR 제목에도 붙인다
 - **API 키·DB 접속 정보는 절대 커밋하지 않는다.** `.env`는 `.gitignore`에 들어 있다
 - 좌표는 항상 `{ lat, lng }` 객체, 좌표계는 WGS84(EPSG:4326)

@@ -9,7 +9,9 @@
 
 ## 11주차 (2026-11-07 ~ 11-13)
 
+- 2026-11-12: 웹 Vercel 배포 (상협, PR #69) — `https://deungdae-map.vercel.app`(프로젝트 `deungdae-map`, Root `apps/web`, Vite). 서버 `CORS_ORIGINS`에 웹 주소를 넣고 다시 배포, 카카오 JavaScript SDK 도메인 등록(도중에 localhost가 빠져 다시 넣음), 두 프로젝트 Node 설정 22.x. 실제 주소에서 지도·검색·경로 비교를 확인했고 새 경로 검색은 1.97초(대전역 → 대전시청, 한 번). 옛 "웹 배포 마무리" 항목
 - 2026-11-12: 서버 Vercel 배포 (PR #66·#67·#68) — 배포처를 Vercel로 정하고(상협) `https://deungdae-api.vercel.app`에 올림. 첫 배포는 빌드는 됐지만 요청이 멈춰서 `main.ts`의 top-level `await bootstrap()`을 뺐다(#67 — Vercel이 `listen()`을 가로채고 완료 콜백을 부르지 않음). Node는 `engines` `^22.13.0`(#66), CORS 허용 주소는 환경변수 `CORS_ORIGINS`(#68). 웹 배포·카카오 SDK 도메인은 남음. 옛 "서버 배포처" 미결정 항목
+- 2026-11-11: PWA 골격 (승민, PR #64) — `vite-plugin-pwa`로 manifest(등대·`standalone`·시작 주소 `/`), 임시 아이콘(J1) 192·512·마스커블·`apple-touch-icon`, S1 설치 안내 줄(안드로이드는 [추가] 버튼, 아이폰은 공유 → "홈 화면에 추가" 문구). 상협 리뷰 제안 3개(description, `apple-mobile-web-app-capable` 빼기, 공유 버튼 문구)를 반영. 서비스 워커 등록·아이콘 확정은 ROADMAP "PWA 설치 설정"에 남김
 - 2026-11-11: CI 추가 (PR #66) — PR과 `main` push마다 GitHub Actions로 웹 build·lint, 서버 build·lint·test·test:e2e를 Node 22로 돌림. 서버 테스트는 DB·카카오·천문연을 가짜로 바꿔 돌아서 비밀값 없이 된다. Node 버전은 `engines` `^22.13.0`으로 고정 — `>=22.13`이면 Vercel이 최신 26으로 배포해서 (ROADMAP "결정된 것"). 옛 "CI 추가"·"Node 버전 통일" 항목
 - 2026-11-10: 승민 PR 네 개 — 낮은 화면(375×667)에서 경로 시트 높이 상한 70dvh → 55dvh로 지도가 약 200 → 300px (#62), 같은 경로 안내 문구를 서버 `sameRoute` 규칙에 맞게 (#61), 웹 README를 Vite 기본 템플릿에서 실행·환경변수·구조·지금 동작으로 (#60). 일몰·일출이 지나도 낮/밤이 바뀌게 다시 판별 (#63, 이 PR) — `lib/daylight.ts`로 기기 시각과 비교하고 다음 일출·일몰·자정·화면 복귀에 다시 판별, 고른 값은 자동 값이 바뀌면 버림. 리뷰 두 가지 중 고른 값이 다음 날 되살아나는 문제는 자동 값이 바뀌면 지우는 것으로, `/api/daylight` 무한 재호출은 1분 간격 재시도로 고침. 옛 "작은 화면"·"같은 경로 안내 문구"·"웹 README 정리"·"앱을 켜 둔 채 일몰·일출" 항목
 - 2026-11-08: 문서 최신화 (PR #59) — 가중치를 설문 결과를 보고 정한다는 내용을 REQUIREMENTS·ERD·안전점수 실험 문서에도 넣음. ROADMAP에 노션에만 있던 웹 README 정리(승민)를 옮기고, A 보강 발표 결정·주차별 일정을 발표 뒤 시제로

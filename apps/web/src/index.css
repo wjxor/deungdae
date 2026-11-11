@@ -1489,7 +1489,11 @@ button {
   cursor: pointer;
 }
 
+/* 펼친 시트는 안에서 스크롤돼서, 낮은 화면(375×667)에서도 [안내 시작]이 늘 보이게 시트 아래에 붙인다 */
 .rs-start {
+  position: sticky;
+  bottom: 0;
+  box-shadow: 0 0 0 10px var(--panel); /* 뒤로 스크롤되는 글자를 가린다 */
   background: var(--cta);
   color: var(--on-cta);
 }

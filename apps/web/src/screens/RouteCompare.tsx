@@ -7,8 +7,8 @@ import NavPanel from '../components/NavPanel'
 import RouteSheet from '../components/RouteSheet'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import { WALK_SPEED_MPS, useSimulatedWalk } from '../hooks/useSimulatedWalk'
-import { routeProgress } from '../lib/progress'
 import { useHeading } from '../hooks/useHeading'
+import { useRouteProgress } from '../hooks/useRouteProgress'
 import { useWatchPosition } from '../hooks/useWatchPosition'
 import { searchRoutes } from '../lib/api'
 import { ApiRequestError } from '../lib/apiError'
@@ -87,19 +87,18 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
   const followed = routes ? routes[sameRoute ? 'safe' : selected] : null
   const walk = useSimulatedWalk(navigating, followed?.path ?? null)
   const watch = WALK_SPEED_MPS > 0 ? walk : real
+  const here = navigating && watch.status === 'ready' ? watch.location : null
   // 지나온 길은 지도에서 지운다. 걷다가 되돌아가도 선이 다시 나오지 않게 가장 멀리 온 길이를 쓴다
-  const [farthestM, setFarthestM] = useState(0)
-  const alongNow = followed && navigating && watch.status === 'ready' ? routeProgress(watch.location, followed.path).alongM : 0
-  if (alongNow > farthestM) setFarthestM(alongNow)
-  const alongM = navigating ? farthestM : 0
-  const heading = useHeading(navigating && watch.status === 'ready' ? watch.location : null)
+  const progress = useRouteProgress(here, followed?.path ?? null)
+  const alongM = progress?.alongM ?? 0
+  const heading = useHeading(here)
 
   return (
     <main className="map-home route-compare" data-mode={mode}>
       <div className="map-area">
         <KakaoMap
-          center={navigating && watch.status === 'ready' ? watch.location : origin}
-          myLocation={navigating && watch.status === 'ready' ? watch.location : myLocation}
+          center={here ?? origin}
+          myLocation={here ?? myLocation}
           pin={destination.location}
           facilityVisible={NO_FACILITIES}
           heading={heading}
@@ -108,7 +107,8 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
 
         <header className="top">
           <div className="route-head">
-            <button type="button" className="back" aria-label="뒤로" onClick={onBack}>
+            {/* 이동 중에는 [안내 종료]처럼 경로 비교로 돌아간다 (PR #65 리뷰) */}
+            <button type="button" className="back" aria-label="뒤로" onClick={navigating ? () => setNavigating(false) : onBack}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" />
               </svg>
@@ -129,7 +129,7 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
       </div>
 
       {routes && navigating ? (
-        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} onStop={() => { setNavigating(false); setFarthestM(0) }} onArrived={onArrived} />
+        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} progress={progress} onStop={() => setNavigating(false)} onArrived={onArrived} />
       ) : routes ? (
         <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} onStart={() => setNavigating(true)} />
       ) : (

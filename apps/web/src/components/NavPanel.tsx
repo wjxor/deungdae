@@ -1,26 +1,20 @@
 import type { Route } from '../../../../shared/types'
+import { OFF_ROUTE_M, type NavProgress } from '../hooks/useRouteProgress'
 import type { WatchState } from '../hooks/useWatchPosition'
-import { distanceM } from '../lib/geo'
-import { routeProgress } from '../lib/progress'
 import { formatDistance, formatDuration } from '../lib/routeSummary'
 
 type Props = {
   route: Route
   watch: WatchState
+  progress: NavProgress | null // 위치를 아직 못 받았으면 null
   onStop: () => void // 도중에 안내 종료: 경로 비교 화면으로
   onArrived: () => void // 도착 뒤 닫기: 이동이 끝났으니 지도 홈으로
 }
 
-const OFF_ROUTE_M = 50 // 경로에서 이만큼 떨어지면 벗어났다고 알린다 (GPS 흔들림보다 크게)
-const ARRIVE_M = 30 // 도착지에서 이만큼 안이면 도착으로 본다
-
 // 이동 중 화면의 하단 패널. 받아 둔 경로를 따라 남은 거리·시간만 보여 주고 서버는 부르지 않는다.
 // 경로를 벗어나도 다시 찾지 않고 알리기만 한다 (경로 호출은 사용자가 "경로 찾기"를 눌렀을 때만, CLAUDE.md)
-export default function NavPanel({ route, watch, onStop, onArrived }: Props) {
-  const here = watch.status === 'ready' ? watch.location : null
-  const end = route.path[route.path.length - 1]
-  const arrived = here !== null && distanceM(here, end) <= ARRIVE_M
-  const progress = here ? routeProgress(here, route.path) : null
+export default function NavPanel({ route, watch, progress, onStop, onArrived }: Props) {
+  const arrived = progress?.arrived === true
   const off = progress !== null && progress.offRouteM > OFF_ROUTE_M
 
   let body
@@ -33,8 +27,9 @@ export default function NavPanel({ route, watch, onStop, onArrived }: Props) {
   } else if (!progress) {
     body = <p className="nav-msg" role="status">현재 위치를 찾는 중이에요</p>
   } else {
-    const remainingM = route.distanceM * progress.remainingFraction
-    const remainingS = route.durationS * progress.remainingFraction
+    const left = progress.totalM > 0 ? Math.max(0, 1 - progress.alongM / progress.totalM) : 1
+    const remainingM = route.distanceM * left
+    const remainingS = route.durationS * left
     body = (
       <>
         {off && (

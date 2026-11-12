@@ -44,7 +44,7 @@ Claude Code를 주로 쓰는 사람은 고상협. 백엔드·DB 작업이 기본
 
 프론트와 백엔드가 같은 언어이므로 API 응답 타입은 `shared/types.ts` 하나를 양쪽이 import한다.
 안심경로는 **B 기본 + A 보강**으로 계산한다 (ROADMAP "결정된 것"). A 보강을 쓰는 조건과 경유지 개수는 미결정이다 (ROADMAP "팀에서 정해야 할 것").
-서버 배포처는 미결정이다 (ROADMAP "팀에서 정해야 할 것").
+웹·서버는 Vercel 프로젝트 둘로 배포한다 — 서버 `https://deungdae-api.vercel.app/api`, 웹 `https://deungdae-map.vercel.app` (ROADMAP "결정된 것"). main에 merge하면 자동 배포된다.
 도보 경로는 카카오 도보 API(`/v2/routing/walk`)를 쓰고, 품질 문제가 생기면 경로 호출 부분만 티맵 보행자 API로 교체한다(지도 화면은 카카오 SDK 유지). 경로 호출은 별도 서비스 모듈로 분리해 교체가 쉽게.
 
 ## 개발 도구

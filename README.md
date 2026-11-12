@@ -70,6 +70,20 @@ node --env-file=.env scripts/kakao-walk-test.ts "반석역" "노은도서관"
 node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
 ```
 
+## 배포
+
+웹·서버 모두 Vercel(상협 계정, Hobby 무료)에 이 저장소를 연결해 두었다 (2026-11-11, ROADMAP "결정된 것"). `main`에 merge하면 자동으로 다시 배포된다.
+
+| 프로젝트 | 주소 | Root Directory | Preset | 환경변수 |
+|---|---|---|---|---|
+| 서버 `deungdae-api` | https://deungdae-api.vercel.app/api | `apps/api` | NestJS (함수 지역 서울 `icn1`) | `DATABASE_URL`·`KAKAO_REST_API_KEY`·`KASI_API_KEY`·`CORS_ORIGINS` |
+| 웹 `deungdae-map` | https://deungdae-map.vercel.app | `apps/web` | Vite | `VITE_KAKAO_JS_KEY`·`VITE_API_BASE_URL` |
+
+- 환경변수 값은 Vercel 프로젝트 설정에만 넣고 저장소에는 두지 않는다. `CORS_ORIGINS`에는 배포한 웹 주소를 넣는다 (쉼표로 여러 개)
+- PR마다 Vercel이 미리보기 주소를 PR에 댓글로 단다. 미리보기는 Vercel 로그인이 필요해서 지금은 상협 계정으로만 열린다
+- Node 버전은 `package.json`의 `engines`(`^22.13.0`)를 따른다. Vercel 프로젝트 설정보다 이 값이 우선한다
+- 웹 주소는 카카오 JavaScript SDK 도메인(`docs/EXTERNAL_APIS.md`)과 서버 `CORS_ORIGINS`에 등록돼 있다. 웹 PR 미리보기 주소와 처음 만들 때 붙은 `deungdae-umber.vercel.app`은 등록하지 않아서 지도·검색이 안 된다. 화면은 실제 주소나 로컬에서 확인한다
+
 ## 협업 규칙
 
 - `main` 직접 push 금지. 기능 브랜치에서 작업하고 PR로 합친다 (1명 이상 확인 후 merge)
@@ -80,6 +94,7 @@ node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
 - merge는 **squash만** 허용하고, squash 커밋 제목은 PR 제목이다 (2026-10-22 상협, 저장소 Settings → General → Pull Requests). PR 하나가 `main`의 커밋 하나가 된다
   - 기본값은 커밋이 1개인 PR이면 그 커밋 메시지를 제목으로 써서 #12가 `Update .gitignore`로 들어갔고, #25는 이 설정 전이라 merge commit으로 들어가 브랜치 커밋(`Add files via upload`)이 그대로 남았다
 - 머지된 PR의 브랜치는 GitHub가 자동으로 삭제한다 (저장소 설정 "Automatically delete head branches")
+- PR마다 GitHub Actions `CI`(`.github/workflows/ci.yml`)가 웹 build·lint, 서버 build·lint·test·test:e2e를 Node 22로 돌린다. `main`에 merge된 뒤에도 한 번 더 돈다. 서버 테스트는 DB와 카카오·천문연 호출을 가짜로 바꿔 돌아서 비밀값이 필요 없다
 - 커밋 메시지에 요구사항 ID를 붙인다: `FR-004 최단경로 API 구현`. PR 제목이 `main`의 커밋 메시지가 되므로 PR 제목에도 붙인다
 - **API 키·DB 접속 정보는 절대 커밋하지 않는다.** `.env`는 `.gitignore`에 들어 있다
 - 좌표는 항상 `{ lat, lng }` 객체, 좌표계는 WGS84(EPSG:4326)

@@ -18,6 +18,8 @@ describe('GET /api/health (e2e)', () => {
   let app: INestApplication<App>;
 
   beforeEach(async () => {
+    // 로컬 .env에 CORS_ORIGINS가 있어도 같은 결과가 나오게 비운다
+    vi.stubEnv('CORS_ORIGINS', '');
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
       .useValue(fakePrisma)
@@ -28,6 +30,7 @@ describe('GET /api/health (e2e)', () => {
   });
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await app.close();
   });
 
@@ -41,6 +44,54 @@ describe('GET /api/health (e2e)', () => {
   });
 
   it('프론트 개발 서버(localhost:5173)에서 부를 수 있다', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/health')
+      .set('Origin', 'http://localhost:5173')
+      .expect(200);
+    expect(res.headers['access-control-allow-origin']).toBe(
+      'http://localhost:5173',
+    );
+  });
+
+  it('CORS_ORIGINS에 없는 주소에는 허용 헤더를 주지 않는다', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/health')
+      .set('Origin', 'https://deungdae-map.vercel.app')
+      .expect(200);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+});
+
+describe('CORS_ORIGINS (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeEach(async () => {
+    vi.stubEnv('CORS_ORIGINS', 'https://deungdae-map.vercel.app/');
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(PrismaService)
+      .useValue(fakePrisma)
+      .compile();
+    app = moduleRef.createNestApplication();
+    configureApp(app);
+    await app.init();
+  });
+
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    await app.close();
+  });
+
+  it('CORS_ORIGINS에 적은 배포 주소에서 부를 수 있다', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/health')
+      .set('Origin', 'https://deungdae-map.vercel.app')
+      .expect(200);
+    expect(res.headers['access-control-allow-origin']).toBe(
+      'https://deungdae-map.vercel.app',
+    );
+  });
+
+  it('개발 서버도 그대로 열려 있다', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/health')
       .set('Origin', 'http://localhost:5173')

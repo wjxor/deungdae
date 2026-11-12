@@ -144,15 +144,18 @@ export function useAuth() {
       // 돌아온 게 아니면 저장해 둔 토큰이 아직 쓸 수 있는지 서버에 확인한다
       const saved = readSession()
       if (!saved) return
+      // 응답을 기다리는 사이 로그아웃·탈퇴했거나 다른 로그인으로 바뀌었으면 늦게 온 응답을 버린다.
+      // 버리지 않으면 공용 기기에서 로그아웃한 앞 사람의 로그인이 되살아난다
+      const stillSaved = () => readSession()?.accessToken === saved.accessToken
       fetchMe(saved.accessToken).then(
         ({ user }) => {
-          if (!active) return
+          if (!active || !stillSaved()) return
           const next = { ...saved, user } // 카카오 닉네임이 바뀌었으면 최신 값으로
           saveSession(next)
           setSession(next)
         },
         (e: unknown) => {
-          if (!active) return
+          if (!active || !stillSaved()) return
           // 만료·탈퇴면 비회원으로. 연결 실패(오프라인 등)면 저장값을 그대로 둔다
           if (e instanceof ApiRequestError && e.code === 'UNAUTHORIZED') {
             clearSession()

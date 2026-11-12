@@ -59,7 +59,7 @@ apps/web/src/
 
 ## 지금 동작
 
-- **로그인**: 서버가 없어서 개발 서버(`npm run dev`)에서만 카카오 버튼이 가짜 회원("테스트 회원")으로 로그인된다. 배포 빌드는 "준비 중" 안내가 나온다. 네이버·구글 버튼은 막혀 있다. 서버 소셜 로그인이 붙으면 `lib/auth.ts`의 `requestSocialLogin`·`requestDeleteAccount`만 바꾼다 (ROADMAP "서버 소셜 로그인")
+- **로그인**: 카카오 로그인은 서버(`/api/auth/*`, API.md 5장)가 처리한다. [카카오로 시작하기]를 누르면 `lib/kakaoSdk.ts`가 카카오 JS SDK(JS 키)로 동의 화면에 보내고, 돌아오면 `lib/auth.ts`가 인가 코드를 서버에 넘겨 받은 로그인 토큰을 localStorage(`deungdae.auth`)에 둔다. 카카오에 등록한 리다이렉트 URI가 `http://localhost:5173/`과 배포 주소라 로컬은 5173 포트에서만, PR 미리보기 주소에서는 안 된다. 네이버·구글 버튼은 막혀 있다
 - **즐겨찾기**: 앱을 켜 둔 동안 메모리에만 있다. 새로고침하면 사라진다
 - **PWA**: manifest·서비스 워커·앱 아이콘은 아직 없다 (ROADMAP "PWA 설치 설정")
 

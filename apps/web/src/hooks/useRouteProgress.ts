@@ -5,6 +5,7 @@ import { routeProgress } from '../lib/progress'
 
 export const OFF_ROUTE_M = 50 // 경로에서 이만큼 떨어지면 벗어났다고 알린다 (GPS 흔들림보다 크게)
 const ARRIVE_M = 30 // 도착지에서 이만큼 안이면 도착으로 본다
+const ARRIVE_LEFT_M = 50 // 남은 길이 이만큼 안일 때만 도착으로 본다 (길 건너가 도착지면 출발하자마자 30m 안이라서)
 const BACK_M = 30 // 지금까지 온 곳보다 이만큼 뒤까지 찾는다 (GPS가 조금 뒤로 튀어도 잡히게)
 const AHEAD_M = 100 // 지금까지 온 곳보다 이만큼 앞까지 찾는다 (위치는 1초마다 오고 ?walk=30도 한 번에 30m)
 const CATCH_UP_M = 20 // 근처에서 못 찾았는데 경로 다른 곳에 이만큼 가까우면 거기까지 간 것으로 본다 (GPS가 한동안 끊겼다 잡힌 경우)
@@ -26,11 +27,13 @@ export function advance(track: Track, location: LatLng, path: LatLng[]): NavProg
   if (near.offRouteM <= OFF_ROUTE_M) along = near.alongM
   else if (whole.offRouteM <= CATCH_UP_M) along = whole.alongM
 
+  const alongM = Math.max(track.farthestM, along)
+  const atEnd = distanceM(location, path[path.length - 1]) <= ARRIVE_M && whole.totalM - alongM <= ARRIVE_LEFT_M
   return {
-    alongM: Math.max(track.farthestM, along),
+    alongM,
     totalM: whole.totalM,
     offRouteM: whole.offRouteM,
-    arrived: track.arrived || distanceM(location, path[path.length - 1]) <= ARRIVE_M,
+    arrived: track.arrived || atEnd,
   }
 }
 

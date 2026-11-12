@@ -10,7 +10,7 @@ export type Progress = {
 const M_PER_LAT = 110540
 
 // 내 위치를 경로(꺾은선)에 가장 가까운 점으로 옮겨 놓고, 거기서 끝까지 남은 비율과 경로에서 떨어진 거리를 구한다.
-// range를 주면 경로 시작부터 그 길이 범위에 걸친 선분만 본다. 경로가 되돌아오는 모양(ㄷ자 등)에서 GPS 오차로
+// range를 주면 경로 시작부터 그 길이 범위 안의 부분만 본다. 경로가 되돌아오는 모양(ㄷ자 등)에서 GPS 오차로
 // 아직 안 간 뒤쪽 길에 잡히지 않게, 이동 중에는 지금까지 온 곳 근처만 찾는다. 범위에 선분이 없으면 offRouteM이 Infinity.
 // 거리 계산은 distanceToPathM(geo.ts)과 같은 평면 근사다 (몇 km 안의 오차는 1m보다 훨씬 작다)
 export function routeProgress(p: LatLng, path: LatLng[], range?: { fromM: number; toM: number }): Progress {
@@ -40,8 +40,11 @@ export function routeProgress(p: LatLng, path: LatLng[], range?: { fromM: number
     const dx = b.x - a.x
     const dy = b.y - a.y
     const len2 = dx * dx + dy * dy
-    // 내 위치(원점)에서 선분 ab에 내린 수선의 발. 선분 밖이면 가까운 끝점
-    const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, -(a.x * dx + a.y * dy) / len2))
+    // 내 위치(원점)에서 선분 ab에 내린 수선의 발. 선분 밖이면 가까운 끝점.
+    // range가 있으면 선분 중 범위 안 부분으로 자른다 (긴 선분이 범위에 조금만 걸쳐도 통째로 들어가지 않게)
+    const tMin = range && len2 > 0 ? Math.max(0, (range.fromM - before) / lens[i - 1]) : 0
+    const tMax = range && len2 > 0 ? Math.min(1, (range.toM - before) / lens[i - 1]) : 1
+    const t = len2 === 0 ? 0 : Math.max(tMin, Math.min(tMax, -(a.x * dx + a.y * dy) / len2))
     const d = Math.hypot(a.x + t * dx, a.y + t * dy)
     if (d < best) {
       best = d

@@ -1,7 +1,10 @@
 import type {
+  AuthResponse,
   DaylightResponse,
   FacilitiesResponse,
+  KakaoLoginRequest,
   LatLng,
+  MeResponse,
   PlacesResponse,
   RouteSearchRequest,
   RouteSearchResponse,
@@ -62,4 +65,23 @@ export function searchRoutes(req: RouteSearchRequest, signal?: AbortSignal): Pro
     body: JSON.stringify(req),
     signal,
   })
+}
+
+// POST /api/auth/kakao (API.md 5장). 카카오에서 받은 인가 코드와 그때 쓴 redirectUri를 넘기고 로그인 토큰을 받는다
+export function loginWithKakao(req: KakaoLoginRequest): Promise<AuthResponse> {
+  return request('/auth/kakao', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+}
+
+// GET /api/auth/me (API.md 5장). 저장해 둔 토큰이 아직 쓸 수 있는지 확인한다
+export function fetchMe(token: string): Promise<MeResponse> {
+  return request('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+}
+
+// DELETE /api/auth/me (API.md 5장). 탈퇴 — 204라 본문이 없다 (request는 빈 본문을 null로 넘긴다)
+export async function deleteMe(token: string): Promise<void> {
+  await request<null>('/auth/me', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
 }

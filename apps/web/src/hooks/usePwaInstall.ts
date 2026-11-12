@@ -10,7 +10,8 @@ export type PwaInstall =
 
 const DISMISS_KEY = 'deungdae.installHintDismissed'
 
-function isStandalone() {
+// 홈 화면에 설치한 앱으로 열었는지. 카카오 로그인도 이 값으로 카카오톡 앱을 거칠지 정한다 (lib/auth.ts)
+export function isStandalone() {
   return window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
 }
 

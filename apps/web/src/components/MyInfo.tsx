@@ -34,7 +34,7 @@ export default function MyInfo({ user, onLogout, onDelete, onDeleted, onClose }:
             <p className="myinfo-warn">탈퇴하면 계정과 즐겨찾기가 지워져요. 되돌릴 수 없어요.</p>
             {failed && (
               <p className="myinfo-warn" role="status">
-                탈퇴는 아직 준비 중이에요.
+                탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.
               </p>
             )}
             <div className="myinfo-acts">

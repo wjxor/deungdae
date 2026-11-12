@@ -23,7 +23,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
 
   // 화면 전환을 브라우저 기록에 남겨서 뒤로가기가 앱 밖이 아니라 앞 화면으로 돌아가게 한다.
-  // 앱은 S1에서 시작하고, 로그인 화면은 S1의 [로그인]으로 들어간다 (로그인 상태가 메모리에만 있어 새로고침마다 로그인 화면이 먼저 나오지 않게)
+  // 앱은 S1에서 시작하고, 로그인 화면은 S1의 [로그인]으로 들어간다. 카카오에서 돌아와 로그인이 실패했을 때만 로그인 화면을 바로 보여 준다
   const go = (next: Screen, how: 'push' | 'replace' = 'push') => {
     if (how === 'push') history.pushState({ screen: next }, '')
     else history.replaceState({ screen: next }, '')
@@ -70,16 +70,17 @@ export default function App() {
     go('route')
   }
 
-  // 로그인하면 회원, "로그인 없이 시작하기"면 비회원(auth.user가 null)으로 S1에 돌아간다. 로그인 화면은 S1 위에 쌓인 화면이라 뒤로 간다
-  if (screen === 'login') {
+  // 로그인 화면. [카카오로 시작하기]를 누르면 페이지가 카카오로 넘어갔다가 앱 첫 화면으로 돌아온다 (lib/auth.ts).
+  // S1의 [로그인]으로 들어왔으면 S1 위에 쌓인 화면이라 뒤로 가고, 카카오에서 돌아와 실패해 열린 것이면 안내만 지우고 S1으로
+  if (screen === 'login' || auth.loginError) {
     return (
       <Login
-        onLogin={async (provider) => {
-          const ok = await auth.login(provider)
-          if (ok) history.back()
-          return ok
+        error={auth.loginError}
+        onLogin={(provider) => auth.login(provider)}
+        onGuest={() => {
+          auth.clearLoginError()
+          if (screen === 'login') history.back()
         }}
-        onGuest={() => history.back()}
       />
     )
   }

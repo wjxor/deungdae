@@ -25,3 +25,8 @@ export function externalApiError(message: string): ApiException {
     message,
   );
 }
+
+/** 401 UNAUTHORIZED — 토큰 없음·만료, 카카오가 인가 코드를 거부함 */
+export function unauthorized(message: string): ApiException {
+  return new ApiException(HttpStatus.UNAUTHORIZED, 'UNAUTHORIZED', message);
+}

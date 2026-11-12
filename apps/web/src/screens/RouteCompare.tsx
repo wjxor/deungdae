@@ -3,8 +3,13 @@ import type { LatLng, Mode, Place, Route, RouteSearchRequest, RouteType } from '
 import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import StarIcon from '../components/StarIcon'
+import NavPanel from '../components/NavPanel'
 import RouteSheet from '../components/RouteSheet'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
+import { WALK_SPEED_MPS, useSimulatedWalk } from '../hooks/useSimulatedWalk'
+import { useHeading } from '../hooks/useHeading'
+import { useRouteProgress } from '../hooks/useRouteProgress'
+import { useWatchPosition } from '../hooks/useWatchPosition'
 import { searchRoutes } from '../lib/api'
 import { ApiRequestError } from '../lib/apiError'
 import { NO_FACILITIES } from '../lib/facilityIcon'
@@ -18,6 +23,7 @@ type Props = {
   daylight: ReturnType<typeof useDaylightMode>
   favorite?: { on: boolean; onToggle: () => void } // 회원만. 이 경로(출발지→도착지)를 자주 가는 경로로 담는다
   onBack: () => void
+  onArrived: () => void // 도착하고 닫았을 때. 지도 홈으로 나간다
 }
 
 type State =
@@ -34,7 +40,7 @@ const SLOW_MS = 3000
 const FALLBACK_MESSAGE = '경로를 찾지 못했어요. 잠시 후 다시 시도해 주세요.'
 
 // S3 경로 비교 (FR-007). 들어올 때 경로를 한 번만 받고, 경로 선택과 낮/밤 전환은 받은 경로의 표시만 바꾼다.
-export default function RouteCompare({ origin, originLabel, myLocation, destination, daylight, favorite, onBack }: Props) {
+export default function RouteCompare({ origin, originLabel, myLocation, destination, daylight, favorite, onBack, onArrived }: Props) {
   const { mode, sunrise, sunset, setMode } = daylight
 
   // 요청은 들어올 때 값으로 한 번만 보낸다. 이후 낮/밤을 바꿔도 다시 부르지 않는다
@@ -44,6 +50,9 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
   // 사용자가 시트에서 고른 경로. 없으면 낮/밤에 따른 추천을 보여 주고, 낮/밤을 바꾸면 추천으로 돌아간다
   const [picked, setPicked] = useState<RouteType | null>(null)
   const selected = picked ?? recommendedOf(mode)
+  // 이동 중 화면. 받아 둔 경로를 따라 내 위치만 갱신하고 서버는 다시 부르지 않는다
+  const [navigating, setNavigating] = useState(false)
+  const real = useWatchPosition(navigating && WALK_SPEED_MPS === 0)
 
   useEffect(() => {
     // 화면을 떠나면(뒤로·취소) 늦게 온 응답은 버린다
@@ -74,21 +83,32 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
 
   const routes = state.status === 'ready' ? state.routes : null
   const sameRoute = state.status === 'ready' && state.sameRoute
+  // 개발 서버에서 ?walk를 붙이면 실제 위치 대신 경로를 따라 걷는 가짜 위치를 쓴다
+  const followed = routes ? routes[sameRoute ? 'safe' : selected] : null
+  const walk = useSimulatedWalk(navigating, followed?.path ?? null)
+  const watch = WALK_SPEED_MPS > 0 ? walk : real
+  const here = navigating && watch.status === 'ready' ? watch.location : null
+  // 지나온 길은 지도에서 지운다. 걷다가 되돌아가도 선이 다시 나오지 않게 가장 멀리 온 길이를 쓴다
+  const progress = useRouteProgress(here, followed?.path ?? null)
+  const alongM = progress?.alongM ?? 0
+  const heading = useHeading(here)
 
   return (
     <main className="map-home route-compare" data-mode={mode}>
       <div className="map-area">
         <KakaoMap
-          center={origin}
-          myLocation={myLocation}
+          center={here ?? origin}
+          myLocation={here ?? myLocation}
           pin={destination.location}
           facilityVisible={NO_FACILITIES}
-          route={routes ? { routes, selected, sameRoute, mode } : undefined}
+          heading={heading}
+          route={routes ? { routes, selected, sameRoute, mode, navigating, alongM } : undefined}
         />
 
         <header className="top">
           <div className="route-head">
-            <button type="button" className="back" aria-label="뒤로" onClick={onBack}>
+            {/* 이동 중에는 [안내 종료]처럼 경로 비교로 돌아간다 (PR #65 리뷰) */}
+            <button type="button" className="back" aria-label="뒤로" onClick={navigating ? () => setNavigating(false) : onBack}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 5l-7 7 7 7" />
               </svg>
@@ -103,13 +123,15 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
             )}
           </div>
           <div className="toprow">
-            <ModeToggle mode={mode} sunrise={sunrise} sunset={sunset} onChange={changeMode} />
+            {!navigating && <ModeToggle mode={mode} sunrise={sunrise} sunset={sunset} onChange={changeMode} />}
           </div>
         </header>
       </div>
 
-      {routes ? (
-        <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} />
+      {routes && navigating ? (
+        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} progress={progress} onStop={() => setNavigating(false)} onArrived={onArrived} />
+      ) : routes ? (
+        <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} onStart={() => setNavigating(true)} />
       ) : (
         <section className="sheet" aria-label="경로 비교">
           {state.status === 'loading' && (

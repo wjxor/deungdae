@@ -48,6 +48,14 @@ export default function App() {
     go('home', 'replace')
   }
 
+  // 도착해서 닫으면 이동이 끝난 것이다. 도착지·출발지를 비우고 지도 홈으로 돌아간다 (기록은 홈 → 출발지 → 경로 두 칸 앞)
+  const finishTrip = () => {
+    setDestination(null)
+    setPickedOrigin(null)
+    setTrip(null)
+    history.go(-2)
+  }
+
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   const origin: Origin | null = pickedOrigin
     ? { location: pickedOrigin.location, label: pickedOrigin.name }
@@ -93,6 +101,7 @@ export default function App() {
             : undefined
         }
         onBack={() => history.back()}
+        onArrived={finishTrip}
       />
     )
   }

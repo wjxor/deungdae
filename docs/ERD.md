@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-11-04 (`users.email` null 허용, CCTV·안심벨 지점으로 세기) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-11-13 (`users` 테이블 생성 — 카카오 로그인) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -64,11 +64,10 @@ erDiagram
     }
     users {
         int id PK
-        text email UK
-        text password_hash
+        text provider "kakao (naver, google은 나중에)"
+        text provider_id "소셜 계정 ID"
         text nickname
-        text provider "email, kakao ..."
-        text provider_id
+        text email "카카오는 null"
         timestamptz created_at
     }
     reports {
@@ -89,7 +88,7 @@ erDiagram
 | Must | `facilities` | FR-002·006 | `GET /facilities`, `POST /routes/search` |
 | Must | `route_cache` | FR-004·006·007 | `POST /routes/search` |
 | Must | `sun_times` | FR-005 | `GET /daylight` |
-| Could | `users` | FR-011 | `/auth/*` |
+| Could | `users` | FR-011 | `/auth/kakao`, `/auth/me` (2026-11-13 생성) |
 | Could | `reports` | FR-009·010 | `/reports`, `POST /routes/search` (점수 감점) |
 
 `GET /places`는 카카오 로컬 API 결과를 그대로 돌려주므로 테이블이 없다.
@@ -213,13 +212,16 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
-| `id` | integer | PK | API `User.id` |
-| `email` | text | UNIQUE | 카카오는 사용자가 동의하지 않으면 없어서 null 허용 (2026-11-04, PR #48 — API `User.email`) |
-| `password_hash` | text | | bcrypt. 소셜 로그인 사용자는 null |
-| `nickname` | text | NOT NULL | |
-| `provider` | text | NOT NULL, 기본 `email` | 소셜 로그인 대비 |
-| `provider_id` | text | (`provider`, `provider_id`) UNIQUE | 소셜 계정 ID |
+| `id` | integer | PK | API `User.id`, 로그인 토큰의 `sub` |
+| `provider` | text | NOT NULL | `kakao`. 네이버·구글은 `naver`·`google`로 같은 구조 (`shared/types.ts`의 `SocialProvider`) |
+| `provider_id` | text | NOT NULL, (`provider`, `provider_id`) UNIQUE | 소셜 계정 ID. 카카오 회원번호는 Long이라 JS 숫자로 다루면 끝자리가 틀어질 수 있어 문자열로 둔다 |
+| `nickname` | text | NOT NULL | 로그인할 때마다 카카오 닉네임으로 고친다. 비면 "등대 회원" |
+| `email` | text | NULL 허용 | 카카오 이메일은 비즈 앱 전용이라 받지 않아 늘 null (API `User.email`). 나중에 네이버·구글에서 같은 이메일이 올 수 있어 UNIQUE를 두지 않는다 |
 | `created_at` | timestamptz | 기본 now() | |
+
+- 2026-11-13 마이그레이션 `add_users`로 만들었다. 다른 테이블처럼 RLS를 켰다 (정책 없음)
+- 사람은 (`provider`, `provider_id`)로 구분한다. 같은 사람이 카카오와 구글로 각각 로그인하면 회원이 둘이다. 한 사람으로 묶어야 하면 `user_identities`(provider, provider_id)로 나누는 마이그레이션을 한다
+- 소셜 로그인만 있어 `password_hash`는 두지 않았고 `provider` 기본값 `email`도 없앴다 (초안에는 있었음). 이메일 가입을 만들게 되면 그때 더한다
 
 ### `reports` — 위험 제보 (Could, FR-009·010)
 

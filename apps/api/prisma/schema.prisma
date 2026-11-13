@@ -1,4 +1,4 @@
-// 등대 DB 스키마. docs/ERD.md의 Must 테이블 5개 (Could인 users·reports는 13주차에 추가)
+// 등대 DB 스키마. docs/ERD.md의 Must 테이블 5개 + users(FR-011, 2026-11-12 카카오 로그인). reports는 13주차
 // 테이블·컬럼은 snake_case, 모델·필드는 PascalCase·camelCase (@@map·@map)
 // DB 접속 주소는 이 파일이 아니라 prisma.config.ts에 있다 (Prisma 7)
 
@@ -92,4 +92,18 @@ model SunTime {
 
   @@id([date, region])
   @@map("sun_times")
+}
+
+// 회원 (FR-011). 소셜 로그인만 있어서 비밀번호 컬럼은 두지 않는다 (이메일 가입은 화면이 없어 만들지 않음)
+// 사람은 (provider, provider_id)로 구분한다. 닉네임은 겹쳐도 되고 이메일은 서비스마다 같을 수 있어 UNIQUE를 두지 않는다
+model User {
+  id         Int      @id @default(autoincrement())
+  provider   String // kakao (네이버·구글은 나중에 같은 구조로)
+  providerId String   @map("provider_id") // 카카오 회원번호. Long이라 JS 숫자로 다루면 끝자리가 틀어질 수 있어 문자열로 둔다
+  nickname   String
+  email      String? // 카카오는 이메일 동의항목을 받지 않아 늘 null (비즈 앱 전용)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([provider, providerId])
+  @@map("users")
 }

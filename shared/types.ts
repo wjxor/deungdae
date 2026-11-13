@@ -95,3 +95,10 @@ export type SocialProvider = "kakao" | "naver" | "google";
 
 // 카카오는 사용자가 동의하지 않으면 이메일을 주지 않아 email이 null일 수 있다
 export type User = { id: number; nickname: string; email: string | null; provider: SocialProvider };
+
+// 카카오 로그인 (API.md 5장, FR-011). 웹이 카카오에서 받은 인가 코드와, 그때 쓴 redirectUri를 서버에 넘긴다
+export type KakaoLoginRequest = { code: string; redirectUri: string };
+
+export type AuthResponse = { user: User; accessToken: string };
+
+export type MeResponse = { user: User };

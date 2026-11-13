@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-11-12 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-11-13 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
 Base URL: `/api` (배포 `https://deungdae-api.vercel.app/api`) · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -20,7 +20,7 @@ Base URL: `/api` (배포 `https://deungdae-api.vercel.app/api`) · 형식: JSON 
 | 400 | OUT_OF_AREA | 대상 지역(대전광역시) 밖 좌표 |
 | 400 | TOO_FAR | 출발지와 도착지가 도보 경로로 찾기에 너무 멂 (카카오 `TOO_FAR_AWAY`) |
 | 400 | BBOX_TOO_LARGE | 시설 조회 범위(`bbox`)가 너무 넓음 |
-| 401 | UNAUTHORIZED | 토큰 없음·만료 |
+| 401 | UNAUTHORIZED | 토큰 없음·만료, 카카오가 인가 코드를 거부함 (5장) |
 | 404 | ORIGIN_UNREACHABLE | 출발지 근처에 걸을 수 있는 길이 없음 (카카오 `START_LINK_NOT_FOUND`) |
 | 404 | DESTINATION_UNREACHABLE | 도착지 근처에 걸을 수 있는 길이 없음 (카카오 `END_LINK_NOT_FOUND`) |
 | 404 | ROUTE_NOT_FOUND | 그 밖의 경로 계산 실패 (카카오 `ROUTE_RESULT_NOT_FOUND` 등) |
@@ -127,8 +127,15 @@ export type Report = {
 
 export type SocialProvider = "kakao" | "naver" | "google";
 
-// 카카오는 사용자가 동의하지 않으면 이메일이 없다 (PR #48, 2026-11-04)
+// 카카오는 이메일 동의항목을 받지 않아 email이 null이다 (PR #48, 2026-11-04 · 비즈 앱 전용이라 닉네임만, 2026-11-12)
 export type User = { id: number; nickname: string; email: string | null; provider: SocialProvider };
+
+// 카카오 로그인 (5장, FR-011). 웹이 카카오에서 받은 인가 코드와, 그때 쓴 redirectUri를 서버에 넘긴다
+export type KakaoLoginRequest = { code: string; redirectUri: string };
+
+export type AuthResponse = { user: User; accessToken: string };
+
+export type MeResponse = { user: User };
 ```
 
 ## 1. 상태 확인
@@ -272,25 +279,42 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 
 ## 5. 인증
 
-소셜 로그인은 서버가 처리하고 카카오부터 붙인다 (2026-11-04 상협, PR #48 댓글 — ROADMAP "지금 할 일"의 서버 소셜 로그인). 아래 이메일·비밀번호 명세는 초안 그대로이고 서버를 만들 때 이 장을 고친다 (탈퇴 `DELETE /api/auth/me` 등). `User`는 로그인 화면(PR #48)에 맞춰 `email` null 허용·`provider`로 먼저 바꿨다 (공용 타입).
+카카오 로그인을 서버가 처리한다 (FR-011, 2026-11-13). 웹이 카카오 JS SDK(JS 키)로 인가 코드를 받아 넘기면, 서버가 REST 키와 클라이언트 시크릿으로 카카오 토큰을 받고 회원을 찾거나 만들어 우리 로그인 토큰을 준다. REST 키가 웹 주소창·번들에 나오지 않게 하려고 이 흐름을 골랐다 (노션 "서버 카카오 로그인 설계 (FR-011)"). 네이버·구글은 같은 구조로 나중에 붙인다. 이메일·비밀번호 가입은 화면이 없어 만들지 않는다 (초안의 `signup`·`login`은 뺐다).
 
-### POST /api/auth/signup
-```json
-{ "email": "a@b.com", "password": "********", "nickname": "상협" }
-```
-→ 201 `{ "user": User, "accessToken": "..." }`
+- 로그인 토큰은 HS256 JWT, `sub`는 회원 id, 유효 기간 7일. 리프레시 토큰은 없어 지나면 다시 로그인한다. 카카오 토큰은 저장하지 않는다
+- 로그아웃은 서버를 부르지 않고 웹이 토큰을 버린다. 버린 토큰도 7일 안에는 쓸 수 있다 (토큰을 서버에 저장하지 않아서)
+- 웹은 `{ accessToken, user }`를 localStorage에 두고, 앱을 다시 열면 `GET /auth/me`로 확인한다
 
-### POST /api/auth/login
+### POST /api/auth/kakao
+요청 `KakaoLoginRequest`
 ```json
-{ "email": "a@b.com", "password": "********" }
+{ "code": "카카오가 준 인가 코드", "redirectUri": "https://deungdae-map.vercel.app/" }
 ```
-→ 200 `{ "user": User, "accessToken": "..." }`
+→ 200 `AuthResponse`
+```json
+{ "user": { "id": 5, "nickname": "민수", "email": null, "provider": "kakao" }, "accessToken": "eyJ..." }
+```
+
+- `redirectUri`는 웹이 카카오 인가 요청에 쓴 값과 같아야 하고, 허용된 웹 주소(`http://localhost:5173`, 서버 환경변수 `CORS_ORIGINS`)의 루트(`/`)만 받는다. 카카오 콘솔에 등록한 리다이렉트 URI도 이 두 개다 (EXTERNAL_APIS)
+- 카카오 회원번호로 회원을 찾고, 없으면 만들고, 있으면 닉네임을 최신 값으로 고친다. 닉네임이 비면 "등대 회원"
+- 동의항목은 닉네임만이라 `email`은 늘 null이다. 카카오 이메일은 비즈 앱 전용이다 (EXTERNAL_APIS)
+- 회원을 새로 만들 수도 있지만 로그인이라 201이 아니라 200
 
 ### GET /api/auth/me  (인증 필요)
-→ 200 `{ "user": User }`
+→ 200 `MeResponse`
+```json
+{ "user": { "id": 5, "nickname": "민수", "email": null, "provider": "kakao" } }
+```
 
-- 비밀번호는 bcrypt 해시 저장. 토큰은 JWT, 만료 7일
-- 프론트는 토큰을 메모리 + localStorage에 보관
+### DELETE /api/auth/me  (인증 필요)
+→ 204 (본문 없음). 탈퇴 — 어드민 키로 카카오 연결을 끊은 뒤 `users` 행을 지운다. 사용자가 카카오에서 이미 연결을 끊었어도(카카오 `-101`) 지운다. 연결 끊기가 실패하면 지우지 않고 502로 답해 다시 시도하게 한다
+
+| HTTP | code | 상황 |
+|---|---|---|
+| 400 | INVALID_INPUT | 본문 형식이 틀림, 허용되지 않은 `redirectUri` |
+| 401 | UNAUTHORIZED | 카카오가 인가 코드를 거부함 — 만료·재사용(KOE320), 인가 요청과 다른 주소(KOE303). "카카오 로그인을 다시 해 주세요" |
+| 401 | UNAUTHORIZED | `Authorization: Bearer`가 없음("로그인이 필요해요"), 토큰이 틀리거나 만료, 탈퇴한 회원 |
+| 502 | EXTERNAL_API_ERROR | 카카오 장애·5초 무응답, 서버 설정 문제(KOE010·KOE101, 카카오 키·`JWT_SECRET` 없음), DB 실패 |
 
 ## 6. 제보
 
@@ -311,6 +335,7 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 |---|---|
 | 5~7주 | `GET /health`, `GET /places`, `POST /routes/search` (shortest만) — 데이터 구축과 병행 |
 | 8~9주 | `POST /routes/search`에 safe 추가, `GET /facilities` (FR-002가 Must), `GET /daylight` (FR-005) |
-| 13주 | `/auth/*`, `/reports` (Could) |
+| 11주 | `/auth/kakao`, `/auth/me` (FR-011 Could — 서버 카카오 로그인만 앞당김, 2026-11-13) |
+| 13주 | `/reports` (Could) |
 
 프론트는 이 문서의 JSON 예시를 그대로 목(mock) 데이터로 써서 화면을 먼저 만든다.

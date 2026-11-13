@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import type { SocialProvider } from '../lib/auth'
-import { PROVIDERS } from '../lib/auth'
+import { LOGIN_FAILED_MESSAGE, PROVIDERS } from '../lib/auth'
 import SocialLogo from '../components/SocialLogo'
 
 type Props = {
-  onLogin: (provider: SocialProvider) => Promise<boolean>
+  error: string | null // 카카오에서 돌아왔는데 로그인이 실패했을 때의 안내
+  onLogin: (provider: SocialProvider) => Promise<boolean> // 카카오로 넘어가면 true, 카카오 SDK를 못 불러오면 false
   onGuest: () => void // 로그인하지 않고 지도로 간다 (비회원)
 }
 
-// 소셜 로그인 화면 (FR-011). S1 하단의 [로그인]으로 들어온다. 로그인 처리는 서버가 하고, 여기는 버튼만 둔다
-export default function Login({ onLogin, onGuest }: Props) {
+// 소셜 로그인 화면 (FR-011). S1 하단의 [로그인]으로 들어오고, 카카오 로그인이 실패해 돌아왔을 때도 열린다. 로그인 처리는 서버가 하고, 여기는 버튼만 둔다
+export default function Login({ error, onLogin, onGuest }: Props) {
   const [failed, setFailed] = useState(false)
 
   const pick = async (provider: SocialProvider) => {
@@ -32,9 +33,9 @@ export default function Login({ onLogin, onGuest }: Props) {
           ))}
         </div>
 
-        {failed && (
+        {(failed || error) && (
           <p className="notice" role="status">
-            로그인은 아직 준비 중이에요. 로그인 없이 경로를 찾을 수 있어요.
+            {LOGIN_FAILED_MESSAGE} 로그인 없이도 경로를 찾을 수 있어요.
           </p>
         )}
 

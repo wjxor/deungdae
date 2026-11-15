@@ -115,7 +115,7 @@
 - **스택**: TypeScript + React(Vite, PWA) / TypeScript + NestJS / PostgreSQL + PostGIS(Supabase) / Python 전처리 — 3주차 발표자료 14페이지
 - **개발 환경**: 로컬 개발, 도커는 당분간 안 씀. DB는 Supabase 공용 인스턴스를 셋이 같이 사용
 - **Node 22**: web·api `engines`를 `^22.13.0`으로 고정 (2026-11-11 상협, PR #66). `>=22.13`이면 Vercel이 쓸 수 있는 최신(26)으로 배포해 CI(22)와 달라져서. 22는 2027-04까지 지원돼 학기 안에는 그대로 둔다. 올릴 때는 `engines`와 CI `node-version`을 같이 바꾼다
-- **서버 배포처: Vercel** (2026-11-11 상협, PR #66·#67·#68): 같은 저장소를 Vercel 프로젝트 둘로 — 서버 `deungdae-api`(Root `apps/api`, NestJS 프리셋, 함수 지역 서울 `icn1`, `https://deungdae-api.vercel.app/api`), 웹 `deungdae-map`(`apps/web`, Vite, `https://deungdae-map.vercel.app`, 2026-11-12). Hobby 무료, 함수는 최대 300초(예전에 적은 "10초 제한"은 지금 기준이 아님), main에 merge하면 자동 배포되고 PR마다 미리보기가 생긴다. 서버리스라 나가는 IP가 고정되지 않아 카카오 REST 키 허용 IP는 쓰지 않는다. CORS는 서버 환경변수 `CORS_ORIGINS`
+- **서버 배포처: Vercel** (2026-11-11 상협, PR #66·#67·#68): 같은 저장소를 Vercel 프로젝트 둘로 — 서버 `deungdae-api`(Root `apps/api`, NestJS 프리셋, 함수 지역 서울 `icn1`, `https://deungdae-api.vercel.app/api`), 웹 `deungdae-map`(`apps/web`, Vite, `https://deungdae-map.vercel.app`, 2026-11-12). Hobby 무료, 함수는 최대 300초(예전에 적은 "10초 제한"은 지금 기준이 아님), main에 merge하면 자동 배포되고 PR마다 미리보기가 생긴다 (Vercel 봇의 PR 댓글은 2026-11-15에 껐다 — 미리보기 배포와 PR 체크는 그대로). 서버리스라 나가는 IP가 고정되지 않아 카카오 REST 키 허용 IP는 쓰지 않는다. CORS는 서버 환경변수 `CORS_ORIGINS`
 - **저장소**: 상협 개인 계정의 공개 저장소 `wjxor/deungdae`, 모노레포 — `shared/types.ts`를 같이 import하고, 3명 팀이라 나누면 관리만 늘어서. 라이선스는 MIT (2026-10-29 상협, PR #43)
 - **대상 지역(NFR-002)**: 대전광역시 전체 — 2026-10-02 팀 확정. 시설 데이터가 5개 구 모두에 있고, B안은 경로 주변만 조회해 넓어도 느려지지 않음
   - 유의: 구별 밀도 차이가 큼(가로등은 유성구에 40%, 비상벨은 서구가 적음) → 구끼리 점수를 비교할 때 데이터 편차를 고려

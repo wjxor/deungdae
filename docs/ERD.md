@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-11-13 (`users` 테이블 생성 — 카카오 로그인) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-11-15 (배포 주소 응답 시간, 즐겨찾기·제보 테이블 상태) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -89,7 +89,7 @@ erDiagram
 | Must | `route_cache` | FR-004·006·007 | `POST /routes/search` |
 | Must | `sun_times` | FR-005 | `GET /daylight` |
 | Could | `users` | FR-011 | `/auth/kakao`, `/auth/me` (2026-11-13 생성) |
-| Could | `reports` | FR-009·010 | `/reports`, `POST /routes/search` (점수 감점) |
+| Could | `reports` | FR-009·010 | `/reports`, `POST /routes/search` (점수 감점). 아직 만들지 않음 (13주차) |
 
 `GET /places`는 카카오 로컬 API 결과를 그대로 돌려주므로 테이블이 없다.
 

@@ -261,6 +261,7 @@ GROUP BY f.type, t.weight;
 | 정제 기준 | `attributes`·`coord_source`로 어느 쪽으로 정해도 담을 수 있게 둠 |
 | 시설 가중치와 가로등·보안등 상한 | 가중치는 `facility_types.weight` 값만 바꾼다. 구간당 상한을 두면 테이블이 아니라 점수 쿼리를 바꾼다 |
 | 제보 로그인 필요 여부, 사진 첨부 | `reports.user_id`·`photo_url`을 null 허용으로 둠 |
+| 즐겨찾기(FR-012) 범위 | 테이블 없음 (화면은 앱 메모리에만 저장). 정하면 승민 제안대로 `favorite_places`·`favorite_routes`(탈퇴하면 CASCADE)를 더한다 (ROADMAP "팀에서 정해야 할 것") |
 
 ## Prisma·PostGIS 메모
 

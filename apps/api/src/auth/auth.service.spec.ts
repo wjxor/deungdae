@@ -1,6 +1,8 @@
 import type { ConfigService } from '@nestjs/config';
 import { ApiException, externalApiError } from '../common/api-exception.js';
+import type { GoogleAuthClient } from '../google/google-auth.client.js';
 import type { KakaoAuthClient } from '../kakao/kakao-auth.client.js';
+import type { NaverAuthClient } from '../naver/naver-auth.client.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import { AuthService } from './auth.service.js';
 
@@ -21,6 +23,8 @@ const prisma = {
   user: { upsert: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
 };
 const kakao = { exchangeCode: vi.fn(), getProfile: vi.fn(), unlink: vi.fn() };
+const naver = { exchangeCode: vi.fn(), getProfile: vi.fn(), revoke: vi.fn() };
+const google = { exchangeCode: vi.fn(), getProfile: vi.fn(), revoke: vi.fn() };
 
 /** 주어진 환경변수만 돌려주는 가짜 설정으로 서비스를 만든다 */
 function service(env: Record<string, string | undefined> = {}) {
@@ -35,6 +39,8 @@ function service(env: Record<string, string | undefined> = {}) {
   return new AuthService(
     prisma as unknown as PrismaService,
     kakao as unknown as KakaoAuthClient,
+    naver as unknown as NaverAuthClient,
+    google as unknown as GoogleAuthClient,
     config,
   );
 }
@@ -62,6 +68,18 @@ beforeEach(() => {
     nickname: '민수',
   });
   kakao.unlink.mockReset().mockResolvedValue('unlinked');
+  naver.exchangeCode.mockReset().mockResolvedValue('naver-token');
+  naver.getProfile.mockReset().mockResolvedValue({
+    providerId: 'naverId123',
+    nickname: '네이버민수',
+  });
+  naver.revoke.mockReset().mockResolvedValue(undefined);
+  google.exchangeCode.mockReset().mockResolvedValue('google-token');
+  google.getProfile.mockReset().mockResolvedValue({
+    providerId: '1098765432109876543210',
+    nickname: '구글민수',
+  });
+  google.revoke.mockReset().mockResolvedValue(undefined);
 });
 
 describe('AuthService.loginWithKakao', () => {
@@ -144,6 +162,100 @@ describe('AuthService.loginWithKakao', () => {
       ),
     ).toEqual({ status: 502, code: 'EXTERNAL_API_ERROR' });
     expect(kakao.exchangeCode).not.toHaveBeenCalled();
+  });
+});
+
+describe('AuthService.login (네이버·구글)', () => {
+  it('네이버 — state로 토큰을 받고 (naver, 회원번호)로 회원을 찾거나 만든다', async () => {
+    prisma.user.upsert.mockResolvedValue({
+      ...ROW,
+      provider: 'naver',
+      providerId: 'naverId123',
+      nickname: '네이버민수',
+    });
+    const auth = service();
+    const res = await auth.login('naver', {
+      code: 'auth-code',
+      redirectUri: WEB,
+      state: 'st',
+    });
+
+    expect(naver.exchangeCode).toHaveBeenCalledWith('auth-code', 'st');
+    expect(naver.getProfile).toHaveBeenCalledWith('naver-token');
+    expect(prisma.user.upsert).toHaveBeenCalledWith({
+      where: {
+        provider_providerId: { provider: 'naver', providerId: 'naverId123' },
+      },
+      create: {
+        provider: 'naver',
+        providerId: 'naverId123',
+        nickname: '네이버민수',
+      },
+      update: { nickname: '네이버민수' },
+    });
+    expect(res.user).toEqual({
+      id: 5,
+      nickname: '네이버민수',
+      email: null,
+      provider: 'naver',
+    });
+    expect(await auth.userIdFromToken(res.accessToken)).toBe(5);
+    expect(kakao.exchangeCode).not.toHaveBeenCalled();
+  });
+
+  it('네이버인데 state가 없으면 400이고 네이버를 부르지 않는다', async () => {
+    expect(
+      await failure(service().login('naver', { code: 'c', redirectUri: WEB })),
+    ).toEqual({ status: 400, code: 'INVALID_INPUT' });
+    expect(naver.exchangeCode).not.toHaveBeenCalled();
+  });
+
+  it('구글 — redirectUri로 토큰을 받고 (google, sub)로 회원을 찾거나 만든다', async () => {
+    const res = await service().login('google', {
+      code: 'auth-code',
+      redirectUri: WEB,
+    });
+
+    expect(google.exchangeCode).toHaveBeenCalledWith('auth-code', WEB);
+    expect(google.getProfile).toHaveBeenCalledWith('google-token');
+    expect(prisma.user.upsert).toHaveBeenCalledWith({
+      where: {
+        provider_providerId: {
+          provider: 'google',
+          providerId: '1098765432109876543210',
+        },
+      },
+      create: {
+        provider: 'google',
+        providerId: '1098765432109876543210',
+        nickname: '구글민수',
+      },
+      update: { nickname: '구글민수' },
+    });
+    expect(typeof res.accessToken).toBe('string');
+  });
+
+  it.each(['naver', 'google'] as const)(
+    '%s — 허용되지 않은 redirectUri면 400이고 서비스를 부르지 않는다',
+    async (provider) => {
+      expect(
+        await failure(
+          service().login(provider, {
+            code: 'c',
+            redirectUri: 'https://evil.example/',
+            state: 's',
+          }),
+        ),
+      ).toEqual({ status: 400, code: 'INVALID_INPUT' });
+      expect(naver.exchangeCode).not.toHaveBeenCalled();
+      expect(google.exchangeCode).not.toHaveBeenCalled();
+    },
+  );
+
+  it('카카오도 login으로 부를 수 있다 (loginWithKakao와 같음)', async () => {
+    await service().login('kakao', { code: 'auth-code', redirectUri: WEB });
+    expect(kakao.exchangeCode).toHaveBeenCalledWith('auth-code', WEB);
+    expect(naver.exchangeCode).not.toHaveBeenCalled();
   });
 });
 

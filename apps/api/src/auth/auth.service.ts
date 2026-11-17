@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type {
   AuthResponse,
   KakaoLoginRequest,
+  SocialLoginRequest,
   SocialProvider,
   User,
 } from '../../../../shared/types.js';
@@ -15,10 +16,13 @@ import {
 } from '../common/api-exception.js';
 import { dbErrorText } from '../common/db-error.js';
 import type { User as UserRow } from '../generated/prisma/client.js';
+import { GoogleAuthClient } from '../google/google-auth.client.js';
 import { KakaoAuthClient } from '../kakao/kakao-auth.client.js';
+import { NaverAuthClient } from '../naver/naver-auth.client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { signAccessToken, verifyAccessToken } from './jwt.js';
 import { isAllowedRedirectUri } from './redirect-uri.js';
+import type { SocialProfile } from './social-profile.js';
 
 /** HS256 비밀값 최소 길이. 짧으면 토큰을 맞혀 볼 수 있어 받지 않는다 */
 const MIN_SECRET_LENGTH = 32;
@@ -26,10 +30,12 @@ const MIN_SECRET_LENGTH = 32;
 const SERVER_FAILURE_MESSAGE =
   '로그인을 잠시 처리하지 못했어요. 잠시 후 다시 시도해 주세요';
 const EXPIRED_MESSAGE = '로그인이 만료됐어요. 다시 로그인해 주세요';
+const BAD_REQUEST_MESSAGE = '로그인 요청 형식이 올바르지 않아요';
 
 /**
- * 카카오 로그인·회원 정보·탈퇴 (API.md 5장, FR-011).
- * 서버는 카카오 토큰을 저장하지 않고 우리 JWT(7일)만 내준다. 로그아웃은 웹이 토큰을 버리는 것이라 서버 일이 없다
+ * 카카오·네이버·구글 로그인, 회원 정보, 탈퇴 (API.md 5장, FR-011).
+ * 서버는 서비스 토큰을 저장하지 않고 우리 JWT(7일)만 내준다. 로그아웃은 웹이 토큰을 버리는 것이라 서버 일이 없다.
+ * 같은 사람이 여러 서비스로 로그인하면 회원이 따로 생긴다 (`users`는 provider·회원번호로 구분)
  */
 @Injectable()
 export class AuthService {
@@ -40,6 +46,8 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly kakao: KakaoAuthClient,
+    private readonly naver: NaverAuthClient,
+    private readonly google: GoogleAuthClient,
     config: ConfigService,
   ) {
     const secret = config.get<string>('JWT_SECRET');
@@ -53,24 +61,30 @@ export class AuthService {
     this.origins = allowedOrigins(config.get<string>('CORS_ORIGINS'));
   }
 
+  /** 카카오 로그인 (`POST /auth/kakao`). `login('kakao', req)`와 같다 */
+  loginWithKakao(req: KakaoLoginRequest): Promise<AuthResponse> {
+    return this.login('kakao', req);
+  }
+
   /**
-   * 웹이 카카오에서 받은 인가 코드로 로그인한다. 카카오 회원번호로 회원을 찾고, 없으면 만들고, 있으면 닉네임을 최신 값으로 고친다.
-   * 허용되지 않은 redirectUri는 400, 카카오가 코드를 거부하면 401, 카카오·DB 실패는 502
+   * 웹이 그 서비스에서 받은 인가 코드로 로그인한다. 서비스 회원번호로 회원을 찾고, 없으면 만들고, 있으면 닉네임을 최신 값으로 고친다.
+   * 허용되지 않은 redirectUri·네이버인데 state가 없음은 400, 서비스가 코드를 거부하면 401, 서비스·DB 실패는 502
    */
-  async loginWithKakao(req: KakaoLoginRequest): Promise<AuthResponse> {
-    if (!isAllowedRedirectUri(req.redirectUri, this.origins)) {
-      throw invalidInput('로그인 요청 형식이 올바르지 않아요');
-    }
-    // 인가 코드는 한 번만 쓸 수 있어서, 우리 쪽 설정이 빠졌으면 카카오에 보내기 전에 멈춘다
+  async login(
+    provider: SocialProvider,
+    req: SocialLoginRequest,
+  ): Promise<AuthResponse> {
+    this.checkRequest(provider, req);
+    // 인가 코드는 한 번만 쓸 수 있어서, 우리 쪽 설정이 빠졌으면 서비스에 보내기 전에 멈춘다
     const secret = this.requireSecret();
     this.requireDb();
 
-    const kakaoToken = await this.kakao.exchangeCode(req.code, req.redirectUri);
-    const { providerId, nickname } = await this.kakao.getProfile(kakaoToken);
+    const { profile } = await this.fetchProfile(provider, req);
+    const { providerId, nickname } = profile;
     const row = await this.db(() =>
       this.prisma.user.upsert({
-        where: { provider_providerId: { provider: 'kakao', providerId } },
-        create: { provider: 'kakao', providerId, nickname },
+        where: { provider_providerId: { provider, providerId } },
+        create: { provider, providerId, nickname },
         update: { nickname },
       }),
     );
@@ -100,6 +114,39 @@ export class AuthService {
     const row = await this.findOrUnauthorized(userId);
     await this.kakao.unlink(row.providerId);
     await this.db(() => this.prisma.user.delete({ where: { id: userId } }));
+  }
+
+  /** redirectUri가 허용된 웹 주소의 루트인지, 네이버면 state가 있는지 본다. 아니면 400 */
+  private checkRequest(provider: SocialProvider, req: SocialLoginRequest) {
+    if (!isAllowedRedirectUri(req.redirectUri, this.origins)) {
+      throw invalidInput(BAD_REQUEST_MESSAGE);
+    }
+    if (provider === 'naver' && !req.state) {
+      throw invalidInput(BAD_REQUEST_MESSAGE);
+    }
+  }
+
+  /**
+   * 인가 코드를 그 서비스의 액세스 토큰으로 바꾸고 회원번호·닉네임을 받는다. 토큰은 탈퇴 때 연결을 끊는 데만 쓰고 저장하지 않는다.
+   * 서비스 에러(401·502)는 그대로 넘긴다
+   */
+  private async fetchProfile(
+    provider: SocialProvider,
+    req: SocialLoginRequest,
+  ): Promise<{ accessToken: string; profile: SocialProfile }> {
+    let accessToken: string;
+    let profile: SocialProfile;
+    if (provider === 'kakao') {
+      accessToken = await this.kakao.exchangeCode(req.code, req.redirectUri);
+      profile = await this.kakao.getProfile(accessToken);
+    } else if (provider === 'naver') {
+      accessToken = await this.naver.exchangeCode(req.code, req.state ?? '');
+      profile = await this.naver.getProfile(accessToken);
+    } else {
+      accessToken = await this.google.exchangeCode(req.code, req.redirectUri);
+      profile = await this.google.getProfile(accessToken);
+    }
+    return { accessToken, profile };
   }
 
   /** 회원을 찾고, 없으면 401 */

@@ -11,7 +11,10 @@ import {
 } from '@nestjs/common';
 import type { AuthResponse, MeResponse } from '../../../../shared/types.js';
 import { AuthGuard, type AuthedRequest } from './auth.guard.js';
-import { parseKakaoLoginRequest } from './auth.request.js';
+import {
+  parseKakaoLoginRequest,
+  parseSocialLoginRequest,
+} from './auth.request.js';
 import { AuthService } from './auth.service.js';
 
 @Controller('auth')
@@ -23,6 +26,20 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   loginWithKakao(@Body() body: unknown): Promise<AuthResponse> {
     return this.auth.loginWithKakao(parseKakaoLoginRequest(body));
+  }
+
+  /** POST /api/auth/naver (API.md 5장). 웹이 네이버에서 받은 인가 코드와 state로 로그인한다 */
+  @Post('naver')
+  @HttpCode(HttpStatus.OK)
+  loginWithNaver(@Body() body: unknown): Promise<AuthResponse> {
+    return this.auth.login('naver', parseSocialLoginRequest(body));
+  }
+
+  /** POST /api/auth/google (API.md 5장). 웹이 구글에서 받은 인가 코드로 로그인한다 */
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  loginWithGoogle(@Body() body: unknown): Promise<AuthResponse> {
+    return this.auth.login('google', parseSocialLoginRequest(body));
   }
 
   /** GET /api/auth/me — 저장해 둔 토큰으로 로그인을 되살릴 때 */

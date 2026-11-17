@@ -10,7 +10,9 @@ import type {
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
 import { unauthorized } from '../src/common/api-exception.js';
+import { GoogleAuthClient } from '../src/google/google-auth.client.js';
 import { KakaoAuthClient } from '../src/kakao/kakao-auth.client.js';
+import { NaverAuthClient } from '../src/naver/naver-auth.client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
 // 실제 카카오·DB 없이 돌도록 둘 다 가짜로 바꾼다. 회원 한 명을 메모리에 둔다
@@ -55,6 +57,16 @@ const fakeKakao = {
   getProfile: vi.fn(),
   unlink: vi.fn(),
 };
+const fakeNaver = {
+  exchangeCode: vi.fn(),
+  getProfile: vi.fn(),
+  revoke: vi.fn(),
+};
+const fakeGoogle = {
+  exchangeCode: vi.fn(),
+  getProfile: vi.fn(),
+  revoke: vi.fn(),
+};
 
 const WEB = 'http://localhost:5173/';
 
@@ -73,12 +85,28 @@ describe('/api/auth (e2e)', () => {
       nickname: '민수',
     });
     fakeKakao.unlink.mockReset().mockResolvedValue('unlinked');
+    fakeNaver.exchangeCode.mockReset().mockResolvedValue('naver-token');
+    fakeNaver.getProfile.mockReset().mockResolvedValue({
+      providerId: 'naverId123',
+      nickname: '네이버민수',
+    });
+    fakeNaver.revoke.mockReset().mockResolvedValue(undefined);
+    fakeGoogle.exchangeCode.mockReset().mockResolvedValue('google-token');
+    fakeGoogle.getProfile.mockReset().mockResolvedValue({
+      providerId: '1098765432109876543210',
+      nickname: '구글민수',
+    });
+    fakeGoogle.revoke.mockReset().mockResolvedValue(undefined);
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(PrismaService)
       .useValue(fakePrisma)
       .overrideProvider(KakaoAuthClient)
       .useValue(fakeKakao)
+      .overrideProvider(NaverAuthClient)
+      .useValue(fakeNaver)
+      .overrideProvider(GoogleAuthClient)
+      .useValue(fakeGoogle)
       .compile();
     app = moduleRef.createNestApplication();
     configureApp(app);
@@ -108,6 +136,45 @@ describe('/api/auth (e2e)', () => {
     });
     expect(typeof body.accessToken).toBe('string');
     expect(fakeKakao.exchangeCode).toHaveBeenCalledWith('auth-code', WEB);
+  });
+
+  it('POST /api/auth/naver → 200 { user: { provider: "naver" }, accessToken }', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/naver')
+      .send({ code: 'auth-code', redirectUri: WEB, state: 'st' })
+      .expect(200);
+    const body = res.body as AuthResponse;
+    expect(body.user).toEqual({
+      id: 5,
+      nickname: '네이버민수',
+      email: null,
+      provider: 'naver',
+    });
+    expect(fakeNaver.exchangeCode).toHaveBeenCalledWith('auth-code', 'st');
+
+    const me = await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${body.accessToken}`)
+      .expect(200);
+    expect((me.body as MeResponse).user.provider).toBe('naver');
+  });
+
+  it('POST /api/auth/google → 200 { user: { provider: "google" } }', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/google')
+      .send({ code: 'auth-code', redirectUri: WEB })
+      .expect(200);
+    expect((res.body as AuthResponse).user.provider).toBe('google');
+    expect(fakeGoogle.exchangeCode).toHaveBeenCalledWith('auth-code', WEB);
+  });
+
+  it('네이버 본문에 state가 없으면 400 INVALID_INPUT', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/naver')
+      .send({ code: 'auth-code', redirectUri: WEB })
+      .expect(400);
+    expect((res.body as ApiError).error.code).toBe('INVALID_INPUT');
+    expect(fakeNaver.exchangeCode).not.toHaveBeenCalled();
   });
 
   it('code가 없으면 400 INVALID_INPUT', async () => {

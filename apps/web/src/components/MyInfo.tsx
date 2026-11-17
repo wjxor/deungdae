@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSheet } from '../hooks/useSheet'
 import type { User } from '../../../../shared/types'
 import { PROVIDER_NAME, type DeleteResult } from '../lib/auth'
@@ -19,6 +19,15 @@ export default function MyInfo({ user, onLogout, onDelete, onDeleted, onClose }:
   const [failed, setFailed] = useState(false)
   const [leaving, setLeaving] = useState(false) // 서비스 확인 화면으로 넘어가는 중
   const name = PROVIDER_NAME[user.provider]
+
+  // 서비스 확인 화면에서 뒤로 가기로 돌아오면 브라우저가 이 화면을 그대로 되살려(bfcache) 버튼이 막힌 채 남는다. 다시 누를 수 있게 푼다
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setLeaving(false)
+    }
+    window.addEventListener('pageshow', onShow)
+    return () => window.removeEventListener('pageshow', onShow)
+  }, [])
 
   const remove = async () => {
     setFailed(false)
@@ -50,6 +59,7 @@ export default function MyInfo({ user, onLogout, onDelete, onDeleted, onClose }:
                 onClick={() => {
                   setConfirming(false)
                   setFailed(false)
+                  setLeaving(false)
                 }}
               >
                 취소

@@ -61,7 +61,7 @@ export type RouteSearchResponse = {
   sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
 
-// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 안전점수에만 써서 응답에 없다
+// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 지도에 띄우지 않아 `/facilities` 응답에 없다 (경로의 `facilityCounts`에는 있다)
 export type FacilityType = "cctv" | "emergency_bell" | "police";
 
 // 안전점수에 쓰는 시설 5종 (ERD facility_types.code 전부). 지도에 띄우지 않는 가로등·보안등도 들어간다

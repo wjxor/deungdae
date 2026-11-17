@@ -99,6 +99,10 @@ export type User = { id: number; nickname: string; email: string | null; provide
 // 카카오 로그인 (API.md 5장, FR-011). 웹이 카카오에서 받은 인가 코드와, 그때 쓴 redirectUri를 서버에 넘긴다
 export type KakaoLoginRequest = { code: string; redirectUri: string };
 
+// 네이버·구글 로그인과 네이버·구글 회원 탈퇴 (5장, FR-011). 웹이 그 서비스에서 받은 인가 코드와 redirectUri를 넘긴다.
+// state는 네이버가 토큰을 바꿀 때 인가 요청과 같은 값을 같이 받아서 넘긴다 (구글은 없어도 된다)
+export type SocialLoginRequest = { code: string; redirectUri: string; state?: string };
+
 export type AuthResponse = { user: User; accessToken: string };
 
 export type MeResponse = { user: User };

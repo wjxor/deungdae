@@ -1,17 +1,31 @@
-import type { LatLng, ScoreFacilityType } from '../../../../shared/types.js';
+import type {
+  FacilityCounts,
+  LatLng,
+  ScoreFacilityType,
+} from '../../../../shared/types.js';
 import { Prisma } from '../generated/prisma/client.js';
 
 /** 구간마다 이 반경 안의 시설을 센다 (REQUIREMENTS 안전점수 규칙) */
 export const FACILITY_RADIUS_M = 30;
 
+/** 5종 모두 0인 시설 개수. `ScoreFacilityType`과 종류가 어긋나면(빠지거나 남으면) `satisfies`가 컴파일 에러로 알려 준다 */
+const ZERO_FACILITY_COUNTS = {
+  street_light: 0,
+  security_light: 0,
+  cctv: 0,
+  emergency_bell: 0,
+  police: 0,
+} satisfies FacilityCounts;
+
 /** 안전점수에 쓰는 시설 5종 — ERD `facility_types.code`. 경로별 개수 응답의 키 순서이기도 하다 */
-export const SCORE_FACILITY_TYPES: readonly ScoreFacilityType[] = [
-  'street_light',
-  'security_light',
-  'cctv',
-  'emergency_bell',
-  'police',
-];
+export const SCORE_FACILITY_TYPES = Object.keys(
+  ZERO_FACILITY_COUNTS,
+) as readonly ScoreFacilityType[];
+
+/** 5종 모두 0인 새 개수 객체 */
+export function emptyFacilityCounts(): FacilityCounts {
+  return { ...ZERO_FACILITY_COUNTS };
+}
 
 /** `segmentScoreQuery` 결과 한 행. 시설이 하나도 없는 구간은 행이 없다 */
 export type SegmentScoreRow = { i: number; raw: number };

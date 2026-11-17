@@ -9,6 +9,7 @@ import { dbErrorText } from '../common/db-error.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import {
+  emptyFacilityCounts,
   routeFacilityQuery,
   SCORE_FACILITY_TYPES,
   segmentScoreQuery,
@@ -54,7 +55,7 @@ export class SafetyScoreService {
       routeFacilityQuery(segmentsByRoute),
       '시설 개수 조회 실패',
     );
-    const counts = segmentsByRoute.map(() => emptyCounts());
+    const counts = segmentsByRoute.map(() => emptyFacilityCounts());
     for (const { i, type, n } of rows) {
       if (isScoreFacilityType(type)) counts[i][type] = n;
     }
@@ -71,13 +72,6 @@ export class SafetyScoreService {
       throw externalApiError(DB_ERROR_MESSAGE);
     }
   }
-}
-
-/** 5종 모두 0인 개수 */
-function emptyCounts(): FacilityCounts {
-  return Object.fromEntries(
-    SCORE_FACILITY_TYPES.map((t) => [t, 0]),
-  ) as FacilityCounts;
 }
 
 /** DB의 시설 종류가 응답에 담는 5종 중 하나인지 */

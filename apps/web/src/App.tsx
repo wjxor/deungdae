@@ -35,6 +35,13 @@ export default function App() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
+  // 네이버·구글 탈퇴 확인에서 돌아온 결과 안내는 지도 홈에 잠깐 보여 주고 지운다
+  const { accountNotice, clearAccountNotice } = auth
+  useEffect(() => {
+    if (!accountNotice) return
+    const timer = setTimeout(clearAccountNotice, 6000)
+    return () => clearTimeout(timer)
+  }, [accountNotice, clearAccountNotice])
   // S2에서 검색해 고른 출발지. 없으면 현재 위치를 출발지로 쓴다
   const [pickedOrigin, setPickedOrigin] = useState<Place | null>(null)
   const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string; originPlace: Place | null } | null>(null)
@@ -145,6 +152,7 @@ export default function App() {
       }}
       onDelete={() => auth.deleteAccount()}
       onDeleted={endSession}
+      accountNotice={accountNotice}
     />
   )
 }

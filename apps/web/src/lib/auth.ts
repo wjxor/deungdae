@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { SocialProvider, User } from '../../../../shared/types'
 import { isStandalone } from '../hooks/usePwaInstall'
 import { deleteMe, fetchMe, loginWithKakao, loginWithSocial } from './api'
@@ -21,6 +21,12 @@ export const PROVIDER_NAME: Record<SocialProvider, string> = { kakao: '카카오
 export function loginFailedMessage(provider: SocialProvider | null): string {
   return `${provider ? `${PROVIDER_NAME[provider]} ` : ''}로그인을 하지 못했어요. 다시 시도해 주세요.`
 }
+
+// 탈퇴 결과. 네이버·구글은 서비스 확인 화면으로 넘어가서(redirecting) 결과는 돌아온 뒤 accountNotice로 알린다
+export type DeleteResult = 'deleted' | 'redirecting' | 'failed'
+
+export const ACCOUNT_DELETED_MESSAGE = '탈퇴했어요. 그동안 등대를 써 주셔서 고마워요.'
+export const DELETE_FAILED_MESSAGE = '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.'
 
 // 로그인 정보는 이 브라우저에만 둔다. 서버는 토큰을 저장하지 않아 로그아웃은 이 값을 지우는 것이다 (API.md 5장)
 const SESSION_KEY = 'deungdae.auth'
@@ -128,6 +134,8 @@ type RedirectResult =
   | { kind: 'cancelled' } // 사용자가 서비스 화면에서 취소함
   | { kind: 'failed'; provider: SocialProvider | null }
   | { kind: 'ok'; session: Session }
+  | { kind: 'deleted' } // 탈퇴 확인을 거쳐 탈퇴를 마침
+  | { kind: 'deleteFailed'; message: string }
 
 // 서비스가 돌아올 때 주소에 붙이는 값. 구글은 scope·authuser·prompt·hd도 붙인다
 const RETURN_KEYS = ['code', 'state', 'error', 'error_description', 'scope', 'authuser', 'prompt', 'hd']
@@ -154,6 +162,10 @@ async function handleRedirect(): Promise<RedirectResult> {
 
   const pending = takePending()
   if (error) return { kind: 'cancelled' }
+  const checked = code && state && pending && state === pending.state ? { code, state, pending } : null
+  if (pending?.purpose === 'delete') {
+    return checked ? completeDelete(checked.pending.provider, checked.code, checked.state) : { kind: 'deleteFailed', message: DELETE_FAILED_MESSAGE }
+  }
   if (!code || !state || !pending || state !== pending.state) return { kind: 'failed', provider: pending?.provider ?? null }
 
   try {
@@ -167,10 +179,28 @@ async function handleRedirect(): Promise<RedirectResult> {
   }
 }
 
+// 네이버·구글 탈퇴 확인에서 돌아왔을 때. 저장해 둔 로그인 토큰과 새로 받은 코드로 서버에 탈퇴를 요청한다.
+// 서버가 다른 계정이라고 거절하면(400) 그 문구를 그대로 보여 준다
+async function completeDelete(provider: SocialProvider, code: string, state: string): Promise<RedirectResult> {
+  const saved = readSession()
+  if (!saved || provider === 'kakao' || saved.user.provider !== provider) return { kind: 'deleteFailed', message: DELETE_FAILED_MESSAGE }
+  try {
+    await deleteMe(saved.accessToken, { code, redirectUri: redirectUri(), state })
+  } catch (e) {
+    const message = e instanceof ApiRequestError && e.code === 'INVALID_INPUT' ? e.message : DELETE_FAILED_MESSAGE
+    return { kind: 'deleteFailed', message }
+  }
+  clearSession()
+  return { kind: 'deleted' }
+}
+
 export function useAuth() {
   // 저장해 둔 로그인을 먼저 보여 준다. 서버 확인을 기다리는 동안 비회원 메뉴가 잠깐 보였다가 바뀌지 않게
   const [session, setSession] = useState<Session | null>(readSession)
   const [loginError, setLoginError] = useState<string | null>(null)
+  // 탈퇴 확인에서 돌아온 결과 안내 (지도 홈에 띄운다). 지우는 함수는 App의 타이머가 렌더마다 다시 걸리지 않게 고정한다
+  const [accountNotice, setAccountNotice] = useState<string | null>(null)
+  const clearAccountNotice = useCallback(() => setAccountNotice(null), [])
 
   useEffect(() => {
     let active = true
@@ -180,6 +210,12 @@ export function useAuth() {
         setSession(result.session)
         return
       }
+      if (result.kind === 'deleted') {
+        setSession(null)
+        setAccountNotice(ACCOUNT_DELETED_MESSAGE)
+        return
+      }
+      if (result.kind === 'deleteFailed') setAccountNotice(result.message)
       if (result.kind === 'failed') setLoginError(loginFailedMessage(result.provider))
 
       // 돌아온 게 아니면 저장해 둔 토큰이 아직 쓸 수 있는지 서버에 확인한다
@@ -218,17 +254,20 @@ export function useAuth() {
     setSession(null)
   }
 
-  // 성공하면 true. 카카오 연결을 끊고 서버에서 회원을 지운 뒤 이 브라우저의 로그인도 지운다
-  const deleteAccount = async () => {
-    if (!session) return false
+  // 카카오 회원은 서버가 바로 연결을 끊고 회원을 지운 뒤 이 브라우저의 로그인도 지운다 ('deleted').
+  // 네이버·구글 회원은 서버가 연결을 끊으려면 그 서비스 토큰이 필요해서, 서비스 로그인을 한 번 더 거친다 ('redirecting' — 결과는 돌아와서)
+  const deleteAccount = async (): Promise<DeleteResult> => {
+    if (!session) return 'failed'
+    const { provider } = session.user
+    if (provider !== 'kakao') return startRedirect(provider, 'delete') ? 'redirecting' : 'failed'
     try {
       await deleteMe(session.accessToken)
     } catch {
-      return false
+      return 'failed'
     }
     clearSession()
     setSession(null)
-    return true
+    return 'deleted'
   }
 
   return {
@@ -238,5 +277,7 @@ export function useAuth() {
     deleteAccount,
     loginError,
     clearLoginError: () => setLoginError(null),
+    accountNotice,
+    clearAccountNotice,
   }
 }

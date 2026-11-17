@@ -91,7 +91,12 @@ export function fetchMe(token: string): Promise<MeResponse> {
   return request('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
 }
 
-// DELETE /api/auth/me (API.md 5장). 탈퇴 — 204라 본문이 없다 (request는 빈 본문을 null로 넘긴다)
-export async function deleteMe(token: string): Promise<void> {
-  await request<null>('/auth/me', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+// DELETE /api/auth/me (API.md 5장). 탈퇴 — 응답은 204라 본문이 없다 (request는 빈 본문을 null로 넘긴다).
+// 네이버·구글 회원은 한 번 더 로그인해 받은 코드(reauth)를 본문으로 보낸다. 카카오 회원은 본문이 없다
+export async function deleteMe(token: string, reauth?: SocialLoginRequest): Promise<void> {
+  await request<null>('/auth/me', {
+    method: 'DELETE',
+    headers: reauth ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { Authorization: `Bearer ${token}` },
+    body: reauth ? JSON.stringify(reauth) : undefined,
+  })
 }

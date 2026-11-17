@@ -31,7 +31,8 @@ curl 'http://localhost:3000/api/facilities?bbox=36.35,127.33,36.37,127.36'
 - `/api/daylight`는 `KASI_API_KEY`(공공데이터포털 서비스 키, 천문연 출몰시각 활용 신청된 것)가 필요하다. 없으면 오늘 값이 DB `sun_times`에 있을 때만 답하고, 없으면 502 `EXTERNAL_API_ERROR`. 천문연은 하루에 한 번만 부른다 (같은 날은 서버 메모리, 다시 켜면 `sun_times`)
 - CORS는 개발 웹(`http://localhost:5173`)과 환경변수 `CORS_ORIGINS`(쉼표로 구분)에 적은 주소를 허용한다. 배포 서버(Vercel)에는 배포한 웹 주소를 넣는다. 로컬에서는 넣지 않아도 된다
 - `/api/auth/*`(카카오 로그인, API.md 5장)는 `KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`(카카오 콘솔 [REST API 키] > 클라이언트 시크릿)·`KAKAO_ADMIN_KEY`(어드민 키, 탈퇴 때 연결 끊기)·`JWT_SECRET`(로그인 토큰 서명, 32자 이상 무작위 값 — 로컬과 배포 값을 다르게)이 필요하다. 없으면 서버는 뜨고 로그인·탈퇴만 502 `EXTERNAL_API_ERROR`. 카카오 로그인의 리다이렉트 URI도 `CORS_ORIGINS`의 주소 루트만 받는다
-- 시크릿·어드민 키·`JWT_SECRET`은 GitHub·노션에 적지 않는다. 어드민 키는 모든 사용자에게 관리자 권한으로 쓸 수 있는 키다
+- 네이버·구글 로그인(`/api/auth/naver`·`/api/auth/google`, 탈퇴 재인증 포함)은 `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`(네이버 개발자센터 앱), `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`(구글 클라우드 OAuth 클라이언트)이 필요하다. 없으면 그 서비스의 로그인·탈퇴만 502. 콘솔 설정은 `docs/EXTERNAL_APIS.md`
+- 시크릿(카카오·네이버·구글)·어드민 키·`JWT_SECRET`은 GitHub·노션에 적지 않는다. 어드민 키는 모든 사용자에게 관리자 권한으로 쓸 수 있는 키다
 
 ## DB 연결 (Supabase)
 
@@ -119,12 +120,14 @@ apps/api/
     │   └── time.ts           # 한국 시간 ISO 문자열 (+09:00)
     ├── prisma/             # DB 연결 (DATABASE_URL, Transaction pooler)
     ├── kakao/              # 카카오 로컬 API(키워드·주소 검색)와 로그인(토큰 받기·사용자 정보·연결 끊기) 호출 (KAKAO_REST_API_KEY·KAKAO_CLIENT_SECRET·KAKAO_ADMIN_KEY)
+    ├── naver/              # 네이버 로그인(토큰 받기·사용자 정보·토큰 삭제) 호출 (NAVER_CLIENT_ID·NAVER_CLIENT_SECRET)
+    ├── google/             # 구글 로그인(토큰 받기·OpenID userinfo·토큰 취소) 호출 (GOOGLE_CLIENT_ID·GOOGLE_CLIENT_SECRET)
     ├── walk/               # 도보 경로 호출과 캐시 (route_cache). 티맵으로 바꾸면 여기만
     ├── health/             # GET /api/health
     ├── daylight/           # GET /api/daylight (천문연 출몰시각 호출, sun_times 캐시) (KASI_API_KEY)
     ├── places/             # GET /api/places
     ├── facilities/         # GET /api/facilities (지도 범위 안의 CCTV·안심벨·지구대, 종류·좌표가 같으면 하나로 묶음)
-    ├── auth/               # POST /api/auth/kakao, GET·DELETE /api/auth/me (users, 로그인 토큰 JWT_SECRET)
+    ├── auth/               # POST /api/auth/kakao·naver·google, GET·DELETE /api/auth/me (users, 로그인 토큰 JWT_SECRET)
     └── routes/             # POST /api/routes/search (약 50m 구간, 안전점수, 안심경로 고르기 — 값은 safety.ts)
 test/
 ├── *.e2e-spec.ts           # DB·카카오·천문연을 가짜로 바꾼 e2e

@@ -45,6 +45,29 @@
 - 어드민 키는 서버 환경변수 `KAKAO_ADMIN_KEY`에만. 탈퇴 때 연결 끊기(`/v1/user/unlink`)에 쓴다. 모든 사용자에게 관리자 권한으로 쓸 수 있는 키라 웹·GitHub·노션에 두지 않는다
 - 카카오 토큰 요청 에러: KOE320 인가 코드 만료·재사용(한 번만 쓸 수 있다), KOE303 인가 요청과 다른 redirect_uri, KOE010 클라이언트 시크릿이 틀림, KOE101 client_id가 틀림 (카카오 문서 "문제 해결")
 
+## 네이버·구글 로그인 설정 (FR-011, 2026-11-17)
+
+카카오와 같은 구조다 — 웹이 SDK 없이 인가 주소로 보내 코드를 받고, 서버가 Client Secret으로 토큰을 바꾼다 (API.md 5장). 2026-11-17 상협이 두 콘솔에 등록했고, 로컬에서 네이버 로그인·탈퇴와 구글 로그인을 확인했다 (11/18). 토큰은 저장하지 않고 이메일은 받지 않는다.
+
+**네이버** (네이버 개발자센터, 상협 계정)
+- 앱 "등대", 사용 API [네이버 로그인], 제공 정보는 별명만 필수 (이름·이메일·휴대전화는 받지 않는다)
+- 서비스 환경 [PC웹]: 서비스 URL `https://deungdae-map.vercel.app`, Callback URL `http://localhost:5173/`와 `https://deungdae-map.vercel.app/` (끝 `/`까지 같아야 한다)
+- "개발 중" 상태에서는 개발자센터 계정과 [멤버관리] 테스터 ID에 등록한 아이디만 로그인된다. 다른 아이디는 네이버가 "개발 중" 화면을 띄우고 넘어가지 않는다 (검수가 거절됐을 때도 같은 화면). 누구나 쓰게 하려면 [네이버 로그인 검수상태]에서 검수를 요청한다 — 등대 로그인 버튼 화면과 네이버 동의 화면 캡처를 붙인다. 검수 기간은 확인하지 못했다
+- 서버 `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`, 웹 `VITE_NAVER_CLIENT_ID`(Client ID와 같은 값). 웹 변수에 Client Secret을 넣지 않는다 — `VITE_` 값은 번들에 그대로 나간다
+- 호출: 토큰 `POST https://nid.naver.com/oauth2.0/token`(`grant_type=authorization_code`, `code`, 인가 요청과 같은 `state`), 사용자 정보 `GET https://openapi.naver.com/v1/nid/me`(`response.id`·`response.nickname`), 연결 끊기는 같은 토큰 주소에 `grant_type=delete`·`access_token`·`service_provider=NAVER`. 거부도 HTTP 200에 `error`로 온다(`invalid_request` 등)
+
+**구글** (Google Cloud 콘솔 [Google 인증 플랫폼], 상협 계정)
+- OAuth 동의 화면: 대상 외부, 게시 상태 테스트, 범위 `openid`·`.../auth/userinfo.profile`만. 기본 범위만 쓰면 테스트 상태여도 테스트 사용자 목록에 없는 사람도 로그인된다 (구글 도움말 "OAuth production readiness"). 로고는 올리지 않는다 (확인 절차가 필요해질 수 있다)
+- 클라이언트: 유형 웹 애플리케이션, 승인된 리디렉션 URI `http://localhost:5173/`와 `https://deungdae-map.vercel.app/`. 보안 비밀(Client Secret)은 만들 때 한 번만 보이고, 잃어버리면 새로 만든다. 설정이 반영되기까지 5분~몇 시간 걸릴 수 있다 (그 사이 `redirect_uri_mismatch`)
+- 서버 `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`, 웹 `VITE_GOOGLE_CLIENT_ID`(클라이언트 ID와 같은 값)
+- 호출: 토큰 `POST https://oauth2.googleapis.com/token`(코드 만료·재사용은 400 `invalid_grant`), 사용자 정보 `GET https://openidconnect.googleapis.com/v1/userinfo`(`sub`·`name`), 연결 끊기 `POST https://oauth2.googleapis.com/revoke`(`token=`)
+- 돌아올 때 `code`·`state` 말고도 `scope`·`authuser`·`prompt`·`hd`, 보낸 곳을 알리는 `iss`(RFC 9207)를 붙인다. 웹이 주소에서 모두 지운다
+- 앱 안 브라우저(카카오톡·인스타그램 등 웹뷰)에서는 구글이 OAuth를 막는다 — 403 `disallowed_useragent` 화면에서 멈추고 등대로 돌아오지 않는다. 웹은 카카오톡 안이면 `kakaotalk://web/openExternal?url=…`로 외부 브라우저에서 등대를 다시 열고, 그 밖의 앱 안 브라우저면 "사파리·크롬에서 열어 주세요"를 보여 준다. 카카오 로그인은 앱 안에서도 된다. 네이버는 앱 안에서 되는지 아직 확인하지 못했다
+
+**공통**
+- 웹 PR 미리보기 주소는 리다이렉트 URI에 등록하지 않아 미리보기에서는 로그인이 안 된다 (카카오와 같음). 새 주소는 기존 값을 고쳐 쓰지 말고 추가한다
+- 탈퇴 때 연결을 끊으려면 그 사용자의 토큰이 필요해서(카카오처럼 어드민 키가 없다), 웹이 그 서비스 로그인을 한 번 더 거친다 (API.md 5장 `DELETE /api/auth/me`)
+
 ## 티맵 보행자 경로 (예비) `POST https://apis.openapi.sk.com/tmap/routes/pedestrian`
 - `searchOption`: 0 추천 / 4 추천+대로우선 / 10 최단 / 30 최단거리+계단제외
 - 경유지 `passList` 최대 5개, 응답 GeoJSON, 구간별 도로 종류(`roadType`)·시설(`facilityType`) 제공

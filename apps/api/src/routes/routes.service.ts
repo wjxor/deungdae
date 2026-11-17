@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import type {
+  FacilityCounts,
   Route,
   RouteSearchRequest,
   RouteSearchResponse,
@@ -32,6 +33,7 @@ type ScoredRoute = {
   distanceM: number;
   safetyScore: number;
   segments: Segment[];
+  facilityCounts: FacilityCounts;
 };
 
 /**
@@ -88,12 +90,16 @@ export class RoutesService {
     return found;
   }
 
-  /** 후보마다 구간을 나누고, 모든 구간의 원점수를 한 번에 받아 점수를 매긴다 */
+  /**
+   * 후보마다 구간을 나누고, 모든 구간의 원점수를 한 번에 받아 점수를 매긴다.
+   * 펼침용 시설 개수는 구간이 아니라 후보 경로 선 전체로 세고, 점수 쿼리와 동시에 돌린다. 둘 중 하나라도 실패하면 502
+   */
   private async score(walks: WalkRoute[]): Promise<ScoredRoute[]> {
     const pieces = walks.map((w) => splitPath(w.path));
-    const raws = await this.scores.rawScores(
-      pieces.flat().map((piece) => piece.path),
-    );
+    const [raws, counts] = await Promise.all([
+      this.scores.rawScores(pieces.flat().map((piece) => piece.path)),
+      this.scores.facilityCounts(walks.map((w) => w.path)),
+    ]);
 
     let next = 0;
     return walks.map((walk, k) => {
@@ -106,6 +112,7 @@ export class RoutesService {
         distanceM: walk.distanceM,
         safetyScore: toRouteScore(segments),
         segments,
+        facilityCounts: counts[k],
       };
     });
   }
@@ -126,5 +133,6 @@ function toRoute(type: RouteType, route: ScoredRoute): Route {
     level: toSafetyLevel(route.safetyScore),
     path: route.walk.path,
     segments: route.segments,
+    facilityCounts: route.facilityCounts,
   };
 }

@@ -74,6 +74,14 @@ describe('POST /api/routes/search (e2e)', () => {
       safetyScore: 0,
       level: 'danger',
     });
+    // 시설이 없어도 5종 키가 모두 있다
+    expect(shortest.facilityCounts).toEqual({
+      street_light: 0,
+      security_light: 0,
+      cctv: 0,
+      emergency_bell: 0,
+      police: 0,
+    });
   });
 
   it('본문 형식이 틀리면 400 INVALID_INPUT (카카오 안 부름)', async () => {

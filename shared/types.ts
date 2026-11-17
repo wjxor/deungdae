@@ -46,6 +46,7 @@ export type Route = {
   level: SafetyLevel;       // 경로 전체 점수의 등급. 구간 level과 같은 기준 (70 이상 safe, 40~69 caution, 39 이하 danger)
   path: LatLng[];           // 지도에 선 그릴 때 사용
   segments: Segment[];      // 색상 구간
+  facilityCounts: FacilityCounts; // 경로 선에서 30m 안 시설 종류별 개수 (같은 좌표는 한 곳). 펼침 "경로 주변 안심시설"용
 };
 
 export type RouteSearchRequest = {

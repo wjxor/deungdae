@@ -1,10 +1,10 @@
-import type { LatLng } from '../../../../shared/types.js';
+import type { FacilityCounts, LatLng } from '../../../../shared/types.js';
 import {
   DAEJEON_STATION,
   WALK_OK,
   WOOSONG,
 } from '../../test/fixtures/kakao-walk.js';
-import { ApiException } from '../common/api-exception.js';
+import { ApiException, externalApiError } from '../common/api-exception.js';
 import type { KakaoRouteMode } from '../walk/kakao-walk.client.js';
 import { toWalkRoute, type WalkRoute } from '../walk/kakao-walk.convert.js';
 import type { WalkRouteService } from '../walk/walk-route.service.js';
@@ -20,12 +20,21 @@ const REQ = {
   mode: 'night',
 } as const;
 
+/** k번째 경로에 CCTV k + 1곳, 나머지는 0인 시설 개수 (경로 순서를 확인하려고) */
+const countsOf = (k: number): FacilityCounts => ({
+  street_light: 0,
+  security_light: 0,
+  cctv: k + 1,
+  emergency_bell: 0,
+  police: 0,
+});
+
 /** 넓은 길 우선 후보. 모양은 최단과 같게 두고 거리만 바꾼다 (점수는 가짜 원점수로 정함) */
 const broad = (distanceM: number): WalkRoute => ({ ...SHORTEST, distanceM });
 
 /**
  * 카카오(route_mode별)와 원점수를 가짜로 둔 RoutesService.
- * 원점수는 앞쪽 구간(최단경로)에 `shortestRaw`, 뒤쪽 구간(넓은 길)에 `broadRaw`를 준다
+ * 원점수는 앞쪽 구간(최단경로)에 `shortestRaw`, 뒤쪽 구간(넓은 길)에 `broadRaw`를 준다. 시설 개수는 `countsOf(경로 순서)`
  */
 function setup({
   broadRoute = Promise.resolve(broad(380)) as Promise<WalkRoute>,
@@ -41,11 +50,15 @@ function setup({
       paths.map((_, i) => (i < SEGMENTS ? shortestRaw : broadRaw)),
     ),
   );
+  const facilityCounts = vi.fn(
+    (routes: LatLng[][][]): Promise<FacilityCounts[]> =>
+      Promise.resolve(routes.map((_, k) => countsOf(k))),
+  );
   const service = new RoutesService(
     { find } as unknown as WalkRouteService,
-    { rawScores } as unknown as SafetyScoreService,
+    { rawScores, facilityCounts } as unknown as SafetyScoreService,
   );
-  return { service, find, rawScores };
+  return { service, find, rawScores, facilityCounts };
 }
 
 /** 던진 ApiException의 HTTP 상태와 code */
@@ -171,6 +184,62 @@ describe('RoutesService', () => {
       code: 'ORIGIN_UNREACHABLE',
     });
     expect(rawScores).not.toHaveBeenCalled();
+  });
+
+  it('경로마다 시설 개수를 담는다 — 점수와 같은 구간 조각을 경로별로 넘겨 한 번에 센다', async () => {
+    // 두 후보를 구분하려고 넓은 길은 모양을 뒤집는다
+    const broadPath = [...SHORTEST.path].reverse();
+    const { service, facilityCounts } = setup({
+      broadRoute: Promise.resolve({ ...broad(380), path: broadPath }),
+      shortestRaw: 1,
+      broadRaw: 5,
+    });
+    const res = await service.search(REQ);
+
+    expect(res.sameRoute).toBe(false);
+    const [shortest, safe] = res.routes;
+    expect(shortest.facilityCounts).toEqual(countsOf(0));
+    expect(safe.facilityCounts).toEqual(countsOf(1));
+    expect(facilityCounts).toHaveBeenCalledOnce();
+    expect(facilityCounts).toHaveBeenCalledWith([
+      splitPath(SHORTEST.path).map((p) => p.path),
+      splitPath(broadPath).map((p) => p.path),
+    ]);
+  });
+
+  it('같은 경로면 두 경로의 시설 개수가 같다', async () => {
+    const { service } = setup({ shortestRaw: 9, broadRaw: 10 });
+    const res = await service.search(REQ);
+
+    expect(res.sameRoute).toBe(true);
+    expect(res.routes[1].facilityCounts).toEqual(res.routes[0].facilityCounts);
+    expect(res.routes[0].facilityCounts).toEqual(countsOf(0));
+  });
+
+  it('넓은 길 우선이 4xx면 최단 하나만 센다', async () => {
+    const { service, facilityCounts } = setup({
+      broadRoute: Promise.reject(
+        new ApiException(404, 'ROUTE_NOT_FOUND', '경로를 찾지 못했어요'),
+      ),
+    });
+    const res = await service.search(REQ);
+
+    expect(facilityCounts).toHaveBeenCalledWith([
+      splitPath(SHORTEST.path).map((p) => p.path),
+    ]);
+    expect(res.routes[0].facilityCounts).toEqual(countsOf(0));
+    expect(res.routes[1].facilityCounts).toEqual(countsOf(0));
+  });
+
+  it('시설 개수 조회가 실패하면 점수가 있어도 502', async () => {
+    const { service, facilityCounts } = setup();
+    facilityCounts.mockRejectedValue(
+      externalApiError('안전점수를 잠시 계산하지 못했어요'),
+    );
+    expect(await errorOf(service.search(REQ))).toEqual({
+      status: 502,
+      code: 'EXTERNAL_API_ERROR',
+    });
   });
 
   it.each([

@@ -46,6 +46,7 @@ export type Route = {
   level: SafetyLevel;       // 경로 전체 점수의 등급. 구간 level과 같은 기준 (70 이상 safe, 40~69 caution, 39 이하 danger)
   path: LatLng[];           // 지도에 선 그릴 때 사용
   segments: Segment[];      // 색상 구간
+  facilityCounts: FacilityCounts; // 경로 선에서 30m 안 시설 종류별 개수 (같은 좌표는 한 곳). 펼침 "경로 주변 안심시설"용
 };
 
 export type RouteSearchRequest = {
@@ -60,8 +61,14 @@ export type RouteSearchResponse = {
   sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
 
-// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 안전점수에만 써서 응답에 없다
+// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 지도에 띄우지 않아 `/facilities` 응답에 없다 (경로의 `facilityCounts`에는 있다)
 export type FacilityType = "cctv" | "emergency_bell" | "police";
+
+// 안전점수에 쓰는 시설 5종 (ERD facility_types.code 전부). 지도에 띄우지 않는 가로등·보안등도 들어간다
+export type ScoreFacilityType = "street_light" | "security_light" | FacilityType;
+
+// 경로 근처 시설의 종류별 개수. 0인 종류도 키가 있다. 종류별로 같은 좌표는 한 곳으로 센다 (안전점수와 같은 지점 규칙)
+export type FacilityCounts = Record<ScoreFacilityType, number>;
 
 export type Facility = {
   id: number;

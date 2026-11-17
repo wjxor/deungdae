@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-11-15 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-11-17 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
 Base URL: `/api` (배포 `https://deungdae-api.vercel.app/api`) · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -81,6 +81,7 @@ export type Route = {
   level: SafetyLevel;       // 경로 전체 점수의 등급. 구간 level과 같은 기준 (70 이상 safe, 40~69 caution, 39 이하 danger)
   path: LatLng[];           // 지도에 선 그릴 때 사용
   segments: Segment[];      // 색상 구간
+  facilityCounts: FacilityCounts; // 경로 선에서 30m 안 시설 종류별 개수 (같은 좌표는 한 곳). 펼침 "경로 주변 안심시설"용
 };
 
 export type RouteSearchRequest = {
@@ -95,8 +96,14 @@ export type RouteSearchResponse = {
   sameRoute: boolean;       // 안심경로가 최단경로와 같은 경로면 true
 };
 
-// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 안전점수에만 써서 응답에 없다
+// 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 지도에 띄우지 않아 `/facilities` 응답에 없다 (경로의 `facilityCounts`에는 있다)
 export type FacilityType = "cctv" | "emergency_bell" | "police";
+
+// 안전점수에 쓰는 시설 5종 (ERD facility_types.code 전부). 지도에 띄우지 않는 가로등·보안등도 들어간다
+export type ScoreFacilityType = "street_light" | "security_light" | FacilityType;
+
+// 경로 근처 시설의 종류별 개수. 0인 종류도 키가 있다. 종류별로 같은 좌표는 한 곳으로 센다 (안전점수와 같은 지점 규칙)
+export type FacilityCounts = Record<ScoreFacilityType, number>;
 
 export type Facility = {
   id: number;
@@ -212,8 +219,8 @@ export type MeResponse = { user: User };
 {
   "recommended": "safe",
   "routes": [
-    { "type": "shortest", "distanceM": 2140, "durationS": 1830, "safetyScore": 46, "level": "caution", "path": [ ... ], "segments": [ ... ] },
-    { "type": "safe",     "distanceM": 2380, "durationS": 2040, "safetyScore": 78, "level": "safe",    "path": [ ... ], "segments": [ ... ] }
+    { "type": "shortest", "distanceM": 2140, "durationS": 1830, "safetyScore": 46, "level": "caution", "path": [ ... ], "segments": [ ... ], "facilityCounts": { ... } },
+    { "type": "safe",     "distanceM": 2380, "durationS": 2040, "safetyScore": 78, "level": "safe",    "path": [ ... ], "segments": [ ... ], "facilityCounts": { ... } }
   ],
   "sameRoute": false
 }
@@ -224,8 +231,14 @@ export type MeResponse = { user: User };
 { "path": [ { "lat": 36.3664, "lng": 127.3446 }, { "lat": 36.3661, "lng": 127.3448 }, { "lat": 36.3660, "lng": 127.3449 } ], "distanceM": 52, "safetyScore": 82, "level": "safe" }
 ```
 
+경로의 시설 개수 (`FacilityCounts`)
+```json
+{ "street_light": 14, "security_light": 6, "cctv": 3, "emergency_bell": 1, "police": 0 }
+```
+
 - 구간은 경로를 약 50m씩 나눈 것이다 (REQUIREMENTS 안전점수 규칙). 프론트는 구간마다 `path`를 `level` 색으로 그리고, 구간을 순서대로 이어 그리면 경로 전체가 된다 (FR-008). v0.3까지는 시작·끝 두 점(`from`·`to`)만 있어서 구간 안에서 길이 꺾이면 직선으로 이어져 건물을 가로질렀다. `from`·`to`는 `path`의 처음·끝과 같아 v0.4에서 뺐다
 - 경로의 `level`은 경로 점수(`safetyScore`)의 등급이고 구간 `level`과 기준이 같다 (70 이상 `safe`, 40~69 `caution`, 39 이하 `danger`). 화면이 등급 기준값을 따로 두지 않게 서버가 같이 준다 (2026-10-27, PR #33 승민 제안)
+- `facilityCounts`는 경로 화면 펼침 "경로 주변 안심시설"에 쓰는 시설 종류별 개수다 (FR-007, 2026-11-17). 경로 선 전체에서 30m 안 시설을 세고, 종류별로 같은 좌표는 한 곳이다(안전점수와 같은 지점 규칙). 구간 개수를 더한 값이 아니라서 구간 경계 근처 시설도 한 번만 센다. 0인 종류도 5종 키가 모두 있고, 지도에 띄우지 않는 가로등·보안등도 들어간다. `sameRoute`면 두 경로의 개수가 같다. 웹은 지금 `/facilities`로 받은 시설을 직접 세는데(`routeFacilities.ts`) 이 값으로 바꾼다 (ROADMAP "펼침 시설 개수 보강")
 - `mode`는 프론트가 정해서 보낸다 (FR-005: 일몰시각 자동 판별이든 수동 토글이든 서버는 결과만 받는다)
 - `mode`와 무관하게 두 경로를 모두 돌려주고 `recommended`만 바뀐다. 프론트는 추천 경로를 기본 표시하고 탭으로 전환
 - 안심경로가 최단경로와 같아도 `routes`에는 `shortest`·`safe`를 둘 다 담고(`path`·점수 등 내용이 같음) `sameRoute: true`로 알린다. 그래서 `recommended`에 해당하는 경로는 항상 `routes` 안에 있다. 프론트는 `sameRoute`면 경로 카드를 하나만 두고 "최단경로와 안심경로가 일치해요"라고 안내한다 (v0.3, 2026-10-13 승민 질문으로 정리. v0.2는 "하나만 담고 `type`은 `shortest`"라 밤에는 `recommended: "safe"`인 경로가 없었음. 안내 문구는 S3 화면에 맞춤 — PR #22, 2026-10-22. 그 전 예시는 "최단경로가 곧 안심경로")
@@ -239,6 +252,7 @@ export type MeResponse = { user: User };
 - **안심경로는 B안으로 고른다.** 최단(`SHORTEST`)과 넓은 길 우선(`BROAD_FIRST`)을 함께 부르고 후보마다 안전점수를 매긴다. 넓은 길 우선이 최단보다 **5점 이상 높고 30% 넘게 돌아가지 않으면** 안심경로, 아니면 최단경로를 그대로 담고 `sameRoute: true`. 편안한 길(`ACCESSIBLE`)은 고르는 결과를 바꾸지 않아 부르지 않는다. 근거는 귀갓길 60쌍 분석이고 200쌍으로 다시 확인했다(다른 길 18%, 우회 최대 +23.5%, 2026-11-04, `docs/safety-score-experiment.md`). 우회 한도는 2026-11-04 20% → 30% 확정(승민 PR #51 제안·상협 동의, 20%였을 때 다른 길 16%), 5점은 팀 회의 전 MVP 임시값이다
 - 안전점수: 구간마다 구간 선에서 30m 안 시설의 `facility_types.weight` 합(원점수)을 로그로 0~100점으로 바꾼다 (원점수 1 → 29점, 5 → 75점, 10 이상 → 100점). 경로 점수는 구간 점수의 거리 가중 평균. 두 후보의 모든 구간을 DB 쿼리 한 번에 센다. 종류별로 같은 좌표는 한 곳으로 센다(지점, 2026-11-04) — 같은 자리에 CCTV가 여러 대여도 한 번이고, 좌표는 반올림하지 않고 완전히 같을 때만 같은 곳이다(`ST_AsBinary`, 4장 마커 묶기와 같은 규칙). 대수로 셀 때와 200쌍에서 고르는 길은 같고(우회 20%·30% 모두) 점수만 조금 바뀐다 (`docs/safety-score-experiment.md` "200쌍으로 늘림" 5번). 같은 좌표가 있는 것은 CCTV·안심벨뿐이다
 - 시설 데이터를 적재하기 전에는 모든 구간이 0점이라 늘 `sameRoute: true`다. DB가 없거나 안전점수 쿼리가 실패하면 502 `EXTERNAL_API_ERROR` (점수 없이 경로만 주면 모든 길이 위험으로 보여서)
+- 시설 개수(`facilityCounts`)는 점수에 쓰는 구간을 후보별로 묶어 넘기고, 점수 쿼리와 같은 "선 근처 지점" SQL 조각으로 후보 번호마다 센다. 두 후보를 쿼리 한 번에 세고 점수 쿼리와 동시에 돌린다. 경로 선 하나를 통째로 넘기면 14.7km 경로의 같은 요청(캐시)이 약 8초 걸려서 구간으로 넘긴다(구간이면 약 0.9초, 개수를 세지 않던 때 약 0.7초). 이 쿼리만 실패해도 502 `EXTERNAL_API_ERROR` — 개수가 빠진 반쪽 응답은 주지 않는다 (2026-11-17, 로컬 서버)
 - 넓은 길 우선만 경로를 못 찾으면(4xx) 최단경로로 답하고, 한도 초과·카카오 장애(5xx)면 최단경로만 보여 주지 않고 그 에러로 답한다
 - 구간은 경로를 길이가 같은 조각으로 나눈다. 구간 수 = 전체 길이 / 50m 반올림(최소 1)이라 한 구간은 40~67m(경로가 75m보다 짧으면 구간 하나). 경계는 경로 위 두 점 사이를 직선으로 보간해 만든다
 - 구간 `distanceM`의 합은 경로 `distanceM`(카카오 `totalDistance`)보다 조금 작다. 구간 거리는 경로 좌표로 잰 길이이고, 9월 실험 응답 30개에서 좌표 길이는 카카오 거리의 90~100%였다. 구간 비율(FR-008)은 구간끼리의 비율이라 영향이 없다

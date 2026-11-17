@@ -23,7 +23,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('home')
 
   // 화면 전환을 브라우저 기록에 남겨서 뒤로가기가 앱 밖이 아니라 앞 화면으로 돌아가게 한다.
-  // 앱은 S1에서 시작하고, 로그인 화면은 S1의 [로그인]으로 들어간다. 카카오에서 돌아와 로그인이 실패했을 때만 로그인 화면을 바로 보여 준다
+  // 앱은 S1에서 시작하고, 로그인 화면은 S1의 [로그인]으로 들어간다. 로그인 서비스에서 돌아와 로그인이 실패했을 때만 로그인 화면을 바로 보여 준다
   const go = (next: Screen, how: 'push' | 'replace' = 'push') => {
     if (how === 'push') history.pushState({ screen: next }, '')
     else history.replaceState({ screen: next }, '')
@@ -70,8 +70,8 @@ export default function App() {
     go('route')
   }
 
-  // 로그인 화면. [카카오로 시작하기]를 누르면 페이지가 카카오로 넘어갔다가 앱 첫 화면으로 돌아온다 (lib/auth.ts).
-  // S1의 [로그인]으로 들어왔으면 S1 위에 쌓인 화면이라 뒤로 가고, 카카오에서 돌아와 실패해 열린 것이면 안내만 지우고 S1으로
+  // 로그인 화면. 카카오·네이버·구글 버튼을 누르면 페이지가 그 서비스로 넘어갔다가 앱 첫 화면으로 돌아온다 (lib/auth.ts).
+  // S1의 [로그인]으로 들어왔으면 S1 위에 쌓인 화면이라 뒤로 가고, 서비스에서 돌아와 실패해 열린 것이면 안내만 지우고 S1으로
   if (screen === 'login' || auth.loginError) {
     return (
       <Login

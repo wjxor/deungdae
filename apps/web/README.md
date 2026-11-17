@@ -28,9 +28,11 @@ npm run dev   # http://localhost:5173
 |---|---|
 | `VITE_KAKAO_JS_KEY` | 카카오 **JavaScript 키**(지도 SDK용). 카카오 콘솔에서 SDK 도메인(`http://localhost:5173` 등)을 등록한 앱의 키여야 한다. REST 키를 넣으면 에러가 난다 |
 | `VITE_API_BASE_URL` | 서버 주소. 없으면 `http://localhost:3000/api` |
+| `VITE_NAVER_CLIENT_ID` | 네이버 로그인 Client ID (서버 `NAVER_CLIENT_ID`와 같은 값). 없으면 [네이버로 시작하기]를 눌렀을 때 실패 안내 |
+| `VITE_GOOGLE_CLIENT_ID` | 구글 OAuth 클라이언트 ID (서버 `GOOGLE_CLIENT_ID`와 같은 값). 없으면 [Google로 시작하기]를 눌렀을 때 실패 안내 |
 
-- `VITE_` 접두사가 붙은 값은 클라이언트 번들에 그대로 들어간다. **카카오 REST 키 등 비밀 값은 넣지 않는다** (서버 `.env`에만)
-- 카카오 앱 콘솔 설정은 [`docs/EXTERNAL_APIS.md`](../../docs/EXTERNAL_APIS.md)
+- `VITE_` 접두사가 붙은 값은 클라이언트 번들에 그대로 들어간다. **카카오 REST 키, 네이버·구글 Client Secret 등 비밀 값은 넣지 않는다** (서버 `.env`에만)
+- 카카오·네이버·구글 앱 콘솔 설정은 [`docs/EXTERNAL_APIS.md`](../../docs/EXTERNAL_APIS.md)
 
 ## 구조
 

@@ -8,6 +8,7 @@ import type {
   PlacesResponse,
   RouteSearchRequest,
   RouteSearchResponse,
+  SocialLoginRequest,
 } from '../../../../shared/types'
 import { ApiRequestError } from './apiError'
 
@@ -70,6 +71,15 @@ export function searchRoutes(req: RouteSearchRequest, signal?: AbortSignal): Pro
 // POST /api/auth/kakao (API.md 5장). 카카오에서 받은 인가 코드와 그때 쓴 redirectUri를 넘기고 로그인 토큰을 받는다
 export function loginWithKakao(req: KakaoLoginRequest): Promise<AuthResponse> {
   return request('/auth/kakao', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+}
+
+// POST /api/auth/naver·/api/auth/google (API.md 5장). 서비스에서 받은 인가 코드·redirectUri·state를 넘기고 로그인 토큰을 받는다
+export function loginWithSocial(provider: 'naver' | 'google', req: SocialLoginRequest): Promise<AuthResponse> {
+  return request(`/auth/${provider}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req),

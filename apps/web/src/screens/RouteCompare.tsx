@@ -12,7 +12,6 @@ import { useRouteProgress } from '../hooks/useRouteProgress'
 import { useWatchPosition } from '../hooks/useWatchPosition'
 import { searchRoutes } from '../lib/api'
 import { ApiRequestError } from '../lib/apiError'
-import { NO_FACILITIES } from '../lib/facilityIcon'
 import { pickRoute } from '../lib/routeSummary'
 
 type Props = {
@@ -100,7 +99,6 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
           center={here ?? origin}
           myLocation={here ?? myLocation}
           pin={destination.location}
-          facilityVisible={NO_FACILITIES}
           heading={heading}
           route={routes ? { routes, selected, sameRoute, mode, navigating, alongM } : undefined}
         />

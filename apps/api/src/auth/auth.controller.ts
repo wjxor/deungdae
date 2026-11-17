@@ -12,6 +12,7 @@ import {
 import type { AuthResponse, MeResponse } from '../../../../shared/types.js';
 import { AuthGuard, type AuthedRequest } from './auth.guard.js';
 import {
+  parseDeleteAccountRequest,
   parseKakaoLoginRequest,
   parseSocialLoginRequest,
 } from './auth.request.js';
@@ -49,11 +50,17 @@ export class AuthController {
     return { user: await this.auth.me(req.userId) };
   }
 
-  /** DELETE /api/auth/me — 탈퇴. 카카오 연결을 끊고 회원을 지운다 */
+  /**
+   * DELETE /api/auth/me — 탈퇴. 서비스 연결을 끊고 회원을 지운다.
+   * 카카오 회원은 본문이 없고, 네이버·구글 회원은 한 번 더 로그인해 받은 `{ code, redirectUri, state }`를 본문으로 보낸다
+   */
   @Delete('me')
   @UseGuards(AuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  deleteAccount(@Req() req: AuthedRequest): Promise<void> {
-    return this.auth.deleteAccount(req.userId);
+  deleteAccount(
+    @Req() req: AuthedRequest,
+    @Body() body: unknown,
+  ): Promise<void> {
+    return this.auth.deleteAccount(req.userId, parseDeleteAccountRequest(body));
   }
 }

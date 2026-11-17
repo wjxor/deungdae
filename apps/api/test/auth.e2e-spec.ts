@@ -218,6 +218,45 @@ describe('/api/auth (e2e)', () => {
     expect((res.body as ApiError).error.code).toBe('UNAUTHORIZED');
   });
 
+  /** 네이버로 로그인해 토큰을 받는다 */
+  async function loginWithNaver(): Promise<AuthResponse> {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/naver')
+      .send({ code: 'auth-code', redirectUri: WEB, state: 'st' })
+      .expect(200);
+    return res.body as AuthResponse;
+  }
+
+  it('네이버 회원 DELETE /api/auth/me + { code, redirectUri, state } → 204, 그 뒤 /me는 401', async () => {
+    const { accessToken } = await loginWithNaver();
+    await request(app.getHttpServer())
+      .delete('/api/auth/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ code: 'again', redirectUri: WEB, state: 'st2' })
+      .expect(204);
+    expect(fakeNaver.exchangeCode).toHaveBeenLastCalledWith('again', 'st2');
+    expect(fakeNaver.revoke).toHaveBeenCalledWith('naver-token');
+    expect(fakeKakao.unlink).not.toHaveBeenCalled();
+
+    await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(401);
+  });
+
+  it('네이버 회원이 본문 없이 DELETE하면 400이고 회원은 남는다', async () => {
+    const { accessToken } = await loginWithNaver();
+    const res = await request(app.getHttpServer())
+      .delete('/api/auth/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(400);
+    expect((res.body as ApiError).error.code).toBe('INVALID_INPUT');
+    await request(app.getHttpServer())
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+  });
+
   it('DELETE /api/auth/me → 204, 그 뒤 같은 토큰으로 /me는 401', async () => {
     const { accessToken } = await login();
     const del = await request(app.getHttpServer())

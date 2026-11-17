@@ -322,3 +322,90 @@ describe('AuthService.deleteAccount', () => {
     expect(kakao.unlink).not.toHaveBeenCalled();
   });
 });
+
+describe('AuthService.deleteAccount (네이버·구글 — 다시 로그인해 확인)', () => {
+  const NAVER_ROW = { ...ROW, provider: 'naver', providerId: 'naverId123' };
+  const GOOGLE_ROW = {
+    ...ROW,
+    provider: 'google',
+    providerId: '1098765432109876543210',
+  };
+  const REAUTH = { code: 'again', redirectUri: WEB, state: 'st2' };
+
+  it('네이버 — 다시 받은 코드의 회원번호가 같으면 연결을 끊고 지운다', async () => {
+    prisma.user.findUnique.mockResolvedValue(NAVER_ROW);
+    await service().deleteAccount(5, REAUTH);
+
+    expect(naver.exchangeCode).toHaveBeenCalledWith('again', 'st2');
+    expect(naver.revoke).toHaveBeenCalledWith('naver-token');
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 5 } });
+    expect(naver.revoke.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.user.delete.mock.invocationCallOrder[0],
+    );
+    expect(kakao.unlink).not.toHaveBeenCalled();
+  });
+
+  it('구글 — 같은 계정이면 토큰을 취소하고 지운다', async () => {
+    prisma.user.findUnique.mockResolvedValue(GOOGLE_ROW);
+    await service().deleteAccount(5, { code: 'again', redirectUri: WEB });
+
+    expect(google.exchangeCode).toHaveBeenCalledWith('again', WEB);
+    expect(google.revoke).toHaveBeenCalledWith('google-token');
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 5 } });
+  });
+
+  it('다른 계정으로 다시 로그인했으면 400이고 끊지도 지우지도 않는다', async () => {
+    prisma.user.findUnique.mockResolvedValue(NAVER_ROW);
+    naver.getProfile.mockResolvedValue({
+      providerId: 'someoneElse',
+      nickname: '다른사람',
+    });
+    expect(await failure(service().deleteAccount(5, REAUTH))).toEqual({
+      status: 400,
+      code: 'INVALID_INPUT',
+    });
+    expect(naver.revoke).not.toHaveBeenCalled();
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('다시 로그인한 코드가 없으면 400이고 서비스를 부르지 않는다', async () => {
+    prisma.user.findUnique.mockResolvedValue(GOOGLE_ROW);
+    expect(await failure(service().deleteAccount(5))).toEqual({
+      status: 400,
+      code: 'INVALID_INPUT',
+    });
+    expect(google.exchangeCode).not.toHaveBeenCalled();
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('허용되지 않은 redirectUri면 400', async () => {
+    prisma.user.findUnique.mockResolvedValue(NAVER_ROW);
+    expect(
+      await failure(
+        service().deleteAccount(5, {
+          ...REAUTH,
+          redirectUri: 'https://evil.example/',
+        }),
+      ),
+    ).toEqual({ status: 400, code: 'INVALID_INPUT' });
+    expect(naver.exchangeCode).not.toHaveBeenCalled();
+  });
+
+  it('연결 끊기가 실패하면 회원을 지우지 않고 502', async () => {
+    prisma.user.findUnique.mockResolvedValue(NAVER_ROW);
+    naver.revoke.mockRejectedValue(externalApiError('x'));
+    expect(await failure(service().deleteAccount(5, REAUTH))).toEqual({
+      status: 502,
+      code: 'EXTERNAL_API_ERROR',
+    });
+    expect(prisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  it('카카오 회원은 본문이 와도 지금처럼 어드민 키로 끊고 지운다', async () => {
+    await service().deleteAccount(5, REAUTH);
+    expect(kakao.unlink).toHaveBeenCalledWith('1234567890123456789');
+    expect(naver.exchangeCode).not.toHaveBeenCalled();
+    expect(google.exchangeCode).not.toHaveBeenCalled();
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 5 } });
+  });
+});

@@ -32,6 +32,13 @@ const SERVER_FAILURE_MESSAGE =
 const EXPIRED_MESSAGE = '로그인이 만료됐어요. 다시 로그인해 주세요';
 const BAD_REQUEST_MESSAGE = '로그인 요청 형식이 올바르지 않아요';
 
+/** 안내 문구에 쓰는 서비스 이름 */
+const PROVIDER_LABEL: Record<SocialProvider, string> = {
+  kakao: '카카오',
+  naver: '네이버',
+  google: 'Google',
+};
+
 /**
  * 카카오·네이버·구글 로그인, 회원 정보, 탈퇴 (API.md 5장, FR-011).
  * 서버는 서비스 토큰을 저장하지 않고 우리 JWT(7일)만 내준다. 로그아웃은 웹이 토큰을 버리는 것이라 서버 일이 없다.
@@ -107,12 +114,38 @@ export class AuthService {
   }
 
   /**
-   * 탈퇴 — 카카오 연결을 끊은 뒤 회원을 지운다. 사용자가 카카오에서 이미 끊었어도 지운다.
-   * 연결 끊기가 실패하면 지우지 않고 502를 그대로 넘겨 다시 시도하게 한다
+   * 탈퇴 — 서비스 연결을 끊은 뒤 회원을 지운다. 연결 끊기가 실패하면 지우지 않고 502를 그대로 넘겨 다시 시도하게 한다.
+   * - 카카오: 어드민 키로 회원번호만 있으면 끊는다. 사용자가 카카오에서 이미 끊었어도 지운다. `reauth`는 보지 않는다
+   * - 네이버·구글: 그 사용자의 토큰이 있어야 끊을 수 있는데 토큰을 저장하지 않아서, 웹이 한 번 더 로그인해 받은 코드(`reauth`)로
+   *   새 토큰을 받는다. 그 계정이 로그인한 회원과 다르면 400이고 끊지도 지우지도 않는다
    */
-  async deleteAccount(userId: number): Promise<void> {
+  async deleteAccount(
+    userId: number,
+    reauth: SocialLoginRequest | null = null,
+  ): Promise<void> {
     const row = await this.findOrUnauthorized(userId);
-    await this.kakao.unlink(row.providerId);
+    const provider = row.provider as SocialProvider;
+    if (provider === 'kakao') {
+      await this.kakao.unlink(row.providerId);
+    } else {
+      const label = PROVIDER_LABEL[provider];
+      if (!reauth) {
+        throw invalidInput(`탈퇴하려면 ${label} 로그인을 한 번 더 해 주세요`);
+      }
+      this.checkRequest(provider, reauth);
+      const { accessToken, profile } = await this.fetchProfile(
+        provider,
+        reauth,
+      );
+      if (profile.providerId !== row.providerId) {
+        throw invalidInput(
+          `로그인한 계정과 다른 ${label} 계정이에요. 같은 계정으로 다시 시도해 주세요`,
+        );
+      }
+      await (provider === 'naver' ? this.naver : this.google).revoke(
+        accessToken,
+      );
+    }
     await this.db(() => this.prisma.user.delete({ where: { id: userId } }));
   }
 

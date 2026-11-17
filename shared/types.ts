@@ -63,6 +63,12 @@ export type RouteSearchResponse = {
 // 지도에 표시하는 시설 (ERD facility_types.code 중 3종). 가로등·보안등은 안전점수에만 써서 응답에 없다
 export type FacilityType = "cctv" | "emergency_bell" | "police";
 
+// 안전점수에 쓰는 시설 5종 (ERD facility_types.code 전부). 지도에 띄우지 않는 가로등·보안등도 들어간다
+export type ScoreFacilityType = "street_light" | "security_light" | FacilityType;
+
+// 경로 근처 시설의 종류별 개수. 0인 종류도 키가 있다. 종류별로 같은 좌표는 한 곳으로 센다 (안전점수와 같은 지점 규칙)
+export type FacilityCounts = Record<ScoreFacilityType, number>;
+
 export type Facility = {
   id: number;
   type: FacilityType;

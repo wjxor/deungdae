@@ -1,11 +1,23 @@
-import type { LatLng } from '../../../../shared/types.js';
+import type { LatLng, ScoreFacilityType } from '../../../../shared/types.js';
 import { Prisma } from '../generated/prisma/client.js';
 
 /** 구간마다 이 반경 안의 시설을 센다 (REQUIREMENTS 안전점수 규칙) */
 export const FACILITY_RADIUS_M = 30;
 
+/** 안전점수에 쓰는 시설 5종 — ERD `facility_types.code`. 경로별 개수 응답의 키 순서이기도 하다 */
+export const SCORE_FACILITY_TYPES: readonly ScoreFacilityType[] = [
+  'street_light',
+  'security_light',
+  'cctv',
+  'emergency_bell',
+  'police',
+];
+
 /** `segmentScoreQuery` 결과 한 행. 시설이 하나도 없는 구간은 행이 없다 */
 export type SegmentScoreRow = { i: number; raw: number };
+
+/** `routeFacilityQuery` 결과 한 행. `type`은 DB 값 그대로라 5종 밖의 값이 올 수도 있다. 없는 종류는 행이 없다 */
+export type RouteFacilityRow = { i: number; type: string; n: number };
 
 /**
  * 구간(선)마다 반경 30m 안 시설의 가중치 합(원점수)을 구하는 SQL. 가중치는 `facility_types.weight`라
@@ -17,18 +29,34 @@ export type SegmentScoreRow = { i: number; raw: number };
  * 분석 스크립트(scripts/safety-score-experiment.mjs)도 이 함수로 같은 SQL을 돌린다
  */
 export function segmentScoreQuery(paths: readonly LatLng[][]): Prisma.Sql {
+  return Prisma.sql`
+    SELECT spot.i, sum(ft.weight)::int AS raw
+    FROM (${spotsNear(paths)}) AS spot
+    JOIN facility_types ft ON ft.code = spot.type
+    GROUP BY spot.i`;
+}
+
+/**
+ * 경로(선)마다 반경 30m 안 시설을 종류별로 세는 SQL — 경로 화면 펼침의 "경로 주변 안심시설"용 (FR-007).
+ * 점수 쿼리와 같은 지점 규칙이라 같은 좌표는 한 곳이다. 경로 선 하나로 세서 구간 둘에 걸친 시설도 한 번만 센다.
+ * `i`는 `paths`의 순서다
+ */
+export function routeFacilityQuery(paths: readonly LatLng[][]): Prisma.Sql {
+  return Prisma.sql`
+    SELECT spot.i, spot.type, count(*)::int AS n
+    FROM (${spotsNear(paths)}) AS spot
+    GROUP BY spot.i, spot.type`;
+}
+
+/** 선마다 반경 30m 안의 지점(종류·좌표가 같으면 한 행) — 점수·개수 쿼리가 같이 쓴다 */
+function spotsNear(paths: readonly LatLng[][]): Prisma.Sql {
   const ids = paths.map((_, i) => i);
   const lines = paths.map(toLineWkt);
   return Prisma.sql`
-    SELECT spot.i, sum(ft.weight)::int AS raw
-    FROM (
       SELECT DISTINCT s.i, f.type, ST_AsBinary(f.location)
       FROM unnest(${ids}::int[], ${lines}::text[]) AS s(i, wkt)
       JOIN facilities f
-        ON ST_DWithin(f.location, ST_GeogFromText(s.wkt), ${FACILITY_RADIUS_M}::float8)
-    ) AS spot
-    JOIN facility_types ft ON ft.code = spot.type
-    GROUP BY spot.i`;
+        ON ST_DWithin(f.location, ST_GeogFromText(s.wkt), ${FACILITY_RADIUS_M}::float8)`;
 }
 
 /** 좌표 목록 → `SRID=4326;LINESTRING(경도 위도, …)` (WKT는 경도가 먼저) */

@@ -80,7 +80,7 @@ node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs.json
 | 웹 `deungdae-map` | https://deungdae-map.vercel.app | `apps/web` | Vite | `VITE_KAKAO_JS_KEY`·`VITE_API_BASE_URL` |
 
 - 환경변수 값은 Vercel 프로젝트 설정에만 넣고 저장소에는 두지 않는다. `CORS_ORIGINS`에는 배포한 웹 주소를 넣는다 (쉼표로 여러 개)
-- PR마다 Vercel이 미리보기 주소를 PR에 댓글로 단다. 미리보기는 Vercel 로그인이 필요해서 지금은 상협 계정으로만 열린다
+- PR마다 Vercel이 미리보기를 배포한다 (PR 아래 체크 "Vercel – deungdae-api"·"Vercel – deungdae-map"). PR 댓글은 2026-11-15에 껐다. 미리보기는 Vercel 로그인이 필요해서 지금은 상협 계정으로만 열린다
 - Node 버전은 `package.json`의 `engines`(`^22.13.0`)를 따른다. Vercel 프로젝트 설정보다 이 값이 우선한다
 - 웹 주소는 카카오 JavaScript SDK 도메인(`docs/EXTERNAL_APIS.md`)과 서버 `CORS_ORIGINS`에 등록돼 있다. 웹 PR 미리보기 주소와 처음 만들 때 붙은 `deungdae-umber.vercel.app`은 등록하지 않아서 지도·검색이 안 된다. 화면은 실제 주소나 로컬에서 확인한다
 

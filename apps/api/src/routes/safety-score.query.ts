@@ -29,28 +29,36 @@ export type RouteFacilityRow = { i: number; type: string; n: number };
  * 분석 스크립트(scripts/safety-score-experiment.mjs)도 이 함수로 같은 SQL을 돌린다
  */
 export function segmentScoreQuery(paths: readonly LatLng[][]): Prisma.Sql {
+  const ids = paths.map((_, i) => i);
   return Prisma.sql`
     SELECT spot.i, sum(ft.weight)::int AS raw
-    FROM (${spotsNear(paths)}) AS spot
+    FROM (${spotsNear(ids, paths)}) AS spot
     JOIN facility_types ft ON ft.code = spot.type
     GROUP BY spot.i`;
 }
 
 /**
- * 경로(선)마다 반경 30m 안 시설을 종류별로 세는 SQL — 경로 화면 펼침의 "경로 주변 안심시설"용 (FR-007).
- * 점수 쿼리와 같은 지점 규칙이라 같은 좌표는 한 곳이다. 경로 선 하나로 세서 구간 둘에 걸친 시설도 한 번만 센다.
- * `i`는 `paths`의 순서다
+ * 경로마다 반경 30m 안 시설을 종류별로 세는 SQL — 경로 화면 펼침의 "경로 주변 안심시설"용 (FR-007).
+ * `segmentsByRoute[k]`는 경로 k의 구간 선들이다. 구간을 이으면 경로 선이라 결과는 경로 선 전체에서 센 것과 같고,
+ * 경로 번호로 묶어 구간 둘에 걸친 시설도 한 번만 센다. 점수 쿼리와 같은 지점 규칙이라 같은 좌표는 한 곳이다.
+ * 경로 선 하나를 통째로 넘기면 인덱스가 경로 전체를 감싸는 사각형을 훑어 14.7km 경로에서 8초 걸려서 구간으로 넘긴다
+ * (2026-11-17 로컬 측정, 구간이면 점수 쿼리처럼 50m 단위로 찾는다). `i`는 경로 순서다
  */
-export function routeFacilityQuery(paths: readonly LatLng[][]): Prisma.Sql {
+export function routeFacilityQuery(
+  segmentsByRoute: readonly LatLng[][][],
+): Prisma.Sql {
+  const ids = segmentsByRoute.flatMap((segments, k) => segments.map(() => k));
   return Prisma.sql`
     SELECT spot.i, spot.type, count(*)::int AS n
-    FROM (${spotsNear(paths)}) AS spot
+    FROM (${spotsNear(ids, segmentsByRoute.flat())}) AS spot
     GROUP BY spot.i, spot.type`;
 }
 
-/** 선마다 반경 30m 안의 지점(종류·좌표가 같으면 한 행) — 점수·개수 쿼리가 같이 쓴다 */
-function spotsNear(paths: readonly LatLng[][]): Prisma.Sql {
-  const ids = paths.map((_, i) => i);
+/** 선마다 반경 30m 안의 지점(종류·좌표가 같으면 `ids`별로 한 행) — 점수·개수 쿼리가 같이 쓴다. `ids[j]`가 `paths[j]`의 번호 */
+function spotsNear(
+  ids: readonly number[],
+  paths: readonly LatLng[][],
+): Prisma.Sql {
   const lines = paths.map(toLineWkt);
   return Prisma.sql`
       SELECT DISTINCT s.i, f.type, ST_AsBinary(f.location)

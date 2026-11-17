@@ -51,8 +51,8 @@ function setup({
     ),
   );
   const facilityCounts = vi.fn(
-    (paths: LatLng[][]): Promise<FacilityCounts[]> =>
-      Promise.resolve(paths.map((_, k) => countsOf(k))),
+    (routes: LatLng[][][]): Promise<FacilityCounts[]> =>
+      Promise.resolve(routes.map((_, k) => countsOf(k))),
   );
   const service = new RoutesService(
     { find } as unknown as WalkRouteService,
@@ -186,8 +186,14 @@ describe('RoutesService', () => {
     expect(rawScores).not.toHaveBeenCalled();
   });
 
-  it('경로마다 시설 개수를 담는다 — 구간이 아니라 후보 경로 전체 선으로 한 번 센다', async () => {
-    const { service, facilityCounts } = setup({ shortestRaw: 1, broadRaw: 5 });
+  it('경로마다 시설 개수를 담는다 — 점수와 같은 구간 조각을 경로별로 넘겨 한 번에 센다', async () => {
+    // 두 후보를 구분하려고 넓은 길은 모양을 뒤집는다
+    const broadPath = [...SHORTEST.path].reverse();
+    const { service, facilityCounts } = setup({
+      broadRoute: Promise.resolve({ ...broad(380), path: broadPath }),
+      shortestRaw: 1,
+      broadRaw: 5,
+    });
     const res = await service.search(REQ);
 
     expect(res.sameRoute).toBe(false);
@@ -196,8 +202,8 @@ describe('RoutesService', () => {
     expect(safe.facilityCounts).toEqual(countsOf(1));
     expect(facilityCounts).toHaveBeenCalledOnce();
     expect(facilityCounts).toHaveBeenCalledWith([
-      SHORTEST.path,
-      broad(380).path,
+      splitPath(SHORTEST.path).map((p) => p.path),
+      splitPath(broadPath).map((p) => p.path),
     ]);
   });
 
@@ -218,7 +224,9 @@ describe('RoutesService', () => {
     });
     const res = await service.search(REQ);
 
-    expect(facilityCounts).toHaveBeenCalledWith([SHORTEST.path]);
+    expect(facilityCounts).toHaveBeenCalledWith([
+      splitPath(SHORTEST.path).map((p) => p.path),
+    ]);
     expect(res.routes[0].facilityCounts).toEqual(countsOf(0));
     expect(res.routes[1].facilityCounts).toEqual(countsOf(0));
   });

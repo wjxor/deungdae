@@ -101,7 +101,9 @@ describe('SafetyScoreService.facilityCounts', () => {
       { i: 1, type: 'cctv', n: 2 },
       { i: 0, type: 'street_light', n: 5 },
     ]);
-    expect(await service.facilityCounts(PATHS.slice(0, 2))).toEqual([
+    expect(
+      await service.facilityCounts([PATHS.slice(0, 2), PATHS.slice(2)]),
+    ).toEqual([
       { ...ZERO, street_light: 5 },
       { ...ZERO, cctv: 2 },
     ]);
@@ -111,7 +113,7 @@ describe('SafetyScoreService.facilityCounts', () => {
   it('모르는 종류 행은 버린다', async () => {
     const { service, queryRaw } = fakePrisma();
     queryRaw.mockResolvedValue([{ i: 0, type: 'toilet', n: 3 }]);
-    expect(await service.facilityCounts(PATHS.slice(0, 1))).toEqual([ZERO]);
+    expect(await service.facilityCounts([PATHS])).toEqual([ZERO]);
   });
 
   it('경로가 없으면 쿼리하지 않는다', async () => {
@@ -122,7 +124,7 @@ describe('SafetyScoreService.facilityCounts', () => {
 
   it('DB가 설정되지 않았으면 502 EXTERNAL_API_ERROR', async () => {
     const { service, queryRaw } = fakePrisma(false);
-    expect(await errorOf(service.facilityCounts(PATHS))).toEqual({
+    expect(await errorOf(service.facilityCounts([PATHS]))).toEqual({
       status: 502,
       code: 'EXTERNAL_API_ERROR',
     });
@@ -137,7 +139,7 @@ describe('SafetyScoreService.facilityCounts', () => {
     queryRaw.mockRejectedValue(
       new Error('Raw query failed\nLINESTRING(127.4346 36.3323, …)'),
     );
-    expect(await errorOf(service.facilityCounts(PATHS))).toEqual({
+    expect(await errorOf(service.facilityCounts([PATHS]))).toEqual({
       status: 502,
       code: 'EXTERNAL_API_ERROR',
     });

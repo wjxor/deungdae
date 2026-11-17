@@ -92,13 +92,16 @@ export class RoutesService {
 
   /**
    * 후보마다 구간을 나누고, 모든 구간의 원점수를 한 번에 받아 점수를 매긴다.
-   * 펼침용 시설 개수는 구간이 아니라 후보 경로 선 전체로 세고, 점수 쿼리와 동시에 돌린다. 둘 중 하나라도 실패하면 502
+   * 펼침용 시설 개수는 같은 구간을 후보별로 묶어 후보마다 세고(구간 개수의 합이 아님), 점수 쿼리와 동시에 돌린다.
+   * 둘 중 하나라도 실패하면 502
    */
   private async score(walks: WalkRoute[]): Promise<ScoredRoute[]> {
     const pieces = walks.map((w) => splitPath(w.path));
     const [raws, counts] = await Promise.all([
       this.scores.rawScores(pieces.flat().map((piece) => piece.path)),
-      this.scores.facilityCounts(walks.map((w) => w.path)),
+      this.scores.facilityCounts(
+        pieces.map((route) => route.map((piece) => piece.path)),
+      ),
     ]);
 
     let next = 0;

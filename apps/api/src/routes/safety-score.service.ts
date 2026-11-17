@@ -41,17 +41,20 @@ export class SafetyScoreService {
   }
 
   /**
-   * 경로마다 반경 30m 안 시설의 종류별 개수를 `paths`와 같은 순서로 돌려준다 (경로 화면 펼침, FR-007).
+   * 경로마다 반경 30m 안 시설의 종류별 개수를 경로 순서대로 돌려준다 (경로 화면 펼침, FR-007).
+   * `segmentsByRoute[k]`는 경로 k의 구간 선들이다(점수에 쓰는 구간 그대로 — 이으면 경로 선이다).
    * 5종 키가 늘 있고 없는 종류는 0, 5종 밖의 종류는 버린다. 점수와 같은 지점 규칙이다.
    * DB가 없거나 실패하면 점수와 같이 502 EXTERNAL_API_ERROR
    */
-  async facilityCounts(paths: readonly LatLng[][]): Promise<FacilityCounts[]> {
-    if (paths.length === 0) return [];
+  async facilityCounts(
+    segmentsByRoute: readonly LatLng[][][],
+  ): Promise<FacilityCounts[]> {
+    if (segmentsByRoute.length === 0) return [];
     const rows = await this.query<RouteFacilityRow>(
-      routeFacilityQuery(paths),
+      routeFacilityQuery(segmentsByRoute),
       '시설 개수 조회 실패',
     );
-    const counts = paths.map(() => emptyCounts());
+    const counts = segmentsByRoute.map(() => emptyCounts());
     for (const { i, type, n } of rows) {
       if (isScoreFacilityType(type)) counts[i][type] = n;
     }

@@ -137,8 +137,8 @@ type RedirectResult =
   | { kind: 'deleted' } // 탈퇴 확인을 거쳐 탈퇴를 마침
   | { kind: 'deleteFailed'; message: string }
 
-// 서비스가 돌아올 때 주소에 붙이는 값. 구글은 scope·authuser·prompt·hd도 붙인다
-const RETURN_KEYS = ['code', 'state', 'error', 'error_description', 'scope', 'authuser', 'prompt', 'hd']
+// 서비스가 돌아올 때 주소에 붙이는 값. 구글은 scope·authuser·prompt·hd와 보낸 곳을 알리는 iss(RFC 9207)도 붙인다
+const RETURN_KEYS = ['code', 'state', 'error', 'error_description', 'scope', 'authuser', 'prompt', 'hd', 'iss']
 
 let redirectResult: Promise<RedirectResult> | null = null
 

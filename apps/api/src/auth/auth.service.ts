@@ -139,7 +139,10 @@ export class AuthService {
       );
       if (profile.providerId !== row.providerId) {
         throw invalidInput(
-          `로그인한 계정과 다른 ${label} 계정이에요. 같은 계정으로 다시 시도해 주세요`,
+          // 네이버 인가 화면에는 계정 고르기가 없어서, 브라우저의 네이버 로그인이 다른 계정이면 다시 해도 같은 계정으로 돌아온다
+          provider === 'naver'
+            ? '로그인한 계정과 다른 네이버 계정이에요. 네이버에서 로그아웃한 뒤 같은 계정으로 다시 시도해 주세요'
+            : `로그인한 계정과 다른 ${label} 계정이에요. 같은 계정으로 다시 시도해 주세요`,
         );
       }
       await (provider === 'naver' ? this.naver : this.google).revoke(

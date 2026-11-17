@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
+import type { MockInstance } from 'vitest';
 import { ApiException } from '../common/api-exception.js';
 import { GoogleAuthClient } from './google-auth.client.js';
 
@@ -43,8 +44,11 @@ async function failure(promise: Promise<unknown>) {
   return { status: ex.getStatus(), code: body.error.code };
 }
 
+/** 경고 로그 스파이. 로그에 토큰·코드가 남지 않는지 볼 때 쓴다 */
+let warn: MockInstance<Logger['warn']>;
+
 beforeEach(() => {
-  vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+  warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
   vi.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
 });
 
@@ -170,7 +174,6 @@ describe('GoogleAuthClient.revoke', () => {
 
 describe('GoogleAuthClient 로그', () => {
   it('실패해도 로그에 토큰·인가 코드·시크릿이 남지 않는다', async () => {
-    const warn = vi.mocked(Logger.prototype.warn);
     stubFetch(() => reply(401, '{"error":"invalid_client"}'));
     await failure(client().exchangeCode('secret-code-123', WEB));
     stubFetch(() => reply(400, '{"error":"invalid_token"}'));

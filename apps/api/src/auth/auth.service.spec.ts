@@ -368,6 +368,24 @@ describe('AuthService.deleteAccount (네이버·구글 — 다시 로그인해 �
     expect(prisma.user.delete).not.toHaveBeenCalled();
   });
 
+  it('네이버는 계정을 고르는 화면이 없어서, 다른 계정이면 네이버에서 로그아웃한 뒤 다시 하라고 안내한다', async () => {
+    prisma.user.findUnique.mockResolvedValue(NAVER_ROW);
+    naver.getProfile.mockResolvedValue({
+      providerId: 'someoneElse',
+      nickname: '다른사람',
+    });
+    const e = await service()
+      .deleteAccount(5, REAUTH)
+      .catch((err: unknown) => err);
+    expect(e).toBeInstanceOf(ApiException);
+    const body = (e as ApiException).getResponse() as {
+      error: { message: string };
+    };
+    expect(body.error.message).toBe(
+      '로그인한 계정과 다른 네이버 계정이에요. 네이버에서 로그아웃한 뒤 같은 계정으로 다시 시도해 주세요',
+    );
+  });
+
   it('다시 로그인한 코드가 없으면 400이고 서비스를 부르지 않는다', async () => {
     prisma.user.findUnique.mockResolvedValue(GOOGLE_ROW);
     expect(await failure(service().deleteAccount(5))).toEqual({

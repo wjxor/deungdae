@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FacilityType, LatLng } from '../../../../shared/types'
-import { ROUTE_FACILITY_VISIBLE } from '../lib/facilityIcon'
+import { NO_FACILITIES, ROUTE_FACILITY_VISIBLE } from '../lib/facilityIcon'
 import { loadKakaoMaps } from '../lib/kakao'
 import FacilityLayer from './FacilityLayer'
 import RouteLayer, { type RouteView } from './RouteLayer'
@@ -10,7 +10,7 @@ type Props = {
   myLocation: LatLng | null
   pin: LatLng | null
   originPin?: LatLng | null // 출발지 핀 (S2 미리보기)
-  facilityVisible: Record<FacilityType, boolean>
+  facilityVisible?: Record<FacilityType, boolean> // 지도 홈(S1) 필터. 없으면 모두 숨긴다. 경로 화면은 이 값 대신 안심벨·지구대만 보인다
   heading?: number | null // 이동 중 진행 방향(북쪽 0도). 있으면 내 위치 점에 방향 삼각형을 붙인다
   route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 안심벨·지구대만 보이며 도착지 핀은 RouteLayer가 그린다
 }
@@ -19,7 +19,7 @@ const NAV_LEVEL = 2 // 이동 중 지도 확대 단계 (숫자가 작을수록 �
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 
-export default function KakaoMap({ center, myLocation, pin, originPin = null, facilityVisible, heading = null, route }: Props) {
+export default function KakaoMap({ center, myLocation, pin, originPin = null, facilityVisible = NO_FACILITIES, heading = null, route }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const myOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const pinOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)

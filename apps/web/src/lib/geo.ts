@@ -13,6 +13,9 @@ export function distanceM(a: LatLng, b: LatLng): number {
 // 대전시청. 현재 위치를 못 잡았을 때의 기본 위치
 export const DAEJEON_CENTER: LatLng = { lat: 36.3504, lng: 127.3845 }
 
+// 대전을 감싸는 사각형. 서버 `DAEJEON_RECT`(apps/api/src/common/daejeon.ts, API.md 2장)와 같은 값이고 시설은 모두 이 안에 있다
+export const DAEJEON_RECT = { minLat: 36.18, minLng: 127.24, maxLat: 36.5, maxLng: 127.56 } as const
+
 // 점에서 경로(꺾은선)까지의 가장 짧은 거리(m). 경로 길이가 몇 km라 위도 한 도를 110.5km,
 // 경도 한 도를 111.3km × cos(위도)로 보는 평면 근사로 충분하다 (이 범위의 오차는 1m보다 훨씬 작다)
 export function distanceToPathM(p: LatLng, path: LatLng[]): number {

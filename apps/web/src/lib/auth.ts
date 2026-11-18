@@ -27,6 +27,7 @@ export type DeleteResult = 'deleted' | 'redirecting' | 'failed'
 
 export const ACCOUNT_DELETED_MESSAGE = '탈퇴했어요. 그동안 등대를 써 주셔서 고마워요.'
 export const DELETE_FAILED_MESSAGE = '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요.'
+export const DELETE_CANCELLED_MESSAGE = '탈퇴를 취소했어요.'
 
 // 로그인 정보는 이 브라우저에만 둔다. 서버는 토큰을 저장하지 않아 로그아웃은 이 값을 지우는 것이다 (API.md 5장)
 const SESSION_KEY = 'deungdae.auth'
@@ -135,7 +136,7 @@ type RedirectResult =
   | { kind: 'failed'; provider: SocialProvider | null }
   | { kind: 'ok'; session: Session }
   | { kind: 'deleted' } // 탈퇴 확인을 거쳐 탈퇴를 마침
-  | { kind: 'deleteFailed'; message: string }
+  | { kind: 'deleteFailed'; message: string } // 탈퇴하지 않음 (취소·실패). message를 지도 홈에 띄운다
 
 // 서비스가 돌아올 때 주소에 붙이는 값. 구글은 scope·authuser·prompt·hd와 보낸 곳을 알리는 iss(RFC 9207)도 붙인다
 const RETURN_KEYS = ['code', 'state', 'error', 'error_description', 'scope', 'authuser', 'prompt', 'hd', 'iss']
@@ -161,7 +162,11 @@ async function handleRedirect(): Promise<RedirectResult> {
   history.replaceState(history.state, '', `${location.pathname}${rest ? `?${rest}` : ''}${location.hash}`)
 
   const pending = takePending()
-  if (error) return { kind: 'cancelled' }
+  // 로그인 취소는 안내 없이 넘어가고, 탈퇴 확인 화면에서 취소하면 탈퇴하지 않았다고 알린다 (네이버·구글 모두 취소는 access_denied)
+  if (error) {
+    if (pending?.purpose !== 'delete') return { kind: 'cancelled' }
+    return { kind: 'deleteFailed', message: error === 'access_denied' ? DELETE_CANCELLED_MESSAGE : DELETE_FAILED_MESSAGE }
+  }
   const checked = code && state && pending && state === pending.state ? { code, state, pending } : null
   if (pending?.purpose === 'delete') {
     return checked ? completeDelete(checked.pending.provider, checked.code, checked.state) : { kind: 'deleteFailed', message: DELETE_FAILED_MESSAGE }

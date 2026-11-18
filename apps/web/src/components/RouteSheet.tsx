@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import type { FacilityType, Route, RouteType } from '../../../../shared/types'
 import { FACILITY_TYPES, ROUTE_FACILITY_VISIBLE } from '../lib/facilityIcon'
-import { NEAR_M, countFacilitiesAlong, type FacilityCounts } from '../lib/routeFacilities'
 import {
   LEVEL_LABEL,
   LEVEL_ORDER,
@@ -36,11 +35,15 @@ const TAP_PX = 8 // 이보다 덜 움직이면 누른 것으로 본다
 
 const TYPES: RouteType[] = ['shortest', 'safe']
 
-// 경로 주변 시설 이름과 세는 단위. 지구대 데이터에는 파출소도 들어 있다
-const FACILITY_LABEL: Record<FacilityType, { name: string; unit: string }> = {
-  cctv: { name: 'CCTV', unit: '대' },
-  emergency_bell: { name: '안심벨', unit: '개' },
-  police: { name: '지구대·파출소', unit: '곳' },
+// 서버가 경로 주변 시설(route.facilityCounts)을 세는 반경. 안전점수와 같은 30m다 (API.md 3장)
+const NEAR_M = 30
+
+// 경로 주변 시설 이름. 지구대 데이터에는 파출소도 들어 있다.
+// 개수는 모두 "곳"으로 센다 — 서버가 종류별로 같은 좌표를 한 곳으로 센다 (CCTV·안심벨 지점 규칙)
+const FACILITY_NAME: Record<FacilityType, string> = {
+  cctv: 'CCTV',
+  emergency_bell: '안심벨',
+  police: '지구대·파출소',
 }
 
 // 구간 색 띠. 길이는 경로 거리에 비례하고, 색은 안전도가 바뀌는 곳에서만 나뉜다 (FR-008)
@@ -81,9 +84,6 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect, onSt
   const [snap, setSnap] = useState<Snap>('half')
   const [dy, setDy] = useState(0) // 끄는 동안 시트가 손가락을 따라가는 거리
   const startY = useRef<number | null>(null)
-  // 경로 주변 시설 개수. 펼쳤을 때 처음 한 번만 부른다
-  const [counts, setCounts] = useState<Record<RouteType, FacilityCounts> | null>(null)
-  const fetchedFor = useRef<typeof routes | null>(null)
 
   const route = routes[sameRoute ? 'safe' : selected] // 같은 경로면 어느 쪽이든 내용이 같다
   const longest = Math.max(routes.shortest.distanceM, routes.safe.distanceM)
@@ -91,21 +91,9 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect, onSt
   const diff = routeDiff(routes.shortest, routes.safe)
   const index = ORDER.indexOf(snap)
 
-  useEffect(() => {
-    if (snap !== 'full' || fetchedFor.current === routes) return
-    fetchedFor.current = routes
-    countFacilitiesAlong(routes)
-      .then((c) => {
-        if (fetchedFor.current === routes) setCounts(c)
-      })
-      .catch(() => {
-        // 시설 개수는 덧붙이는 정보라 못 받으면 말하지 않는다. 다시 펼치면 한 번 더 시도한다
-        if (fetchedFor.current === routes) fetchedFor.current = null
-      })
-  }, [snap, routes])
-  const near = counts?.[sameRoute ? 'safe' : selected]
-  // 지도에 보이는 시설(안심벨·지구대)만 센다. CCTV는 경로 화면 지도에 안 보여서 개수도 말하지 않는다
-  const nearTypes = near ? FACILITY_TYPES.filter((type) => ROUTE_FACILITY_VISIBLE[type] && (near[type] ?? 0) > 0) : []
+  const near = route.facilityCounts
+  // 지도에 보이는 시설(안심벨·지구대)만 보여 준다. CCTV는 경로 화면 지도에 안 보여서 개수도 말하지 않는다
+  const nearTypes = FACILITY_TYPES.filter((type) => ROUTE_FACILITY_VISIBLE[type] && near[type] > 0)
 
   const cycle = () => setSnap(ORDER[(index + 1) % ORDER.length])
   const step = (delta: number) => setSnap(ORDER[Math.min(ORDER.length - 1, Math.max(0, index + delta))])
@@ -280,7 +268,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect, onSt
 
       {snap === 'full' && (
         <>
-          {near && nearTypes.length > 0 && (
+          {nearTypes.length > 0 && (
             <div className="rs-sec">
               <h3>
                 경로 주변 안심시설<small>경로에서 {NEAR_M}m 안</small>
@@ -289,11 +277,8 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect, onSt
                 {nearTypes.map((type) => (
                   <li key={type}>
                     <i className={`fdot ${type}`} aria-hidden="true" />
-                    <span>{FACILITY_LABEL[type].name}</span>
-                    <b>
-                      {near[type]}
-                      {FACILITY_LABEL[type].unit}
-                    </b>
+                    <span>{FACILITY_NAME[type]}</span>
+                    <b>{near[type]}곳</b>
                   </li>
                 ))}
               </ul>

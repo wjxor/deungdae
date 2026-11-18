@@ -12,7 +12,7 @@ const M_PER_LAT = 110540
 // 내 위치를 경로(꺾은선)에 가장 가까운 점으로 옮겨 놓고, 거기서 끝까지 남은 비율과 경로에서 떨어진 거리를 구한다.
 // range를 주면 경로 시작부터 그 길이 범위 안의 부분만 본다. 경로가 되돌아오는 모양(ㄷ자 등)에서 GPS 오차로
 // 아직 안 간 뒤쪽 길에 잡히지 않게, 이동 중에는 지금까지 온 곳 근처만 찾는다. 범위에 선분이 없으면 offRouteM이 Infinity.
-// 거리 계산은 distanceToPathM(geo.ts)과 같은 평면 근사다 (몇 km 안의 오차는 1m보다 훨씬 작다)
+// 거리는 위도 한 도를 110.5km, 경도 한 도를 111.3km × cos(위도)로 보는 평면 근사로 잰다 (몇 km 안의 오차는 1m보다 훨씬 작다)
 export function routeProgress(p: LatLng, path: LatLng[], range?: { fromM: number; toM: number }): Progress {
   if (path.length < 2) return { remainingFraction: 1, alongM: 0, totalM: 0, offRouteM: path.length === 0 ? Infinity : 0 }
   const mPerLng = 111320 * Math.cos((p.lat * Math.PI) / 180)

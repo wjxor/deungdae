@@ -54,7 +54,7 @@ apps/web/src/
     ├── daylight.ts         # 일출·일몰 시각으로 낮/밤 판별, 다음 확인 시각 (서버 isNight와 같은 식)
     ├── auth.ts             # 로그인·탈퇴
     ├── favorites.ts        # 즐겨찾기
-    └── geo.ts, routeSummary.ts, routeFacilities.ts, facilityIcon.ts
+    └── geo.ts, routeSummary.ts, facilityIcon.ts
 ```
 
 ## 지금 동작

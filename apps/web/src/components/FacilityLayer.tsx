@@ -66,12 +66,13 @@ export default function FacilityLayer({ map, visible, wide = false }: Props) {
   const visibleRef = useRef(visible)
   const levelOkRef = useRef(true)
 
-  const apply = (map: kakao.maps.Map) => {
-    facilities.current.forEach((f) => {
+  // list를 주면 그 시설만 본다 (새로 받은 칸). 없으면 받은 시설 전체 (줌·필터가 바뀔 때)
+  const apply = (map: kakao.maps.Map, list: Iterable<Facility> = facilities.current.values()) => {
+    for (const f of list) {
       const show = levelOkRef.current && visibleRef.current[f.type]
       let overlay = overlays.current.get(f.id)
       if (!overlay) {
-        if (!show) return
+        if (!show) continue
         overlay = new kakao.maps.CustomOverlay({
           position: new kakao.maps.LatLng(f.location.lat, f.location.lng),
           content: createFacilityIcon(f.type),
@@ -83,7 +84,7 @@ export default function FacilityLayer({ map, visible, wide = false }: Props) {
         overlays.current.set(f.id, overlay)
       }
       overlay.setVisible(show)
-    })
+    }
   }
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export default function FacilityLayer({ map, visible, wide = false }: Props) {
     // 지도를 옮길 때 겹치는 시설은 id가 같아 한 번만 남는다
     const add = (list: Facility[]) => {
       list.forEach((f) => data.set(f.id, f))
-      apply(map) // 꺼 둔 종류는 오버레이를 만들지 않는다
+      apply(map, list) // 새로 받은 것만 본다. 꺼 둔 종류는 오버레이를 만들지 않는다
     }
 
     const load = async () => {

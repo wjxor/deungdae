@@ -24,7 +24,6 @@ Base URL: `/api` (배포 `https://deungdae-api.vercel.app/api`) · 형식: JSON 
 | 404 | ORIGIN_UNREACHABLE | 출발지 근처에 걸을 수 있는 길이 없음 (카카오 `START_LINK_NOT_FOUND`) |
 | 404 | DESTINATION_UNREACHABLE | 도착지 근처에 걸을 수 있는 길이 없음 (카카오 `END_LINK_NOT_FOUND`) |
 | 404 | ROUTE_NOT_FOUND | 그 밖의 경로 계산 실패 (카카오 `ROUTE_RESULT_NOT_FOUND` 등) |
-| 409 | EMAIL_EXISTS | 회원가입 중복 |
 | 502 | EXTERNAL_API_ERROR | 카카오·천문연 API 실패·응답 없음, 시설 조회 중 DB 실패 |
 | 503 | QUOTA_EXCEEDED | 카카오 도보 경로 하루 무료 한도(1,000건) 초과. 서버 캐시에 있는 같은 요청은 한도와 상관없이 응답한다 |
 
@@ -47,7 +46,6 @@ export type ErrorCode =
   | "ORIGIN_UNREACHABLE"
   | "DESTINATION_UNREACHABLE"
   | "ROUTE_NOT_FOUND"
-  | "EMAIL_EXISTS"
   | "EXTERNAL_API_ERROR"
   | "QUOTA_EXCEEDED";
 
@@ -306,6 +304,7 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 - 구글은 앱 안 브라우저(웹뷰)에서 로그인을 막는다 (403 `disallowed_useragent`). 웹은 카카오톡 안이면 등대를 외부 브라우저로 다시 열고(`kakaotalk://web/openExternal`), 그 밖의 앱 안 브라우저면 "사파리·크롬에서 열어 주세요"를 보여 준다
 - 로그아웃은 서버를 부르지 않고 웹이 토큰을 버린다. 버린 토큰도 7일 안에는 쓸 수 있다 (토큰을 서버에 저장하지 않아서)
 - 웹은 `{ accessToken, user }`를 localStorage에 두고, 앱을 다시 열면 `GET /auth/me`로 확인한다
+- 서비스가 `error`를 붙여 돌려보내면 웹은 `access_denied`(사용자가 취소)만 안내 없이 넘기고, 그 밖(카카오톡 로그인 시간 초과 `timeout` 등)은 로그인 실패로 알린다. 탈퇴할 때 401(토큰 만료·이미 탈퇴)이면 로그아웃시키고 "다시 로그인한 뒤 탈퇴해 주세요"를 보여 준다. 네이버·구글 회원은 서비스 확인 화면으로 보내기 전에 `GET /auth/me`로 먼저 확인한다 (2026-11-18)
 
 ### POST /api/auth/kakao
 요청 `KakaoLoginRequest`

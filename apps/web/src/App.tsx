@@ -153,6 +153,7 @@ export default function App() {
       onDelete={() => auth.deleteAccount()}
       onDeleted={endSession}
       accountNotice={accountNotice}
+      authBusy={auth.busyNotice}
     />
   )
 }

@@ -30,7 +30,8 @@ curl 'http://localhost:3000/api/facilities?bbox=36.35,127.33,36.37,127.36'
 - `/api/facilities`는 DB `facilities` 테이블을 읽는다. 시설 데이터를 적재하기 전에는 늘 빈 목록이다
 - `/api/daylight`는 `KASI_API_KEY`(공공데이터포털 서비스 키, 천문연 출몰시각 활용 신청된 것)가 필요하다. 없으면 오늘 값이 DB `sun_times`에 있을 때만 답하고, 없으면 502 `EXTERNAL_API_ERROR`. 천문연은 하루에 한 번만 부른다 (같은 날은 서버 메모리, 다시 켜면 `sun_times`)
 - CORS는 개발 웹(`http://localhost:5173`)과 환경변수 `CORS_ORIGINS`(쉼표로 구분)에 적은 주소를 허용한다. 배포 서버(Vercel)에는 배포한 웹 주소를 넣는다. 로컬에서는 넣지 않아도 된다
-- `/api/auth/*`(카카오 로그인, API.md 5장)는 `KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`(카카오 콘솔 [REST API 키] > 클라이언트 시크릿)·`KAKAO_ADMIN_KEY`(어드민 키, 탈퇴 때 연결 끊기)·`JWT_SECRET`(로그인 토큰 서명, 32자 이상 무작위 값 — 로컬과 배포 값을 다르게)이 필요하다. 없으면 서버는 뜨고 로그인·탈퇴만 502 `EXTERNAL_API_ERROR`. 카카오 로그인의 리다이렉트 URI도 `CORS_ORIGINS`의 주소 루트만 받는다
+- 카카오 로그인(`/api/auth/kakao`, 카카오 회원 탈퇴 포함, API.md 5장)은 `KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`(카카오 콘솔 [REST API 키] > 클라이언트 시크릿)·`KAKAO_ADMIN_KEY`(어드민 키, 탈퇴 때 연결 끊기)가 필요하다. 없으면 서버는 뜨고 카카오 로그인·탈퇴만 502 `EXTERNAL_API_ERROR`. 리다이렉트 URI는 카카오·네이버·구글 모두 `CORS_ORIGINS`의 주소 루트만 받는다
+- `JWT_SECRET`은 우리 로그인 토큰(HS256)의 서명 값이라 카카오·네이버·구글 로그인과 `GET·DELETE /api/auth/me`에 모두 필요하다. 32자 이상 무작위 값으로 두고, 로컬과 배포 값을 다르게 한다. 없거나 32자보다 짧으면 쓰지 않아(서버를 켤 때 경고 로그) 이 API들이 502 `EXTERNAL_API_ERROR`. 값을 바꾸면 이미 내준 토큰이 모두 401이 되어, 웹은 다음에 열 때 비회원으로 돌아간다 (다시 로그인)
 - 네이버·구글 로그인(`/api/auth/naver`·`/api/auth/google`, 탈퇴 재인증 포함)은 `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`(네이버 개발자센터 앱), `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`(구글 클라우드 OAuth 클라이언트)이 필요하다. 없으면 그 서비스의 로그인·탈퇴만 502. 콘솔 설정은 `docs/EXTERNAL_APIS.md`
 - 시크릿(카카오·네이버·구글)·어드민 키·`JWT_SECRET`은 GitHub·노션에 적지 않는다. 어드민 키는 모든 사용자에게 관리자 권한으로 쓸 수 있는 키다
 

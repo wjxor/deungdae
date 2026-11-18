@@ -8,7 +8,7 @@ type Props = {
   user: User
   onLogout: () => void
   onDelete: () => Promise<DeleteResult> // 탈퇴. 네이버·구글은 서비스 확인 화면으로 넘어가서(redirecting) 결과는 돌아온 뒤 지도 홈에 안내한다
-  onDeleted: () => void // 탈퇴가 끝난 뒤 화면 정리
+  onDeleted: () => void // 탈퇴가 끝났거나 로그인이 만료돼 로그아웃된 뒤 화면 정리 (만료 안내는 지도 홈에)
   onClose: () => void
 }
 
@@ -32,7 +32,7 @@ export default function MyInfo({ user, onLogout, onDelete, onDeleted, onClose }:
   const remove = async () => {
     setFailed(false)
     const result = await onDelete()
-    if (result === 'deleted') dismiss(onDeleted)
+    if (result === 'deleted' || result === 'expired') dismiss(onDeleted)
     else if (result === 'redirecting') setLeaving(true)
     else setFailed(true)
   }

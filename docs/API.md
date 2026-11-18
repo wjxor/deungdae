@@ -24,7 +24,6 @@ Base URL: `/api` (배포 `https://deungdae-api.vercel.app/api`) · 형식: JSON 
 | 404 | ORIGIN_UNREACHABLE | 출발지 근처에 걸을 수 있는 길이 없음 (카카오 `START_LINK_NOT_FOUND`) |
 | 404 | DESTINATION_UNREACHABLE | 도착지 근처에 걸을 수 있는 길이 없음 (카카오 `END_LINK_NOT_FOUND`) |
 | 404 | ROUTE_NOT_FOUND | 그 밖의 경로 계산 실패 (카카오 `ROUTE_RESULT_NOT_FOUND` 등) |
-| 409 | EMAIL_EXISTS | 회원가입 중복 |
 | 502 | EXTERNAL_API_ERROR | 카카오·천문연 API 실패·응답 없음, 시설 조회 중 DB 실패 |
 | 503 | QUOTA_EXCEEDED | 카카오 도보 경로 하루 무료 한도(1,000건) 초과. 서버 캐시에 있는 같은 요청은 한도와 상관없이 응답한다 |
 
@@ -47,7 +46,6 @@ export type ErrorCode =
   | "ORIGIN_UNREACHABLE"
   | "DESTINATION_UNREACHABLE"
   | "ROUTE_NOT_FOUND"
-  | "EMAIL_EXISTS"
   | "EXTERNAL_API_ERROR"
   | "QUOTA_EXCEEDED";
 
@@ -261,7 +259,7 @@ export type MeResponse = { user: User };
 - 구간은 경로를 길이가 같은 조각으로 나눈다. 구간 수 = 전체 길이 / 50m 반올림(최소 1)이라 한 구간은 40~67m(경로가 75m보다 짧으면 구간 하나). 경계는 경로 위 두 점 사이를 직선으로 보간해 만든다
 - 구간 `distanceM`의 합은 경로 `distanceM`(카카오 `totalDistance`)보다 조금 작다. 구간 거리는 경로 좌표로 잰 길이이고, 9월 실험 응답 30개에서 좌표 길이는 카카오 거리의 90~100%였다. 구간 비율(FR-008)은 구간끼리의 비율이라 영향이 없다
 - 대전 안인지는 `/places`와 같은 대전 사각형(위도 36.18~36.50·경도 127.24~127.56)으로 본다. 좌표로 구를 찾는 API를 더 부르지 않으려고 사각형으로 두어서, 세종시 남쪽 등 사각형 안의 대전 밖 좌표는 `OUT_OF_AREA`가 아니다
-- 같은 요청은 카카오를 한 번만 부른다 (CLAUDE.md, 하루 1,000건). 좌표를 소수점 4자리(약 10m)로 반올림해 카카오 호출과 캐시 키에 같이 쓰고, 성공한 응답만 `route_cache`에 24시간 둔다 (ERD). 같은 요청이 동시에 오면 먼저 온 호출 하나를 같이 기다린다. 캐시에 있으면 0.1~0.2초, 없으면 약 1초 (2026-10-25 대전역 → 우송대 1.3km, 로컬 서버). 배포 주소(Vercel 서울)에서는 새 검색 1.97초·같은 요청 0.40초 (2026-11-12 대전역 → 대전시청, 한 번 — 여러 경로로 다시 재는 것은 ROADMAP "응답 시간 다시 재기")
+- 같은 요청은 카카오를 한 번만 부른다 (CLAUDE.md, 하루 1,000건). 좌표를 소수점 4자리(약 10m)로 반올림해 카카오 호출과 캐시 키에 같이 쓰고, 성공한 응답만 `route_cache`에 24시간 둔다 (ERD). 같은 요청이 동시에 오면 먼저 온 호출 하나를 같이 기다린다. 캐시에 있으면 0.1~0.2초, 없으면 약 1초 (2026-10-25 대전역 → 우송대 1.3km, 로컬 서버). 배포 주소(Vercel 서울)에서는 대전 9개 경로(1.0~14.7km)를 두 번씩 재서 새 검색 0.61~2.51초(중앙값 0.77초 — 2초를 넘은 것은 첫 요청 직후 한 번), 같은 요청 0.44~1.39초(중앙값 0.70초) (2026-11-18, 상협 PC에서 curl). 같은 요청도 로컬보다 느린 것은 오가는 시간(health만 0.3초)에 안전점수·시설 개수를 요청마다 DB로 다시 세서다. 첫 요청(health)은 2.97초로 함수가 새로 뜬 것으로 보인다. 2026-11-12 첫 측정(대전역 → 대전시청, 한 번)은 새 검색 1.97초·같은 요청 0.40초
 - 카카오 `status` → 에러 코드: `SAME_POINT` 400 `INVALID_INPUT`, `TOO_FAR_AWAY` 400 `TOO_FAR`, `START_LINK_NOT_FOUND` 404 `ORIGIN_UNREACHABLE`, `END_LINK_NOT_FOUND` 404 `DESTINATION_UNREACHABLE`, 그 밖(`ROUTE_RESULT_NOT_FOUND`, `TOO_MANY_SEARCH_LINK` 등) 404 `ROUTE_NOT_FOUND`. 카카오는 경로를 못 찾아도 HTTP 200에 `status`로 알려 준다. 반올림한 출발·도착이 같으면 카카오를 부르지 않고 400 `INVALID_INPUT`
 - 하루 한도 초과는 카카오 HTTP 429 또는 HTTP 400 + `code: -10`(카카오 공통 에러 문서)으로 보고 503 `QUOTA_EXCEEDED`. 그 밖의 카카오 실패·5초 무응답은 502 `EXTERNAL_API_ERROR`
 - 대전 안에서는 먼 거리도 경로가 나온다 (반석역 → 대덕구 동쪽 20km, 2026-10-25). `TOO_FAR`는 대전 안에서는 거의 나오지 않는다
@@ -306,6 +304,7 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 - 구글은 앱 안 브라우저(웹뷰)에서 로그인을 막는다 (403 `disallowed_useragent`). 웹은 카카오톡 안이면 등대를 외부 브라우저로 다시 열고(`kakaotalk://web/openExternal`), 그 밖의 앱 안 브라우저면 "사파리·크롬에서 열어 주세요"를 보여 준다
 - 로그아웃은 서버를 부르지 않고 웹이 토큰을 버린다. 버린 토큰도 7일 안에는 쓸 수 있다 (토큰을 서버에 저장하지 않아서)
 - 웹은 `{ accessToken, user }`를 localStorage에 두고, 앱을 다시 열면 `GET /auth/me`로 확인한다
+- 서비스가 `error`를 붙여 돌려보내면 웹은 `access_denied`(사용자가 취소)만 안내 없이 넘기고, 그 밖(카카오톡 로그인 시간 초과 `timeout` 등)은 로그인 실패로 알린다. 탈퇴할 때 401(토큰 만료·이미 탈퇴)이면 로그아웃시키고 "다시 로그인한 뒤 탈퇴해 주세요"를 보여 준다. 네이버·구글 회원은 서비스 확인 화면으로 보내기 전에 `GET /auth/me`로 먼저 확인한다 (2026-11-18)
 
 ### POST /api/auth/kakao
 요청 `KakaoLoginRequest`

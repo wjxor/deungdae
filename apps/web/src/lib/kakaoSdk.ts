@@ -26,6 +26,9 @@ declare global {
 
 let loading: Promise<KakaoSdk> | null = null
 
+// SDK 파일이 이 시간 안에 오지 않으면 실패로 본다 (ms). 망이 멈춰 onload·onerror가 둘 다 오지 않으면 버튼이 반응 없이 기다리기만 해서
+const LOAD_TIMEOUT_MS = 10_000
+
 // 카카오 JS SDK를 한 번만 불러오고 JavaScript 키로 초기화한다 (REST 키 금지). 실패하면 다음 호출에서 다시 시도한다
 export function loadKakaoSdk(): Promise<KakaoSdk> {
   if (loading) return loading
@@ -34,28 +37,36 @@ export function loadKakaoSdk(): Promise<KakaoSdk> {
       reject(new Error('VITE_KAKAO_JS_KEY가 설정되지 않았습니다. 루트 .env를 확인해 주세요.'))
       return
     }
+    // onload 안에서 init이 던지면 Promise 밖의 예외라 이 Promise가 끝나지 않는다. 그래서 직접 잡아 실패로 돌린다
     const ready = () => {
-      const sdk = window.Kakao
-      if (!sdk) {
-        reject(new Error('카카오 SDK를 불러오지 못했습니다.'))
-        return
+      try {
+        const sdk = window.Kakao
+        if (!sdk) throw new Error('카카오 SDK를 불러오지 못했습니다.')
+        if (!sdk.isInitialized()) sdk.init(JS_KEY)
+        resolve(sdk)
+      } catch (e) {
+        reject(e instanceof Error ? e : new Error('카카오 SDK를 초기화하지 못했습니다.'))
       }
-      if (!sdk.isInitialized()) sdk.init(JS_KEY)
-      resolve(sdk)
     }
     if (window.Kakao) {
       ready()
       return
     }
     const script = document.createElement('script')
-    script.src = SDK_URL
-    script.integrity = SDK_INTEGRITY
-    script.crossOrigin = 'anonymous'
-    script.onload = ready
-    script.onerror = () => {
+    const fail = () => {
+      clearTimeout(timer)
       script.remove() // 다음 시도에서 새 태그로 다시 불러오게
       reject(new Error('카카오 SDK를 불러오지 못했습니다.'))
     }
+    const timer = setTimeout(fail, LOAD_TIMEOUT_MS)
+    script.src = SDK_URL
+    script.integrity = SDK_INTEGRITY
+    script.crossOrigin = 'anonymous'
+    script.onload = () => {
+      clearTimeout(timer)
+      ready()
+    }
+    script.onerror = fail
     document.head.appendChild(script)
   })
   loading.catch(() => {

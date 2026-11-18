@@ -120,7 +120,7 @@ export class KakaoAuthClient {
       : null;
     if (typeof body?.id !== 'string' || !/^[0-9]+$/.test(body.id)) {
       this.logger.warn(
-        `카카오 사용자 정보 HTTP ${reply.status}: 회원번호 없음`,
+        `카카오 사용자 정보 HTTP ${reply.status}: 회원번호가 없거나 정확히 읽지 못함`,
       );
       throw externalApiError(LOGIN_FAILURE_MESSAGE);
     }
@@ -199,13 +199,26 @@ function parseJson(text: string): unknown {
 type ReviverContext = { source?: string };
 
 /**
+ * 회원번호 숫자를 문자열로 바꾼다. 원문(source)이 있으면 그대로 쓴다.
+ * 원문을 주지 않는 엔진(Node 21 이전 등)에서는 2^53 안의 정수만 바꾸고, 넘으면 이미 끝자리가 달라졌을 수 있어 null을 돌려
+ * 로그인을 실패시킨다. 반올림된 번호로 찾으면 다른 사람 회원으로 로그인될 수 있어서다
+ */
+export function kakaoIdText(
+  value: number,
+  source: string | undefined,
+): string | null {
+  if (source !== undefined) return source;
+  return Number.isSafeInteger(value) ? String(value) : null;
+}
+
+/**
  * 사용자 정보 JSON을 해석하되 `id`는 원문 숫자 그대로 문자열로 둔다.
  * 카카오 회원번호는 Long이라 2^53을 넘으면 Number로 바꾸는 순간 끝자리가 달라진다
  */
 function parseJsonKeepingId(text: string): unknown {
   const reviver = (key: string, value: unknown, context?: ReviverContext) =>
     key === 'id' && typeof value === 'number'
-      ? (context?.source ?? String(value))
+      ? kakaoIdText(value, context?.source)
       : value;
   try {
     return JSON.parse(

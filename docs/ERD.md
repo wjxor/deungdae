@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-11-15 (배포 주소 응답 시간, 즐겨찾기·제보 테이블 상태) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-11-18 (`users` 네이버·구글) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -64,10 +64,10 @@ erDiagram
     }
     users {
         int id PK
-        text provider "kakao (naver, google은 나중에)"
+        text provider "kakao, naver, google"
         text provider_id "소셜 계정 ID"
         text nickname
-        text email "카카오는 null"
+        text email "받지 않아 null"
         timestamptz created_at
     }
     reports {
@@ -213,10 +213,10 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | `id` | integer | PK | API `User.id`, 로그인 토큰의 `sub` |
-| `provider` | text | NOT NULL | `kakao`. 네이버·구글은 `naver`·`google`로 같은 구조 (`shared/types.ts`의 `SocialProvider`) |
-| `provider_id` | text | NOT NULL, (`provider`, `provider_id`) UNIQUE | 소셜 계정 ID. 카카오 회원번호는 Long이라 JS 숫자로 다루면 끝자리가 틀어질 수 있어 문자열로 둔다 |
-| `nickname` | text | NOT NULL | 로그인할 때마다 카카오 닉네임으로 고친다. 비면 "등대 회원" |
-| `email` | text | NULL 허용 | 카카오 이메일은 비즈 앱 전용이라 받지 않아 늘 null (API `User.email`). 나중에 네이버·구글에서 같은 이메일이 올 수 있어 UNIQUE를 두지 않는다 |
+| `provider` | text | NOT NULL | `kakao`·`naver`·`google` (`shared/types.ts`의 `SocialProvider`). 네이버·구글은 2026-11-18 PR #77로 더했고 테이블은 그대로 썼다 |
+| `provider_id` | text | NOT NULL, (`provider`, `provider_id`) UNIQUE | 소셜 계정 ID (카카오 회원번호, 네이버 `response.id`, 구글 `sub`). 카카오 회원번호는 Long이라 JS 숫자로 다루면 끝자리가 틀어질 수 있어 문자열로 둔다 |
+| `nickname` | text | NOT NULL | 로그인할 때마다 그 서비스의 닉네임(카카오 닉네임, 네이버 별명, 구글 이름)으로 고친다. 비면 "등대 회원" |
+| `email` | text | NULL 허용 | 이메일은 받지 않아 늘 null (API `User.email`) — 카카오는 비즈 앱 전용이고, 네이버·구글은 동의항목·범위에서 뺐다. 받게 되면 서비스마다 같은 이메일이 올 수 있어 UNIQUE를 두지 않는다 |
 | `created_at` | timestamptz | 기본 now() | |
 
 - 2026-11-13 마이그레이션 `add_users`로 만들었다. 다른 테이블처럼 RLS를 켰다 (정책 없음)

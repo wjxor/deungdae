@@ -10,6 +10,7 @@ import PlaceSearch from '../components/PlaceSearch'
 import StarIcon from '../components/StarIcon'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import type { useGeolocation } from '../hooks/useGeolocation'
+import type { DeleteResult } from '../lib/auth'
 import type { FavoriteRoute, Favorites } from '../lib/favorites'
 import { DAEJEON_CENTER } from '../lib/geo'
 
@@ -24,13 +25,14 @@ type Props = {
   favorites: Favorites
   onPickFavoriteRoute: (route: FavoriteRoute) => void // 즐겨찾은 경로를 고르면 출발지·도착지가 채워진 S2로 간다
   onLogout: () => void
-  onDelete: () => Promise<boolean>
+  onDelete: () => Promise<DeleteResult>
   onDeleted: () => void
+  accountNotice: string | null // 네이버·구글 탈퇴 확인에서 돌아온 결과 ("탈퇴했어요" 등)
   onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, onLogin, favorites, onPickFavoriteRoute, onLogout, onDelete, onDeleted }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, onLogin, favorites, onPickFavoriteRoute, onLogout, onDelete, onDeleted, accountNotice }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -86,6 +88,11 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
               <StarIcon filled={favorites.hasPlace(destination)} size={16} />
               {destination.name}
             </button>
+          )}
+          {accountNotice && (
+            <p className="notice" role="status">
+              {accountNotice}
+            </p>
           )}
           {notice && (
             <p className="notice" role="status">

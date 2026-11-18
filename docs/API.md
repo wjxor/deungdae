@@ -140,6 +140,10 @@ export type User = { id: number; nickname: string; email: string | null; provide
 // 카카오 로그인 (5장, FR-011). 웹이 카카오에서 받은 인가 코드와, 그때 쓴 redirectUri를 서버에 넘긴다
 export type KakaoLoginRequest = { code: string; redirectUri: string };
 
+// 네이버·구글 로그인과 네이버·구글 회원 탈퇴 (5장, FR-011). 웹이 그 서비스에서 받은 인가 코드와 redirectUri를 넘긴다.
+// state는 네이버가 토큰을 바꿀 때 인가 요청과 같은 값을 같이 받아서 넘긴다 (구글은 없어도 된다)
+export type SocialLoginRequest = { code: string; redirectUri: string; state?: string };
+
 export type AuthResponse = { user: User; accessToken: string };
 
 export type MeResponse = { user: User };
@@ -293,9 +297,13 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 
 ## 5. 인증
 
-카카오 로그인을 서버가 처리한다 (FR-011, 2026-11-13). 웹이 카카오 JS SDK(JS 키)로 인가 코드를 받아 넘기면, 서버가 REST 키와 클라이언트 시크릿으로 카카오 토큰을 받고 회원을 찾거나 만들어 우리 로그인 토큰을 준다. REST 키가 웹 주소창·번들에 나오지 않게 하려고 이 흐름을 골랐다 (노션 "서버 카카오 로그인 설계 (FR-011)"). 네이버·구글은 같은 구조로 나중에 붙인다. 이메일·비밀번호 가입은 화면이 없어 만들지 않는다 (초안의 `signup`·`login`은 뺐다).
+카카오 로그인을 서버가 처리한다 (FR-011, 2026-11-13). 웹이 카카오 JS SDK(JS 키)로 인가 코드를 받아 넘기면, 서버가 REST 키와 클라이언트 시크릿으로 카카오 토큰을 받고 회원을 찾거나 만들어 우리 로그인 토큰을 준다. REST 키가 웹 주소창·번들에 나오지 않게 하려고 이 흐름을 골랐다 (노션 "서버 카카오 로그인 설계 (FR-011)"). 이메일·비밀번호 가입은 화면이 없어 만들지 않는다 (초안의 `signup`·`login`은 뺐다).
 
-- 로그인 토큰은 HS256 JWT, `sub`는 회원 id, 유효 기간 7일. 리프레시 토큰은 없어 지나면 다시 로그인한다. 카카오 토큰은 저장하지 않는다
+네이버·구글도 같은 구조로 붙였다 (2026-11-17, 11/20 발표 전에 완성한다고 밝힘). 웹은 SDK 없이 그 서비스의 인가 주소로 보내고, 돌아온 인가 코드를 서버에 넘긴다. 서버가 Client Secret으로 토큰을 받고 회원 정보(네이버 `response.id`·별명, 구글 OpenID `sub`·`name`)를 받는다. 이메일은 받지 않는다 (구글 `scope=openid profile`, 네이버 동의항목 별명만). 같은 사람이 카카오·네이버·구글로 로그인하면 회원이 따로 생긴다 (`users`는 provider와 회원번호로 구분).
+
+- 로그인 토큰은 HS256 JWT, `sub`는 회원 id, 유효 기간 7일. 리프레시 토큰은 없어 지나면 다시 로그인한다. 카카오·네이버·구글 토큰은 저장하지 않는다
+- 셋 다 웹 주소의 루트(`/`)로 돌아와서, 웹은 보낼 때 `{ state, provider, purpose }`를 sessionStorage에 두고 돌아왔을 때 꺼내 어느 서비스·무슨 일(로그인/탈퇴 확인)인지 고른다. state가 다르면 서버에 보내지 않는다 (CSRF 방지)
+- 구글은 앱 안 브라우저(웹뷰)에서 로그인을 막는다 (403 `disallowed_useragent`). 웹은 카카오톡 안이면 등대를 외부 브라우저로 다시 열고(`kakaotalk://web/openExternal`), 그 밖의 앱 안 브라우저면 "사파리·크롬에서 열어 주세요"를 보여 준다
 - 로그아웃은 서버를 부르지 않고 웹이 토큰을 버린다. 버린 토큰도 7일 안에는 쓸 수 있다 (토큰을 서버에 저장하지 않아서)
 - 웹은 `{ accessToken, user }`를 localStorage에 두고, 앱을 다시 열면 `GET /auth/me`로 확인한다
 
@@ -320,15 +328,34 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 { "user": { "id": 5, "nickname": "민수", "email": null, "provider": "kakao" } }
 ```
 
+### POST /api/auth/naver · POST /api/auth/google
+요청 `SocialLoginRequest`
+```json
+{ "code": "네이버·구글이 준 인가 코드", "redirectUri": "https://deungdae-map.vercel.app/", "state": "인가 요청에 보낸 state" }
+```
+→ 200 `AuthResponse` (카카오와 같은 모양, `user.provider`가 `"naver"`·`"google"`, `email`은 null)
+
+- `state`는 네이버에 필수다 (네이버가 토큰을 바꿀 때 같이 받는다). 없으면 400. 구글은 보내도 쓰지 않는다
+- `redirectUri` 규칙과 회원 찾기·만들기·닉네임 고치기는 카카오와 같다. 닉네임(구글은 이름)이 비면 "등대 회원"
+
 ### DELETE /api/auth/me  (인증 필요)
-→ 204 (본문 없음). 탈퇴 — 어드민 키로 카카오 연결을 끊은 뒤 `users` 행을 지운다. 사용자가 카카오에서 이미 연결을 끊었어도(카카오 `-101`) 지운다. 연결 끊기가 실패하면 지우지 않고 502로 답해 다시 시도하게 한다
+→ 204 (본문 없음). 탈퇴 — 그 서비스의 연결을 끊은 뒤 `users` 행을 지운다. 연결 끊기가 실패하면 지우지 않고 502로 답해 다시 시도하게 한다
+
+- 카카오 회원: 본문 없음. 어드민 키로 카카오 연결을 끊는다. 사용자가 카카오에서 이미 연결을 끊었어도(카카오 `-101`) 지운다. 본문이 와도 쓰지 않는다 (형식이 틀린 본문은 400)
+- 네이버·구글 회원: 연결을 끊으려면 그 사용자의 토큰이 필요한데 서버는 토큰을 저장하지 않아서, 웹이 그 서비스 로그인을 한 번 더 거쳐 받은 코드를 본문으로 보낸다. 서버는 새 토큰을 받아 회원번호가 로그인한 회원과 같은지 보고, 같으면 연결을 끊고(네이버 토큰 삭제 `grant_type=delete`, 구글 `oauth2.googleapis.com/revoke`) 회원을 지운다 (2026-11-17)
+
+요청 (네이버·구글 회원) `SocialLoginRequest`
+```json
+{ "code": "다시 받은 인가 코드", "redirectUri": "https://deungdae-map.vercel.app/", "state": "인가 요청에 보낸 state" }
+```
 
 | HTTP | code | 상황 |
 |---|---|---|
-| 400 | INVALID_INPUT | 본문 형식이 틀림, 허용되지 않은 `redirectUri` |
-| 401 | UNAUTHORIZED | 카카오가 인가 코드를 거부함 — 만료·재사용(KOE320), 인가 요청과 다른 주소(KOE303). "카카오 로그인을 다시 해 주세요" |
+| 400 | INVALID_INPUT | 본문 형식이 틀림, 허용되지 않은 `redirectUri`, 네이버 로그인에 `state`가 없음 |
+| 400 | INVALID_INPUT | 네이버·구글 회원 탈퇴에 본문이 없음("탈퇴하려면 네이버 로그인을 한 번 더 해 주세요"), 다시 로그인한 계정이 로그인한 회원과 다름("로그인한 계정과 다른 네이버 계정이에요…" — 끊지도 지우지도 않는다. 네이버는 계정 고르기 화면이 없어 "네이버에서 로그아웃한 뒤"를 안내한다) |
+| 401 | UNAUTHORIZED | 서비스가 인가 코드를 거부함 — 카카오 만료·재사용(KOE320)·다른 주소(KOE303), 네이버 `invalid_request`·`invalid_grant`(HTTP 200에 `error`로 온다), 구글 400 `invalid_grant`. "카카오(네이버·Google) 로그인을 다시 해 주세요" |
 | 401 | UNAUTHORIZED | `Authorization: Bearer`가 없음("로그인이 필요해요"), 토큰이 틀리거나 만료, 탈퇴한 회원 |
-| 502 | EXTERNAL_API_ERROR | 카카오 장애·5초 무응답, 서버 설정 문제(KOE010·KOE101, 카카오 키·`JWT_SECRET` 없음), DB 실패 |
+| 502 | EXTERNAL_API_ERROR | 서비스 장애·5초 무응답, 서버 설정 문제(KOE010·KOE101, 네이버 `invalid_client`, 구글 `invalid_client`·`redirect_uri_mismatch`, 키·시크릿·`JWT_SECRET` 없음), DB 실패 |
 
 ## 6. 제보
 
@@ -350,6 +377,7 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 | 5~7주 | `GET /health`, `GET /places`, `POST /routes/search` (shortest만) — 데이터 구축과 병행 |
 | 8~9주 | `POST /routes/search`에 safe 추가, `GET /facilities` (FR-002가 Must), `GET /daylight` (FR-005) |
 | 11주 | `/auth/kakao`, `/auth/me` (FR-011 Could — 서버 카카오 로그인만 앞당김, 2026-11-13) |
+| 12주 | `/auth/naver`, `/auth/google`, 네이버·구글 회원 탈퇴 (FR-011, 2026-11-17 — 11/20 발표 전) |
 | 13주 | `/reports` (Could) |
 
 8주차까지 프론트는 이 문서의 JSON 예시를 목(mock) 데이터로 써서 화면을 먼저 만들었다. 9주차에 실제 서버에 연결하고 목 데이터는 지웠다 (PR #32·#38).

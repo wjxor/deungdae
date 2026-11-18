@@ -8,6 +8,7 @@ import type {
   PlacesResponse,
   RouteSearchRequest,
   RouteSearchResponse,
+  SocialLoginRequest,
 } from '../../../../shared/types'
 import { ApiRequestError } from './apiError'
 
@@ -76,12 +77,26 @@ export function loginWithKakao(req: KakaoLoginRequest): Promise<AuthResponse> {
   })
 }
 
+// POST /api/auth/naver·/api/auth/google (API.md 5장). 서비스에서 받은 인가 코드·redirectUri·state를 넘기고 로그인 토큰을 받는다
+export function loginWithSocial(provider: 'naver' | 'google', req: SocialLoginRequest): Promise<AuthResponse> {
+  return request(`/auth/${provider}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  })
+}
+
 // GET /api/auth/me (API.md 5장). 저장해 둔 토큰이 아직 쓸 수 있는지 확인한다
 export function fetchMe(token: string): Promise<MeResponse> {
   return request('/auth/me', { headers: { Authorization: `Bearer ${token}` } })
 }
 
-// DELETE /api/auth/me (API.md 5장). 탈퇴 — 204라 본문이 없다 (request는 빈 본문을 null로 넘긴다)
-export async function deleteMe(token: string): Promise<void> {
-  await request<null>('/auth/me', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+// DELETE /api/auth/me (API.md 5장). 탈퇴 — 응답은 204라 본문이 없다 (request는 빈 본문을 null로 넘긴다).
+// 네이버·구글 회원은 한 번 더 로그인해 받은 코드(reauth)를 본문으로 보낸다. 카카오 회원은 본문이 없다
+export async function deleteMe(token: string, reauth?: SocialLoginRequest): Promise<void> {
+  await request<null>('/auth/me', {
+    method: 'DELETE',
+    headers: reauth ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { Authorization: `Bearer ${token}` },
+    body: reauth ? JSON.stringify(reauth) : undefined,
+  })
 }

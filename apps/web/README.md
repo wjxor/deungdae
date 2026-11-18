@@ -59,7 +59,7 @@ apps/web/src/
     ├── socialLogin.ts      # 네이버·구글 인가 주소, 앱 안 브라우저 판별
     ├── favorites.ts        # 즐겨찾기
     ├── progress.ts         # 이동 중 화면: 경로 위 내 위치·남은 비율·이탈 거리
-    └── geo.ts, routeSummary.ts, routeFacilities.ts, facilityIcon.ts
+    └── geo.ts, routeSummary.ts, facilityIcon.ts
 ```
 
 ## 지금 동작

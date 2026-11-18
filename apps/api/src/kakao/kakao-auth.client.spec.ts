@@ -1,6 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
 import { ApiException } from '../common/api-exception.js';
-import { KakaoAuthClient } from './kakao-auth.client.js';
+import { KakaoAuthClient, kakaoIdText } from './kakao-auth.client.js';
 
 const KEYS = {
   KAKAO_REST_API_KEY: 'rest-key',
@@ -146,6 +146,25 @@ describe('KakaoAuthClient.getProfile', () => {
       status: 502,
       code: 'EXTERNAL_API_ERROR',
     });
+  });
+});
+
+describe('kakaoIdText', () => {
+  it('원문이 있으면 원문 그대로 (19자리도 끝자리까지)', () => {
+    expect(kakaoIdText(1234567890123456800, '1234567890123456789')).toBe(
+      '1234567890123456789',
+    );
+  });
+
+  it('원문이 없으면 2^53 안의 정수만 문자열로', () => {
+    expect(kakaoIdText(4321, undefined)).toBe('4321');
+    expect(kakaoIdText(Number.MAX_SAFE_INTEGER, undefined)).toBe(
+      '9007199254740991',
+    );
+  });
+
+  it('원문이 없는데 2^53을 넘으면 반올림됐을 수 있어 null (로그인 실패)', () => {
+    expect(kakaoIdText(1234567890123456800, undefined)).toBeNull();
   });
 });
 

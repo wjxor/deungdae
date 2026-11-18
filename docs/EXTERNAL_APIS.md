@@ -24,7 +24,7 @@
 ## 카카오맵 SDK 리소스 도메인 (2026-11-15 확인)
 - SDK가 불러오는 스크립트·지도 타일·로드뷰는 2026-10-06부터 `*.kakaocdn.net`에서 받는다. 옛 `*.daumcdn.net`은 2026-11-30까지만 쓸 수 있고 12-01부터 따로 알리지 않고 끊길 수 있다 (카카오맵 데브톡 공지 2026-10-29, https://devtalk.kakao.com/t/api-daumcdn-net/152465)
 - 공식 주소 `https://dapi.kakao.com/v2/maps/sdk.js`로 SDK를 부르면 바꿀 것이 없다. 우리 웹이 이렇게 부르고(`apps/web/src/lib/kakao.ts`), 로그인용 JS SDK는 처음부터 `t1.kakaocdn.net`이다(`apps/web/src/lib/kakaoSdk.ts`). 저장소에 `daumcdn` 주소는 없다
-- 공지가 막는 것: SDK 내부 파일·타일 URL을 직접 만들어 부르기, 내부 파일을 내려받아 따로 저장해 쓰기, 옛 URL에서 도메인만 `kakaocdn`으로 바꾸기. PWA 서비스 워커(2026-11-18 PR #75)도 SDK 파일·지도 타일은 캐시하지 않는다 — 앱 파일만 미리 저장하고 다른 요청은 가로채지 않는다 (PR #64 본문 "지도·API 요청은 캐시하지 않는다"와 같다)
+- 공지가 막는 것: SDK 내부 파일·타일 URL을 직접 만들어 부르기, 내부 파일을 내려받아 따로 저장해 쓰기, 옛 URL에서 도메인만 `kakaocdn`으로 바꾸기. PWA 서비스 워커(2026-11-18 PR #75)도 SDK 파일·지도 타일은 캐시하지 않는다 — 앱 파일만 미리 저장하고, 우리 화면 주소(index.html, PR #83) 말고는 가로채지 않는다 (PR #64 본문 "지도·API 요청은 캐시하지 않는다"와 같다)
 - CSP를 넣게 되면 `dapi.kakao.com`과 `*.kakaocdn.net`을 허용한다. 지금은 CSP가 없다
 
 ## 카카오 앱 콘솔 설정

@@ -116,7 +116,8 @@ async function startKakaoLogin(): Promise<boolean> {
 }
 
 // 네이버·구글 동의 화면으로 보낸다. 넘어가면 true, Client ID가 없으면 false.
-// 구글은 카카오톡 안 브라우저에서 로그인이 막혀서, 그때는 등대를 외부 브라우저로 다시 연다 (그 브라우저에서 버튼을 다시 누른다)
+// 구글은 카카오톡 안 브라우저에서 로그인이 막혀서, 그때는 등대를 외부 브라우저로 다시 연다.
+// 화면을 바꿔도 주소는 그대로라 외부 브라우저에는 지도 홈이 열리고, 거기서 [로그인] → [Google로 시작하기]를 다시 누른다
 function startRedirect(provider: RedirectProvider, purpose: Purpose): boolean {
   if (provider === 'google' && isKakaoTalkInApp()) {
     openInExternalBrowser(location.href)

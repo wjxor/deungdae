@@ -54,16 +54,19 @@ apps/web/src/
     ├── api.ts, apiError.ts # 서버 호출, 에러 응답({ error: { code, message } })
     ├── kakao.ts            # 카카오맵 SDK 불러오기
     ├── daylight.ts         # 일출·일몰 시각으로 낮/밤 판별, 다음 확인 시각 (서버 isNight와 같은 식)
-    ├── auth.ts             # 로그인·탈퇴
+    ├── auth.ts             # 로그인·탈퇴 (카카오·네이버·구글)
+    ├── kakaoSdk.ts         # 카카오 JS SDK 불러오기 (로그인용, 지도 SDK와 다름)
+    ├── socialLogin.ts      # 네이버·구글 인가 주소, 앱 안 브라우저 판별
     ├── favorites.ts        # 즐겨찾기
+    ├── progress.ts         # 이동 중 화면: 경로 위 내 위치·남은 비율·이탈 거리
     └── geo.ts, routeSummary.ts, facilityIcon.ts
 ```
 
 ## 지금 동작
 
-- **로그인**: 카카오 로그인은 서버(`/api/auth/*`, API.md 5장)가 처리한다. [카카오로 시작하기]를 누르면 `lib/kakaoSdk.ts`가 카카오 JS SDK(JS 키)로 동의 화면에 보내고, 돌아오면 `lib/auth.ts`가 인가 코드를 서버에 넘겨 받은 로그인 토큰을 localStorage(`deungdae.auth`)에 둔다. 카카오에 등록한 리다이렉트 URI가 `http://localhost:5173/`과 배포 주소라 로컬은 5173 포트에서만, PR 미리보기 주소에서는 안 된다. 네이버·구글 버튼은 막혀 있다
+- **로그인**: 카카오·네이버·구글 로그인은 서버(`/api/auth/*`, API.md 5장)가 처리한다. [카카오로 시작하기]는 `lib/kakaoSdk.ts`가 카카오 JS SDK(JS 키)로, 네이버·구글은 `lib/socialLogin.ts`가 SDK 없이 인가 주소로 동의 화면에 보낸다. 셋 다 루트(`/`)로 돌아오면 `lib/auth.ts`가 인가 코드를 서버에 넘겨 받은 로그인 토큰을 localStorage(`deungdae.auth`)에 둔다. 세 서비스에 등록한 리다이렉트 URI가 `http://localhost:5173/`과 배포 주소라 로컬은 5173 포트에서만, PR 미리보기 주소에서는 안 된다. 네이버·구글 회원 탈퇴는 그 서비스 로그인을 한 번 더 거친다
 - **즐겨찾기**: 앱을 켜 둔 동안 메모리에만 있다. 새로고침하면 사라진다
-- **PWA**: manifest·서비스 워커·앱 아이콘은 아직 없다 (ROADMAP "PWA 설치 설정")
+- **PWA**: manifest·임시 앱 아이콘(PR #64)과 서비스 워커(PR #75)가 있다. 서비스 워커는 앱 파일만 저장하고 지도·API 요청은 가로채지 않는다. 새 버전은 쓰는 중인 화면을 바꾸지 않아 다음에 열 때 뜨고, 개발 서버(`npm run dev`)에서는 등록하지 않는다. 아이콘 확정은 ROADMAP "PWA 설치 설정"
 
 ## 메모
 

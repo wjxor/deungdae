@@ -58,14 +58,14 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
   // 안심시설 패널을 닫으려고 지도를 누른 것은 도착지로 치지 않는다. 닫힌 직후(0.6초 안)의 지도 누르기를 넘긴다
   const filterDismissedAt = useRef(0)
   // 지도를 누르면 그 자리가 도착지가 된다. 지도는 움직이지 않게 지금 중심에 붙잡아 두고,
-  // 검색창은 새로 그려 "지도에서 고른 위치"가 들어가게 한다. 대전 밖은 서버가 OUT_OF_AREA로 막는 곳이라 핀을 찍지 않는다
+  // 검색창은 새로 그려 "지도에서 고른 도착지"가 들어가게 한다. 대전 밖은 서버가 OUT_OF_AREA로 막는 곳이라 핀을 찍지 않는다
   const pickOnMap = (location: LatLng, mapCenter: LatLng) => {
     if (Date.now() - filterDismissedAt.current < 600) return
     if (!isInDaejeonRect(location)) {
       setOutside(true)
       return
     }
-    onPickDestination(mapPlace(location))
+    onPickDestination(mapPlace(location, 'destination'))
     setRecenter(mapCenter)
     setSearchKey((n) => n + 1)
     setOutside(false)

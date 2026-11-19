@@ -64,7 +64,7 @@ export default function OriginPick({ geo, daylight, origin, isCurrent, destinati
     setResetCount((n) => n + 1)
     setHeldCenter((held) => held ?? mapCenter)
     setOutside(false)
-    onPickOrigin(mapPlace(location))
+    onPickOrigin(mapPlace(location, 'origin'))
   }
 
   const notice = outside
@@ -117,7 +117,7 @@ export default function OriginPick({ geo, daylight, origin, isCurrent, destinati
             </div>
           </div>
           {/* 출발지를 고를 때 보는 입력칸 바로 아래에 둔다. 지도에서 고른 뒤에는 입력칸이 그 이름이라 숨기고, 대전 밖 안내가 뜨면 그쪽이 대신한다 */}
-          {!outside && origin?.label !== MAP_PICK_NAME && (
+          {!outside && origin?.label !== MAP_PICK_NAME.origin && (
             <p className="map-pick-hint">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />

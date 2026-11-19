@@ -21,11 +21,12 @@ export function isInDaejeonRect(p: LatLng): boolean {
   return p.lat >= DAEJEON_RECT.minLat && p.lat <= DAEJEON_RECT.maxLat && p.lng >= DAEJEON_RECT.minLng && p.lng <= DAEJEON_RECT.maxLng
 }
 
-// 지도를 눌러 고른 출발지·도착지. 좌표를 주소로 바꾸는 API는 두지 않아 이름 대신 이 문구를 쓴다 (REQUIREMENTS 화면 S2, API.md 2장)
-export const MAP_PICK_NAME = '지도에서 고른 위치'
-export const mapPlace = (location: LatLng): Place => ({
+// 지도를 눌러 고른 출발지·도착지. 좌표를 주소로 바꾸는 API는 두지 않아 이름 대신 이 문구를 쓴다 (REQUIREMENTS 화면 S2, API.md 2장).
+// 둘 다 지도에서 고르면 S3 위쪽에 같은 이름이 나란히 나와서 출발지·도착지를 이름으로 나눈다
+export const MAP_PICK_NAME = { origin: '지도에서 고른 출발지', destination: '지도에서 고른 도착지' } as const
+export const mapPlace = (location: LatLng, role: keyof typeof MAP_PICK_NAME): Place => ({
   id: `map:${location.lat.toFixed(6)},${location.lng.toFixed(6)}`,
-  name: MAP_PICK_NAME,
+  name: MAP_PICK_NAME[role],
   address: '',
   location,
 })

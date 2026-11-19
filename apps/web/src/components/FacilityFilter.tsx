@@ -5,11 +5,12 @@ import { FACILITY_ICONS, FACILITY_TYPES } from '../lib/facilityIcon'
 type Props = {
   visible: Record<FacilityType, boolean>
   onToggle: (type: FacilityType) => void
+  onDismiss?: () => void // 바깥을 눌러 닫았을 때. 그 누름이 지도에도 닿으므로 지도 누르기를 한 번 넘기는 데 쓴다 (S1 도착지 고르기)
 }
 
 // 안심시설 종류별 표시 on/off (FR-002). 평소엔 작은 버튼 하나이고, 누르면 목록과 스위치가 펼쳐진다.
 // 버튼의 점 세 개가 어떤 종류가 켜져 있는지 펼치지 않고도 알려 준다.
-export default function FacilityFilter({ visible, onToggle }: Props) {
+export default function FacilityFilter({ visible, onToggle, onDismiss }: Props) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -20,7 +21,9 @@ export default function FacilityFilter({ visible, onToggle }: Props) {
   useEffect(() => {
     if (!open) return
     const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+      if (rootRef.current?.contains(e.target as Node)) return
+      setOpen(false)
+      onDismiss?.()
     }
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
@@ -33,7 +36,7 @@ export default function FacilityFilter({ visible, onToggle }: Props) {
       document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open])
+  }, [open, onDismiss])
 
   return (
     <div className="ffilter" ref={rootRef}>

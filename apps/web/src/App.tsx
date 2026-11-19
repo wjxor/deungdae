@@ -42,7 +42,7 @@ export default function App() {
     const timer = setTimeout(clearAccountNotice, 6000)
     return () => clearTimeout(timer)
   }, [accountNotice, clearAccountNotice])
-  // S2에서 검색해 고른 출발지. 없으면 현재 위치를 출발지로 쓴다
+  // S2에서 검색하거나 지도를 눌러 고른 출발지. 없으면 현재 위치를 출발지로 쓴다
   const [pickedOrigin, setPickedOrigin] = useState<Place | null>(null)
   const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string; originPlace: Place | null } | null>(null)
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { FacilityType, LatLng, Place, User } from '../../../../shared/types'
 import FacilityFilter from '../components/FacilityFilter'
 import FavoritesSheet from '../components/FavoritesSheet'
@@ -12,12 +12,12 @@ import type { useDaylightMode } from '../hooks/useDaylightMode'
 import type { useGeolocation } from '../hooks/useGeolocation'
 import type { DeleteResult } from '../lib/auth'
 import type { FavoriteRoute, Favorites } from '../lib/favorites'
-import { DAEJEON_CENTER } from '../lib/geo'
+import { DAEJEON_CENTER, isInDaejeonRect, mapPlace } from '../lib/geo'
 
 type Props = {
   geo: ReturnType<typeof useGeolocation>
   daylight: ReturnType<typeof useDaylightMode>
-  destination: Place | null // 검색해서 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
+  destination: Place | null // 검색하거나 지도를 눌러 고른 도착지. 다른 화면으로 갔다 와도 App이 들고 있다
   onPickDestination: (place: Place) => void
   onClearDestination: () => void // 검색창을 비우면 도착지도 해제한다
   user: User | null // 로그인한 회원. null이면 비회원이라 [안심 경로 찾기]만 보인다
@@ -48,13 +48,32 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
   const center = recenter ?? pin ?? myLocation ?? DAEJEON_CENTER
   const { mode, sunrise, sunset, setMode } = daylight
 
+  // 대전 밖을 눌렀을 때의 안내. 다음에 도착지를 고르면 지운다
+  const [outside, setOutside] = useState(false)
   const pick = (place: Place) => {
     onPickDestination(place)
     setRecenter({ ...place.location })
+    setOutside(false)
+  }
+  // 안심시설 패널을 닫으려고 지도를 누른 것은 도착지로 치지 않는다. 닫힌 직후(0.6초 안)의 지도 누르기를 넘긴다
+  const filterDismissedAt = useRef(0)
+  // 지도를 누르면 그 자리가 도착지가 된다. 지도는 움직이지 않게 지금 중심에 붙잡아 두고,
+  // 검색창은 새로 그려 "지도에서 고른 위치"가 들어가게 한다. 대전 밖은 서버가 OUT_OF_AREA로 막는 곳이라 핀을 찍지 않는다
+  const pickOnMap = (location: LatLng, mapCenter: LatLng) => {
+    if (Date.now() - filterDismissedAt.current < 600) return
+    if (!isInDaejeonRect(location)) {
+      setOutside(true)
+      return
+    }
+    onPickDestination(mapPlace(location))
+    setRecenter(mapCenter)
+    setSearchKey((n) => n + 1)
+    setOutside(false)
   }
 
-  const notice =
-    geo.state.status === 'denied'
+  const notice = outside
+    ? '대전 안에서만 도착지를 고를 수 있어요.'
+    : geo.state.status === 'denied'
       ? '위치 권한이 꺼져 있어요. 주소나 장소를 검색해 주세요.'
       : geo.state.status === 'unavailable'
         ? '현재 위치를 가져오지 못했어요. 주소나 장소를 검색해 주세요.'
@@ -64,7 +83,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
     <main className="map-home" data-mode={mode}>
       {/* 카카오 로고와 저작권이 지도 안 아래쪽에 나오므로, 하단 시트는 지도 밖에 둔다 */}
       <div className="map-area">
-        <KakaoMap center={center} myLocation={myLocation} pin={pin} facilityVisible={facilityVisible} />
+        <KakaoMap center={center} myLocation={myLocation} pin={pin} facilityVisible={facilityVisible} onMapClick={pickOnMap} />
 
         {/* 검색창은 위쪽에 둔다. 아래에 두면 폰 키보드가 입력칸과 결과 목록을 가린다 */}
         <header className="top">
@@ -82,7 +101,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
               sunset={sunset}
               onChange={setMode}
             />
-            <FacilityFilter visible={facilityVisible} onToggle={toggleFacility} />
+            <FacilityFilter visible={facilityVisible} onToggle={toggleFacility} onDismiss={() => (filterDismissedAt.current = Date.now())} />
           </div>
           {user && destination && (
             <button type="button" className="favpill" aria-label={`${destination.name} 즐겨찾기`} aria-pressed={favorites.hasPlace(destination)} onClick={() => favorites.togglePlace(destination)}>
@@ -95,10 +114,19 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
               {authBusy ?? accountNotice}
             </p>
           )}
+          {/* 도착지를 고르기 전에만 보인다. 대전 밖 안내가 뜨면 그쪽이 대신한다 */}
+          {!destination && !outside && (
+            <p className="map-pick-hint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+              </svg>
+              지도를 눌러 도착지를 고를 수도 있어요
+            </p>
+          )}
           {notice && (
             <p className="notice" role="status">
               {notice}
-              {geo.state.status === 'unavailable' && (
+              {!outside && geo.state.status === 'unavailable' && (
                 <button type="button" onClick={geo.retry}>
                   다시 시도
                 </button>

@@ -8,10 +8,13 @@
  *   node --env-file=.env scripts/kakao-walk-test.ts --pairs scripts/route-pairs-score-extra.json --round   # 처음 한 번 (도보 API 420건)
  *   node --env-file=.env scripts/safety-score-experiment.mjs          # 정제 결과(data/processed)로
  *   node --env-file=.env scripts/safety-score-experiment.mjs --db     # DB에 적재한 facilities 테이블로
+ *   node --env-file=.env scripts/safety-score-experiment.mjs --weights street_light=1,security_light=1,cctv=1.57,emergency_bell=1.45,police=5.94
+ *     # 가중치를 바꿔 넣기 전에 미리 보기 — 값은 scripts/survey-weights.py가 출력한다
  *
  * - 쌍: scripts/route-pairs.json(9월 장면 10쌍) + scripts/route-pairs-score.json(무작위 50쌍) +
  *   scripts/route-pairs-score-extra.json(무작위 140쌍, 2026-10-31 200쌍으로 늘림). 무작위 쌍은 make-score-pairs.py
  * - 가중치 후보(10번)는 구간마다 센 종류별 개수에 다른 가중치를 곱해 다시 매긴다. DB 가중치는 바꾸지 않는다
+ * - --weights: facility_types를 그 값으로 바꾼 임시 테이블(pg_temp)을 만들어 서버 SQL이 그 값으로 센다. 공용 테이블은 그대로다
  * - 경로: scripts/output/rounded/<쌍 id>/walk-<MODE>.json (kakao-walk-test.ts --round가 저장한 카카오 응답).
  *   서버처럼 좌표를 소수 4자리로 반올림해 받은 것이라 서버가 같은 쌍에 주는 경로와 같다. 카카오를 다시 부르지 않는다
  * - 구간 나누기·점수·고르는 규칙·구간 점수 SQL은 서버(apps/api/src/routes) 함수를 그대로 쓴다
@@ -30,11 +33,19 @@ const DIST = join(API, 'dist/apps/api/src');
 const pg = createRequire(join(API, 'package.json'))('pg');
 const { toWalkRoute } = await import(join(DIST, 'walk/kakao-walk.convert.js'));
 const { splitPath } = await import(join(DIST, 'routes/segments.js'));
-const { segmentScoreQuery, FACILITY_RADIUS_M } = await import(join(DIST, 'routes/safety-score.query.js'));
-const { toSegmentScore, toRouteScore, toSafetyLevel, pickSafe, SCORE_CAP_RAW, SAFE_MIN_GAIN, SAFE_MAX_DETOUR } =
+const { segmentScoreQuery, toLineWkt, FACILITY_RADIUS_M } = await import(join(DIST, 'routes/safety-score.query.js'));
+const { toSegmentScore, toRouteScore, toSafetyLevel, pickSafe, SCORE_CAP_RAW, SAFE_MIN_GAIN, SAFE_MAX_DETOUR, LIGHT_CAP_PER_SEGMENT } =
   await import(join(DIST, 'routes/safety.js'));
 
 const USE_DB = process.argv.includes('--db');
+/** --weights code=값,… → { code: 값 } (없으면 null) */
+const WEIGHT_OVERRIDE = (() => {
+  const k = process.argv.indexOf('--weights');
+  if (k < 0) return null;
+  const entries = (process.argv[k + 1] ?? '').split(',').map((kv) => kv.split('='));
+  if (entries.some(([code, v]) => !code || !Number.isFinite(Number(v)))) throw new Error('--weights는 code=값,code=값 형식이에요');
+  return Object.fromEntries(entries.map(([code, v]) => [code, Number(v)]));
+})();
 const MODES = ['SHORTEST', 'BROAD_FIRST', 'ACCESSIBLE'];
 const TYPES = ['street_light', 'security_light', 'cctv', 'emergency_bell', 'police'];
 const KO = { street_light: '가로등', security_light: '보안등', cctv: 'CCTV', emergency_bell: '안심벨', police: '지구대' };
@@ -88,6 +99,26 @@ async function loadTempFacilities(client) {
   await client.query(`ANALYZE pg_temp.facilities`);
 }
 
+/**
+ * pg_temp.facility_types를 공용 테이블에서 복사하고 `override` 값으로 바꾼다. 이 연결에서는 facility_types가 이 임시 테이블을 가리킨다.
+ * 공용 열이 아직 정수여도 소수를 넣을 수 있게 weight는 float8로 만든다
+ */
+async function loadTempWeights(client, override) {
+  await client.query(`CREATE TEMP TABLE facility_types (code text PRIMARY KEY, name text NOT NULL, weight float8 NOT NULL)`);
+  await client.query(`INSERT INTO pg_temp.facility_types SELECT code, name, weight FROM public.facility_types`);
+  for (const [code, weight] of Object.entries(override)) {
+    const r = await client.query(`UPDATE pg_temp.facility_types SET weight = $2 WHERE code = $1`, [code, weight]);
+    if (r.rowCount !== 1) throw new Error(`--weights의 ${code}는 facility_types에 없어요`);
+  }
+}
+
+/** 서버 SQL과 같은 규칙의 구간 원점수 — 종류별 지점 수 × 가중치, 가로등·보안등은 합쳐 LIGHT_CAP_PER_SEGMENT개까지 (가중치가 같을 때) */
+const cappedRaw = (spots, w, lightCap = LIGHT_CAP_PER_SEGMENT) =>
+  Math.min(lightCap, (spots.street_light ?? 0) + (spots.security_light ?? 0)) * w.street_light +
+  TYPES.slice(2).reduce((sum, t) => sum + (spots[t] ?? 0) * w[t], 0);
+/** 소수 가중치의 합이라 SQL과 JS의 덧셈 순서에 따른 오차는 같은 값으로 본다 */
+const sameRaw = (a, b) => Math.abs(a - b) < 1e-9;
+
 // ── 구간 원점수 세기 ────────────────────────────────────
 
 // set은 쌍을 고른 방법, batch는 언제 더한 쌍인지 (처음 60쌍 = 9월 10 + 무작위 50)
@@ -108,12 +139,17 @@ let queryMs = 0;
 let queries = 0;
 try {
   if (!USE_DB) await loadTempFacilities(client);
+  if (WEIGHT_OVERRIDE) await loadTempWeights(client, WEIGHT_OVERRIDE);
   const src = await client.query(
     `SELECT count(*)::int AS n, (SELECT relpersistence FROM pg_class WHERE oid = 'facilities'::regclass) AS p FROM facilities`,
   );
   console.log(`시설 ${src.rows[0].n.toLocaleString()}건 (${src.rows[0].p === 't' ? '정제 결과 → 임시 테이블' : 'DB facilities 테이블'})`);
   weights = Object.fromEntries((await client.query(`SELECT code, weight FROM facility_types`)).rows.map((r) => [r.code, r.weight]));
-  console.log(`가중치(facility_types): ${TYPES.map((t) => `${KO[t]} ${weights[t]}`).join(' · ')}`);
+  if (weights.street_light !== weights.security_light) throw new Error('가로등·보안등 가중치가 달라 상한을 같은 식으로 셀 수 없어요');
+  console.log(
+    `가중치(facility_types${WEIGHT_OVERRIDE ? ' → --weights로 바꾼 임시 테이블' : ''}): ${TYPES.map((t) => `${KO[t]} ${weights[t]}`).join(' · ')}` +
+      ` · 가로등·보안등 합쳐 구간당 ${LIGHT_CAP_PER_SEGMENT}개까지`,
+  );
   console.log(
     `정규화: 로그, 원점수 ${SCORE_CAP_RAW} 이상 100점 · 안심경로: 최단보다 ${SAFE_MIN_GAIN}점 이상 높고 우회 ${SAFE_MAX_DETOUR * 100}% 이하 · 반경 ${FACILITY_RADIUS_M}m`,
   );
@@ -134,7 +170,7 @@ try {
         `SELECT s.i, f.type, count(*)::int AS n, count(DISTINCT ST_AsBinary(f.location))::int AS spots
          FROM unnest($1::int[], $2::text[]) AS s(i, wkt)
          JOIN facilities f ON ST_DWithin(f.location, ST_GeogFromText(s.wkt), $3::float8) GROUP BY s.i, f.type`,
-        q.values,
+        [pieces.map((_, i) => i), pieces.map((p) => toLineWkt(p.path)), FACILITY_RADIUS_M],
       );
       const segments = pieces.map((p) => ({ distanceM: p.distanceM, raw: 0, counts: {}, spots: {} }));
       for (const r of raw.rows) segments[r.i].raw = r.raw;
@@ -143,8 +179,8 @@ try {
         segments[r.i].spots[r.type] = r.spots;
       }
       for (const s of segments) {
-        const check = Object.entries(s.spots).reduce((sum, [type, n]) => sum + n * weights[type], 0);
-        if (check !== s.raw) throw new Error(`${pair.id} ${mode}: 서버 SQL 원점수 ${s.raw} ≠ 종류별 지점 합 ${check}`);
+        const check = cappedRaw(s.spots, weights);
+        if (!sameRaw(check, s.raw)) throw new Error(`${pair.id} ${mode}: 서버 SQL 원점수 ${s.raw} ≠ 종류별 지점 합(상한 적용) ${check}`);
       }
       routes[pair.id][mode] = { distanceM: walk.distanceM, segments };
     }
@@ -240,11 +276,18 @@ for (const d of DISTRICTS) {
   console.log(`${d}: 구간 ${s.length} · 0점 ${share(s.filter((x) => x === 0).length, s.length)} · P50 ${r1(pct(s, 0.5))} · P75 ${r1(pct(s, 0.75))} · P90 ${r1(pct(s, 0.9))}`);
 }
 
-console.log('\n## 4. 종류별 기여 (최단경로 구간 — 원점수 합 중 비율 · 그 종류가 하나라도 있는 구간)');
+console.log(`\n## 4. 종류별 기여 (최단경로 구간 — 원점수 합 중 비율 · 그 종류가 하나라도 있는 구간. 가로등·보안등은 상한 ${LIGHT_CAP_PER_SEGMENT}개를 개수 비율로 나눔)`);
 const totalRaw = shortestSegs.reduce((a, s) => a + s.raw, 0);
+/** 구간 하나에서 종류 t가 원점수에 보탠 값. 상한에 걸린 가로등·보안등은 센 몫을 두 종류의 개수 비율로 나눈다 */
+const contribOf = (s, t) => {
+  const n = s.spots[t] ?? 0;
+  if (t !== 'street_light' && t !== 'security_light') return n * weights[t];
+  const lights = (s.spots.street_light ?? 0) + (s.spots.security_light ?? 0);
+  return lights === 0 ? 0 : (Math.min(LIGHT_CAP_PER_SEGMENT, lights) * weights[t] * n) / lights;
+};
 summary.types = {};
 for (const t of TYPES) {
-  const contrib = shortestSegs.reduce((a, s) => a + (s.spots[t] ?? 0) * weights[t], 0);
+  const contrib = shortestSegs.reduce((a, s) => a + contribOf(s, t), 0);
   const present = shortestSegs.filter((s) => s.counts[t]).length;
   summary.types[t] = { share: contrib / totalRaw, present: present / shortestSegs.length };
   console.log(`${KO[t]}: ${share(contrib, totalRaw)} · ${share(present, shortestSegs.length)}`);
@@ -357,19 +400,19 @@ const rawParts = (w, { lightCap = Infinity, byRow = false } = {}) => (s) => {
   };
 };
 const PART_KO = { lights: '가로등·보안등', cctv: 'CCTV', emergency_bell: '안심벨', police: '지구대' };
-if (weights.street_light !== weights.security_light) throw new Error('가로등·보안등 가중치가 달라 상한 후보를 셀 수 없어요');
+/** 설문 가중치를 넣기 전 서버 값 (3주차 초안 + 2026-10-21 MVP 임시값, 상한 없음) — 바뀐 쌍을 이 값과 비교한다 */
+const OLD_WEIGHTS = { street_light: 1, security_light: 1, cctv: 3, emergency_bell: 5, police: 10 };
 const WEIGHT_SETS = [
-  ['지금 (facility_types)', weights, {}],
-  ['가로등·보안등 합쳐 구간당 3개까지', weights, { lightCap: 3 }],
-  ['가로등·보안등 합쳐 구간당 5개까지', weights, { lightCap: 5 }],
-  ['드문 시설 상향 (CCTV 5 · 안심벨 10 · 지구대 20)', { ...weights, cctv: 5, emergency_bell: 10, police: 20 }, {}],
-  ['대수로 세기 (같은 좌표도 따로 — 2026-11-04 전 서버)', weights, { byRow: true }],
+  [`지금 (facility_types + 가로등·보안등 구간당 ${LIGHT_CAP_PER_SEGMENT}개 — 서버)`, weights, { lightCap: LIGHT_CAP_PER_SEGMENT }],
+  ['지금 가중치, 상한 없이', weights, {}],
+  ['설문 전 서버 (가로등·보안등 1 · CCTV 3 · 안심벨 5 · 지구대 10, 상한 없음)', OLD_WEIGHTS, {}],
+  [`설문 전 가중치 + 상한 ${LIGHT_CAP_PER_SEGMENT}개 (11/19 상한을 정할 때 본 값)`, OLD_WEIGHTS, { lightCap: LIGHT_CAP_PER_SEGMENT }],
 ];
 summary.weightSets = {};
-for (const [name, w, opts] of WEIGHT_SETS) {
+for (const [k, [name, w, opts]] of WEIGHT_SETS.entries()) {
   const partsOf = rawParts(w, opts);
   const rawOf = (s) => Object.values(partsOf(s)).reduce((a, b) => a + b, 0);
-  if (name.startsWith('지금') && shortestSegs.some((s) => rawOf(s) !== s.raw)) throw new Error('지금 가중치로 다시 센 원점수가 서버 SQL과 달라요');
+  if (k === 0 && shortestSegs.some((s) => !sameRaw(rawOf(s), s.raw))) throw new Error('지금 가중치로 다시 센 원점수가 서버 SQL과 달라요');
   const picks = choose(toSegmentScore, { modes: ['BROAD_FIRST'], rawOf });
   const d = describe(picks);
   const totals = { lights: 0, cctv: 0, emergency_bell: 0, police: 0 };
@@ -380,7 +423,8 @@ for (const [name, w, opts] of WEIGHT_SETS) {
   const routeScores = sorted(picks.map((p) => p.shortest.safetyScore));
   const differ = picks.filter((p, k) => p.mode !== two[k].mode).length;
   const byDistrict = Object.fromEntries(DISTRICTS.map((g) => [g, picks.filter((p) => p.pair.district === g && p.safe !== p.shortest).length]));
-  summary.weightSets[name] = { ...d, differFromNow: differ, levels, shares: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, v / sum])), byDistrict };
+  const differIds = picks.filter((p, k) => p.mode !== two[k].mode).map((p) => p.pair.id);
+  summary.weightSets[name] = { ...d, differFromNow: differ, differIds, levels, shares: Object.fromEntries(Object.entries(totals).map(([k, v]) => [k, v / sum])), byDistrict };
   console.log(
     `${name}: 다른 길 ${d.changed}/${pairs.length}쌍 (${ci95(d.changed, pairs.length)}) · 점수 +${d.gainMedian}/+${d.gainMax} · 우회 +${d.detourMedian}%/+${d.detourMax}%` +
       ` · 지금과 고른 길이 다른 쌍 ${differ}`,

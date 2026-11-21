@@ -17,7 +17,7 @@ datasource db {
 model FacilityType {
   code   String @id // street_light, security_light, cctv, emergency_bell, police
   name   String
-  weight Int // 개·대당 가중치 (보안등 1·지구대 10은 MVP용 임시값 — ERD "확인할 것")
+  weight Float // 한 곳당 가중치. 가로등·보안등을 1로 맞춘 배수 — 설문 AHP 비율 (ROADMAP "결정된 것" 시설 가중치, PR #84·#86)
 
   dataSources DataSource[]
   facilities  Facility[]

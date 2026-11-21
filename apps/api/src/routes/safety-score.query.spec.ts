@@ -4,6 +4,7 @@ import {
   SCORE_FACILITY_TYPES,
   segmentScoreQuery,
 } from './safety-score.query.js';
+import { CAPPED_LIGHT_TYPES, LIGHT_CAP_PER_SEGMENT } from './safety.js';
 
 describe('segmentScoreQuery', () => {
   it('구간을 경도·위도 순 WKT 선으로 넘기고, 반경 30m 안 시설의 가중치를 더한다', () => {
@@ -21,18 +22,40 @@ describe('segmentScoreQuery', () => {
 
     expect(FACILITY_RADIUS_M).toBe(30);
     expect(q.values).toEqual([
+      ['street_light', 'security_light'],
+      ['street_light', 'security_light'],
       [0, 1],
       [
         'SRID=4326;LINESTRING(127.4346 36.3323, 127.4349 36.3325)',
         'SRID=4326;LINESTRING(127.4349 36.3325, 127.4352 36.3327, 127.4355 36.333)',
       ],
       30,
+      5,
     ]);
     expect(q.text).toContain(
-      'ST_DWithin(f.location, ST_GeogFromText(s.wkt), $3::float8)',
+      'ST_DWithin(f.location, ST_GeogFromText(s.wkt), $5::float8)',
     );
-    expect(q.text).toContain('sum(ft.weight)');
+    // 가중치는 소수(가로등·보안등을 1로 맞춘 배수, PR #86)라 정수로 자르지 않는다
+    expect(q.text).toContain('sum(w.weight)::float8 AS raw');
     expect(q.text).toContain('JOIN facility_types ft ON ft.code = spot.type');
+  });
+
+  it('가로등·보안등은 합쳐 구간당 5개까지만 더한다 (ROADMAP "결정된 것" 시설 가중치·상한)', () => {
+    const q = segmentScoreQuery([
+      [
+        { lat: 36.3323, lng: 127.4346 },
+        { lat: 36.3325, lng: 127.4349 },
+      ],
+    ]);
+
+    expect(LIGHT_CAP_PER_SEGMENT).toBe(5);
+    expect(CAPPED_LIGHT_TYPES).toEqual(['street_light', 'security_light']);
+    // 구간마다 가로등·보안등 묶음과 나머지를 나눠 순위를 매기고, 가로등·보안등은 순위 5까지만 남긴다
+    expect(q.text).toContain(
+      'PARTITION BY spot.i, spot.type = ANY($2::text[]) ORDER BY ft.weight DESC',
+    );
+    expect(q.text).toContain('WHERE NOT w.light OR w.rank <= $6');
+    expect(q.text).toContain('GROUP BY w.i');
   });
 
   it('종류별로 같은 좌표는 한 곳으로 센다 (지점, ROADMAP "결정된 것" 안전점수)', () => {
@@ -45,7 +68,6 @@ describe('segmentScoreQuery', () => {
 
     // 좌표는 ST_AsBinary로 비교한다. 실험 스크립트의 spots와 같은 방식이고, 반올림하지 않은 완전히 같은 값만 같은 곳이다
     expect(q.text).toContain('SELECT DISTINCT s.i, f.type, ST_AsBinary(f.location)');
-    expect(q.text).toContain('GROUP BY spot.i');
   });
 });
 

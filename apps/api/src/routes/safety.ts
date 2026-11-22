@@ -4,8 +4,20 @@ import type { SafetyLevel } from '../../../../shared/types.js';
 // 팀 회의에서 확정한다 (ROADMAP "팀에서 정해야 할 것"). 우회 한도는 2026-11-04 확정 (ROADMAP "결정된 것").
 // 바꾸면 그 문서의 스크립트를 다시 돌려 결과를 확인한다
 
-/** 구간 원점수(반경 30m 안 시설의 가중치 합)가 이 값 이상이면 100점. 60쌍 최단경로 구간의 상위 5% 근처 값 (10~11) */
+/**
+ * 구간 원점수(반경 30m 안 시설의 가중치 합)가 이 값 이상이면 100점. 60쌍 최단경로 구간의 상위 5% 근처 값 (10~11).
+ * 가중치를 설문 비율로 바꿀 때도 가로등·보안등을 1로 맞춰 이 값은 그대로 둔다 (2026-11-21 확정, PR #86)
+ */
 export const SCORE_CAP_RAW = 10;
+
+/**
+ * 가로등·보안등은 합쳐 구간당 이 개수까지만 원점수에 센다 (2026-11-19 확정 — 승민·근영 의견, 상협 동의, PR #84).
+ * 큰길에 줄지어 선 가로등이 점수를 독차지하지 않게 한다. 원점수 5가 75점이라 가로등만으로도 초록은 된다
+ */
+export const LIGHT_CAP_PER_SEGMENT = 5;
+
+/** `LIGHT_CAP_PER_SEGMENT`를 합쳐서 거는 시설 종류 (ERD `facility_types.code`) */
+export const CAPPED_LIGHT_TYPES = ['street_light', 'security_light'] as const;
 
 /** 안심경로는 최단경로보다 이 점수 이상 높아야 고른다. 그래서 S3 차이 요약의 안전점수 차이("+N점")도 늘 이 이상이다 */
 export const SAFE_MIN_GAIN = 5;

@@ -109,9 +109,9 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
               {destination.name}
             </button>
           )}
-          {(authBusy ?? accountNotice) && (
+          {(authBusy ?? accountNotice ?? favorites.error) && (
             <p className="notice" role="status">
-              {authBusy ?? accountNotice}
+              {authBusy ?? accountNotice ?? favorites.error}
             </p>
           )}
           {/* 도착지를 고르기 전에만 보인다. 대전 밖 안내가 뜨면 그쪽이 대신한다 */}

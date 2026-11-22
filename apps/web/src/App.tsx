@@ -18,7 +18,7 @@ export default function App() {
   const geo = useGeolocation()
   const daylight = useDaylightMode()
   const auth = useAuth()
-  const favorites = useFavorites()
+  const favorites = useFavorites(auth.token)
   const [destination, setDestination] = useState<Place | null>(null)
   const [screen, setScreen] = useState<Screen>('home')
 
@@ -105,6 +105,7 @@ export default function App() {
             ? {
                 on: favorites.hasRoute(trip.originPlace, destination),
                 onToggle: () => favorites.toggleRoute(trip.originPlace, trip.originLabel, destination),
+                error: favorites.error,
               }
             : undefined
         }

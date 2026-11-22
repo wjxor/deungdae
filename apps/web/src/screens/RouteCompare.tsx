@@ -20,7 +20,7 @@ type Props = {
   myLocation: LatLng | null // 기기가 알려 준 현재 위치. 출발지와 다를 수 있다
   destination: Place
   daylight: ReturnType<typeof useDaylightMode>
-  favorite?: { on: boolean; onToggle: () => void } // 회원만. 이 경로(출발지→도착지)를 자주 가는 경로로 담는다
+  favorite?: { on: boolean; onToggle: () => void; error: string | null } // 회원만. 이 경로(출발지→도착지)를 자주 가는 경로로 담는다. error는 저장 실패 안내
   onBack: () => void
   onArrived: () => void // 도착하고 닫았을 때. 지도 홈으로 나간다
 }
@@ -123,6 +123,11 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
           <div className="toprow">
             {!navigating && <ModeToggle mode={mode} sunrise={sunrise} sunset={sunset} onChange={changeMode} />}
           </div>
+          {favorite?.error && (
+            <p className="notice" role="status">
+              {favorite.error}
+            </p>
+          )}
         </header>
       </div>
 

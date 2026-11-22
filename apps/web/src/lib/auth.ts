@@ -320,6 +320,7 @@ export function useAuth() {
 
   return {
     user: session?.user ?? null,
+    token: session?.accessToken ?? null, // 즐겨찾기처럼 로그인이 필요한 요청에 쓴다
     login,
     logout,
     deleteAccount,

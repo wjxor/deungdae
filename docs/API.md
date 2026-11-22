@@ -1,6 +1,6 @@
 # 등대 — API 명세
 
-작성일: 2026-09-16 · 갱신: 2026-11-18 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
+작성일: 2026-09-16 · 갱신: 2026-11-22 · 상태: 초안 v0.4 (6~7주차 발표 전 확정)
 Base URL: `/api` (배포 `https://deungdae-api.vercel.app/api`) · 형식: JSON · 인증: `Authorization: Bearer <accessToken>`
 
 ## 공통 규칙
@@ -145,6 +145,16 @@ export type SocialLoginRequest = { code: string; redirectUri: string; state?: st
 export type AuthResponse = { user: User; accessToken: string };
 
 export type MeResponse = { user: User };
+
+// 즐겨찾기 (5-1장, FR-012). 회원만 쓰고, 서버는 장소 정보를 암호화해 저장한다 (NFR-004).
+// 경로는 출발지·도착지만 저장하고 불러올 때 다시 검색한다 — 점수·경로 모양은 시설 데이터·낮밤에 따라 달라져서
+export type FavoritePlace = { id: number; place: Place }; // id는 서버 행 id (place.id는 카카오 장소 ID 등)
+export type FavoriteRoute = { id: number; name: string; origin: Place | null; destination: Place }; // origin null = "현재 위치"
+export type FavoritesResponse = { places: FavoritePlace[]; routes: FavoriteRoute[] };
+export type AddFavoritePlaceRequest = { place: Place };
+export type AddFavoriteRouteRequest = { name: string; origin: Place | null; destination: Place };
+export type FavoritePlaceResponse = { place: FavoritePlace };
+export type FavoriteRouteResponse = { route: FavoriteRoute };
 ```
 
 ## 1. 상태 확인
@@ -338,7 +348,7 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 - `redirectUri` 규칙과 회원 찾기·만들기·닉네임 고치기는 카카오와 같다. 닉네임(구글은 이름)이 비면 "등대 회원"
 
 ### DELETE /api/auth/me  (인증 필요)
-→ 204 (본문 없음). 탈퇴 — 그 서비스의 연결을 끊은 뒤 `users` 행을 지운다. 연결 끊기가 실패하면 지우지 않고 502로 답해 다시 시도하게 한다
+→ 204 (본문 없음). 탈퇴 — 그 서비스의 연결을 끊은 뒤 `users` 행을 지운다(즐겨찾기도 같이 지워진다, 5-1장). 연결 끊기가 실패하면 지우지 않고 502로 답해 다시 시도하게 한다
 
 - 카카오 회원: 본문 없음. 어드민 키로 카카오 연결을 끊는다. 사용자가 카카오에서 이미 연결을 끊었어도(카카오 `-101`) 지운다. 본문이 와도 쓰지 않는다 (형식이 틀린 본문은 400)
 - 네이버·구글 회원: 연결을 끊으려면 그 사용자의 토큰이 필요한데 서버는 토큰을 저장하지 않아서, 웹이 그 서비스 로그인을 한 번 더 거쳐 받은 코드를 본문으로 보낸다. 서버는 새 토큰을 받아 회원번호가 로그인한 회원과 같은지 보고, 같으면 연결을 끊고(네이버 토큰 삭제 `grant_type=delete`, 구글 `oauth2.googleapis.com/revoke`) 회원을 지운다 (2026-11-17)
@@ -355,6 +365,41 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 | 401 | UNAUTHORIZED | 서비스가 인가 코드를 거부함 — 카카오 만료·재사용(KOE320)·다른 주소(KOE303), 네이버 `invalid_request`·`invalid_grant`(HTTP 200에 `error`로 온다), 구글 400 `invalid_grant`. "카카오(네이버·Google) 로그인을 다시 해 주세요" |
 | 401 | UNAUTHORIZED | `Authorization: Bearer`가 없음("로그인이 필요해요"), 토큰이 틀리거나 만료, 탈퇴한 회원 |
 | 502 | EXTERNAL_API_ERROR | 서비스 장애·5초 무응답, 서버 설정 문제(KOE010·KOE101, 네이버 `invalid_client`, 구글 `invalid_client`·`redirect_uri_mismatch`, 키·시크릿·`JWT_SECRET` 없음), DB 실패 |
+
+## 5-1. 즐겨찾기
+
+회원이 자주 가는 장소와 경로를 서버에 저장한다 (FR-012, 2026-11-22). 모두 `Authorization: Bearer <accessToken>`이 필요하다. 웹은 로그인하거나 앱을 다시 열 때 목록을 불러오고, ☆를 누르면 화면을 먼저 바꾼 뒤 저장해서 실패하면 되돌린다.
+
+- **장소**는 `Place` 그대로(이름·주소·좌표), **경로**는 출발지·도착지만 저장한다. 경로를 고르면 웹이 출발지·도착지를 채운 S2로 가서 다시 검색한다 — 점수와 경로 모양은 시설 데이터·낮밤에 따라 달라져 저장하지 않는다. 같은 출발·도착은 서버 캐시(24시간)에서 나와 도보 API를 다시 부르지 않는다
+- 출발지가 "현재 위치"인 경로는 `origin: null`로 저장하고, 불러올 때 그때의 현재 위치에서 출발한다
+- **장소 정보는 서버가 AES-256-GCM으로 암호화해 저장한다** (NFR-004). 같은 곳은 장소 ID 대신 HMAC 값으로 확인한다 — 장소 ID에도 주소(`address:…`)·좌표(`map:…`)가 들어 있어서. DB만 봐서는 위치를 알 수 없다 (ERD `favorite_places`·`favorite_routes`)
+- 회원당 장소·경로 각 50개까지. 대전 사각형 밖 좌표는 저장하지 않는다(불러와도 경로를 못 찾는 곳이라서). 탈퇴하면 같이 지운다
+
+### GET /api/favorites  (인증 필요)
+→ 200 `FavoritesResponse` (저장한 순서, 오래된 것 먼저)
+```json
+{
+  "places": [ { "id": 3, "place": { "id": "8394", "name": "충남대학교", "address": "대전 유성구 대학로 99", "location": { "lat": 36.3664, "lng": 127.3446 } } } ],
+  "routes": [ { "id": 7, "name": "현재 위치 → 충남대학교", "origin": null, "destination": { "id": "8394", "name": "충남대학교", "address": "대전 유성구 대학로 99", "location": { "lat": 36.3664, "lng": 127.3446 } } } ]
+}
+```
+- 서버 키가 저장할 때와 달라 풀지 못하는 행은 목록에서 빼고 서버 로그에만 남긴다 (한 행 때문에 목록 전체가 안 뜨지 않게)
+
+### POST /api/favorites/places  (인증 필요)
+요청 `AddFavoritePlaceRequest` `{ "place": Place }` → 새로 저장하면 201, 이미 저장한 곳이면 200. 본문은 둘 다 `FavoritePlaceResponse` `{ "place": FavoritePlace }`
+
+### POST /api/favorites/routes  (인증 필요)
+요청 `AddFavoriteRouteRequest` `{ "name": "대전역 → 충남대학교", "origin": Place | null, "destination": Place }` → 새로 저장하면 201, 같은 출발·도착이 있으면 200. 본문은 `FavoriteRouteResponse` `{ "route": FavoriteRoute }`
+
+### DELETE /api/favorites/places/:id · DELETE /api/favorites/routes/:id  (인증 필요)
+→ 204. `:id`는 `FavoritePlace.id`·`FavoriteRoute.id`. 지울 것이 없거나 남의 즐겨찾기 번호여도 204 (그 회원의 행만 지운다)
+
+| HTTP | code | 상황 |
+|---|---|---|
+| 400 | INVALID_INPUT | 본문 형식이 틀림(장소 id·name이 빈 문자열, 좌표가 숫자가 아님, origin이 빠짐), 길이 초과(id 200자 · name 100자 · address 200자 · 경로 name 200자), 50개 초과("즐겨찾기는 50개까지 저장할 수 있어요"), `:id`가 양의 정수가 아님 |
+| 400 | OUT_OF_AREA | 장소·출발지·도착지 좌표가 대전 사각형 밖 |
+| 401 | UNAUTHORIZED | 토큰 없음·만료, 탈퇴한 회원의 토큰으로 저장 |
+| 502 | EXTERNAL_API_ERROR | DB 실패, 서버 설정 문제(`FAVORITES_KEY`·`DATABASE_URL` 없음) |
 
 ## 6. 제보
 
@@ -377,6 +422,6 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 | 8~9주 | `POST /routes/search`에 safe 추가, `GET /facilities` (FR-002가 Must), `GET /daylight` (FR-005) |
 | 11주 | `/auth/kakao`, `/auth/me` (FR-011 Could — 서버 카카오 로그인만 앞당김, 2026-11-13) |
 | 12주 | `/auth/naver`, `/auth/google`, 네이버·구글 회원 탈퇴 (FR-011, 2026-11-17 — 11/20 발표 전) |
-| 13주 | `/reports` (Could) |
+| 13주 | `/favorites` (FR-012, 2026-11-22), `/reports` (Could) |
 
 8주차까지 프론트는 이 문서의 JSON 예시를 목(mock) 데이터로 써서 화면을 먼저 만들었다. 9주차에 실제 서버에 연결하고 목 데이터는 지웠다 (PR #32·#38).

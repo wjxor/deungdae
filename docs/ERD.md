@@ -1,6 +1,6 @@
 # 등대 — ERD
 
-작성일: 2026-10-03 · 갱신: 2026-11-18 (`users` 네이버·구글) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
+작성일: 2026-10-03 · 갱신: 2026-11-22 (`favorite_places`·`favorite_routes`) · 상태: 초안 v0.1 (팀 리뷰 후 6~7주차 발표 전 확정)
 기준: [REQUIREMENTS](REQUIREMENTS.md), [API 명세](API.md), [데이터 검증 결과](../data/validation/README.md)
 
 DB는 PostgreSQL + PostGIS (Supabase), 스키마 관리는 Prisma 마이그레이션.
@@ -13,6 +13,8 @@ erDiagram
     facility_types ||--o{ facilities : "종류"
     data_sources ||--o{ facilities : "적재"
     users |o--o{ reports : "작성"
+    users ||--o{ favorite_places : "저장"
+    users ||--o{ favorite_routes : "저장"
 
     facility_types {
         text code PK "street_light, cctv ..."
@@ -70,6 +72,20 @@ erDiagram
         text email "받지 않아 null"
         timestamptz created_at
     }
+    favorite_places {
+        int id PK
+        int user_id FK
+        text place_key "HMAC, user_id와 UNIQUE"
+        bytea payload "암호화한 장소"
+        timestamptz created_at
+    }
+    favorite_routes {
+        int id PK
+        int user_id FK
+        text route_key "HMAC, user_id와 UNIQUE"
+        bytea payload "암호화한 출발·도착"
+        timestamptz created_at
+    }
     reports {
         int id PK
         int user_id FK
@@ -89,6 +105,7 @@ erDiagram
 | Must | `route_cache` | FR-004·006·007 | `POST /routes/search` |
 | Must | `sun_times` | FR-005 | `GET /daylight` |
 | Could | `users` | FR-011 | `/auth/kakao`, `/auth/me` (2026-11-13 생성) |
+| Could | `favorite_places`·`favorite_routes` | FR-012, NFR-004 | `/favorites` (2026-11-22) |
 | Could | `reports` | FR-009·010 | `/reports`, `POST /routes/search` (점수 감점). 아직 만들지 않음 (13주차) |
 
 `GET /places`는 카카오 로컬 API 결과를 그대로 돌려주므로 테이블이 없다.
@@ -223,6 +240,23 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 - 사람은 (`provider`, `provider_id`)로 구분한다. 같은 사람이 카카오와 구글로 각각 로그인하면 회원이 둘이다. 한 사람으로 묶어야 하면 `user_identities`(provider, provider_id)로 나누는 마이그레이션을 한다
 - 소셜 로그인만 있어 `password_hash`는 두지 않았고 `provider` 기본값 `email`도 없앴다 (초안에는 있었음). 이메일 가입을 만들게 되면 그때 더한다
 
+### `favorite_places`·`favorite_routes` — 즐겨찾기 (Could, FR-012)
+
+회원이 저장한 장소와 경로(출발지·도착지). 장소 정보는 서버가 암호화해서 넣어 DB만 봐서는 위치를 알 수 없다 (NFR-004, API.md 5-1장).
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|---|---|---|---|
+| `id` | integer | PK | API `FavoritePlace.id`·`FavoriteRoute.id` (지울 때 쓰는 번호) |
+| `user_id` | integer | FK → `users.id` ON DELETE CASCADE | 탈퇴하면 같이 지운다 |
+| `place_key` / `route_key` | text | NOT NULL, (`user_id`, 키) UNIQUE | 같은 곳을 두 번 저장하지 않게 하는 키. HMAC-SHA256(`회원id:장소ID`)의 hex — 장소 ID에도 주소(`address:…`)·좌표(`map:…`)가 들어 있어 그대로 두지 않는다. 경로는 `출발ID 또는 here>도착ID` |
+| `payload` | bytea | NOT NULL | AES-256-GCM 암호문. 키 버전(1바이트) + IV(12) + 인증 태그(16) + 암호문. 평문은 장소면 `Place` JSON, 경로면 `{ name, origin: Place \| null, destination: Place }` (origin null = "현재 위치") |
+| `created_at` | timestamptz | 기본 now() | 목록 순서 (오래된 것 먼저) |
+
+- 2026-11-22 마이그레이션 `favorites`로 만들었다. 다른 테이블처럼 RLS를 켰다 (정책 없음). 새 테이블만 더해서 배포된 코드에 영향이 없다
+- 키는 서버 환경변수 `FAVORITES_KEY` 하나에서 암호화용·HMAC용을 나눠 만든다 (`apps/api/src/favorites/favorite-crypto.ts`). 로컬과 배포 서버가 같은 공용 DB를 써서 **같은 키**여야 한다. 키를 잃으면 저장된 즐겨찾기를 되살릴 수 없고, 학기 중에는 바꾸지 않는다
+- 경로 모양·안전점수는 저장하지 않는다. 불러올 때 다시 검색한다 (시설 데이터·낮밤에 따라 달라져서)
+- 회원당 장소·경로 각 50개까지 (서버에서 센다)
+
 ### `reports` — 위험 제보 (Could, FR-009·010)
 
 | 컬럼 | 타입 | 제약 | 설명 |
@@ -261,7 +295,6 @@ GROUP BY f.type, t.weight;
 | 정제 기준 | `attributes`·`coord_source`로 어느 쪽으로 정해도 담을 수 있게 둠 |
 | 시설 가중치와 가로등·보안등 상한 | 가중치는 `facility_types.weight` 값만 바꾼다. 구간당 상한을 두면 테이블이 아니라 점수 쿼리를 바꾼다 |
 | 제보 로그인 필요 여부, 사진 첨부 | `reports.user_id`·`photo_url`을 null 허용으로 둠 |
-| 즐겨찾기(FR-012) 범위 | 테이블 없음 (화면은 앱 메모리에만 저장). 정하면 승민 제안대로 `favorite_places`·`favorite_routes`(탈퇴하면 CASCADE)를 더한다 (ROADMAP "팀에서 정해야 할 것") |
 
 ## Prisma·PostGIS 메모
 

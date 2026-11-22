@@ -11,7 +11,8 @@
  *
  * 경유지 고르기: 경로 근처에서 밀집도가 높은 지점부터 최대 --max-via개. 서로 --min-gap m 이상 떨어뜨리고,
  *   밀집도가 --min-density 미만이면 쓰지 않으며, 경로를 따라 출발에 가까운 순으로 카카오에 넘긴다.
- *   밀집도 = 서버 점수와 같은 방식(반경 30m 안 시설 가중치 합, 같은 좌표의 CCTV·안심벨은 한 곳, 원점수 상한 SCORE_CAP_RAW)
+ *   밀집도 = 서버 점수와 같은 방식(반경 30m 안 시설 가중치 합, 같은 좌표의 CCTV·안심벨은 한 곳, 가로등·보안등은 합쳐 LIGHT_CAP_PER_SEGMENT개까지,
+ *   원점수 상한 SCORE_CAP_RAW). 가중치가 소수라 밀집도도 소수다 (2026-11-23, PR #87 서버 반영에 맞춤)
  *
  * 경유지를 언제 쓰나 (--when)
  *   same(기본): 최단과 넓은 길 우선이 같은 길일 때만 (겹침 OVERLAP_SAME 이상). 이때만 S+경유 한 건을 더 부른다 — 같은 길이라 B+경유는 같다
@@ -59,7 +60,7 @@ const pg = createRequire(join(API, 'package.json'))('pg');
 const { toWalkRoute } = await load('walk/kakao-walk.convert.js');
 const { splitPath } = await load('routes/segments.js');
 const { segmentScoreQuery, FACILITY_RADIUS_M } = await load('routes/safety-score.query.js');
-const { toSegmentScore, toRouteScore, pickSafe, SAFE_MIN_GAIN, SAFE_MAX_DETOUR, SCORE_CAP_RAW } = await load('routes/safety.js');
+const { toSegmentScore, toRouteScore, pickSafe, SAFE_MIN_GAIN, SAFE_MAX_DETOUR, SCORE_CAP_RAW, LIGHT_CAP_PER_SEGMENT, CAPPED_LIGHT_TYPES } = await load('routes/safety.js');
 
 // ── 실험 값 (이 값을 바꿔 가며 본다) ───────────────────────
 const DEFAULT_CORRIDOR_M = 250; // 최단·넓은 길 우선 경로에서 이 안의 시설을 경유지 후보로 본다
@@ -261,23 +262,27 @@ function straightLen(o, vias, d) {
  * 기준 경로(base) 근처에서 시설이 몰린 지점을 밀집도 순으로 최대 MAX_VIA개 고른다.
  * 후보 = 최단·넓은 길 우선 경로 CORRIDOR_M 안의 시설 중, 기준 경로 위가 아니고 출발·도착에서 떨어진 것.
  * 이미 고른 지점과 MIN_GAP_M 안이거나, 밀집도가 MIN_DENSITY 미만이거나, 출발→경유지들→도착이 너무 돌면 건너뛴다.
- * 밀집도: 서버 점수와 같게 반경 30m 안 가중치 합 (같은 좌표의 CCTV·안심벨은 한 곳), 원점수 상한까지만 센다.
+ * 밀집도: 서버 점수와 같게 반경 30m 안 가중치 합 (같은 좌표의 CCTV·안심벨은 한 곳, 가로등·보안등은 합쳐 상한 개수까지 — 큰 가중치부터),
+ * 원점수 상한까지만 센다.
  * 밀집도가 같으면 기준 경로에 가까운 지점이 먼저다. 고른 지점은 경로를 따라 출발에 가까운 순으로 돌려준다
  */
 async function pickVias(client, pair, base, shortest, broad) {
   const baseWalk = base.key === 'S' ? shortest : broad;
   const o = rounded(pair.origin.location);
   const d = rounded(pair.destination.location);
-  const values = [lineWkt([shortest.path, broad.path]), CORRIDOR_M, pointWkt(o), END_MARGIN_M, pointWkt(d), DENSITY_M, lineWkt([baseWalk.path]), OFF_ROUTE_M, SCORE_CAP_RAW];
+  const values = [lineWkt([shortest.path, broad.path]), CORRIDOR_M, pointWkt(o), END_MARGIN_M, pointWkt(d), DENSITY_M, lineWkt([baseWalk.path]), OFF_ROUTE_M, SCORE_CAP_RAW, [...CAPPED_LIGHT_TYPES], LIGHT_CAP_PER_SEGMENT];
   if (TYPES) values.push(TYPES);
-  const typeFilter = TYPES ? 'AND f.type = ANY($10::text[])' : '';
-  const densityTypeFilter = TYPES ? 'AND f2.type = ANY($10::text[])' : '';
+  const typeFilter = TYPES ? 'AND f.type = ANY($12::text[])' : '';
+  const densityTypeFilter = TYPES ? 'AND f2.type = ANY($12::text[])' : '';
   const { rows } = await client.query(
     `SELECT f.id, ST_Y(f.location::geometry) AS lat, ST_X(f.location::geometry) AS lng,
-        LEAST((SELECT coalesce(sum(t.w), 0) FROM (
-          SELECT DISTINCT ON (CASE WHEN f2.type IN ('cctv', 'emergency_bell') THEN f2.type || f2.location::text ELSE f2.id::text END) ft2.weight AS w
-          FROM facilities f2 JOIN facility_types ft2 ON ft2.code = f2.type
-          WHERE ST_DWithin(f2.location, f.location, $6::float8) ${densityTypeFilter}) t), $9::int)::int AS density,
+        LEAST((SELECT coalesce(sum(r.w), 0) FROM (
+          SELECT t.w, t.light, row_number() OVER (PARTITION BY t.light ORDER BY t.w DESC) AS rank FROM (
+            SELECT DISTINCT ON (CASE WHEN f2.type IN ('cctv', 'emergency_bell') THEN f2.type || f2.location::text ELSE f2.id::text END)
+              ft2.weight AS w, f2.type = ANY($10::text[]) AS light
+            FROM facilities f2 JOIN facility_types ft2 ON ft2.code = f2.type
+            WHERE ST_DWithin(f2.location, f.location, $6::float8) ${densityTypeFilter}) t) r
+          WHERE NOT r.light OR r.rank <= $11::int), $9::float8)::float8 AS density,
         ST_Distance(f.location, ST_GeogFromText($7))::float8 AS off_m
      FROM facilities f
      WHERE ST_DWithin(f.location, ST_GeogFromText($1), $2::float8)
@@ -315,7 +320,7 @@ async function candidates() {
       const bases = basesFor(overlap);
       for (const base of bases) entry[base.key] = await pickVias(client, pair, base, shortest, broad);
       out.push(entry);
-      const show = (b) => (entry[b.key].vias.length ? `${entry[b.key].vias.length}개 ` + entry[b.key].vias.map((v) => `${v.lat.toFixed(4)},${v.lng.toFixed(4)}(밀집 ${v.density})`).join(' → ') : '없음');
+      const show = (b) => (entry[b.key].vias.length ? `${entry[b.key].vias.length}개 ` + entry[b.key].vias.map((v) => `${v.lat.toFixed(4)},${v.lng.toFixed(4)}(밀집 ${Math.round(v.density * 100) / 100})`).join(' → ') : '없음');
       console.log(`${pair.id.padEnd(22)} 최단·큰길 겹침 ${String(entry.overlap).padStart(5)}% ${bases.length ? bases.map((b) => `${b.label} ${show(b)}`).join(' | ') : '→ 다른 길이라 경유지 안 씀'}`);
     }
   } finally {

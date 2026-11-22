@@ -9,7 +9,7 @@ type Props = {
   onPickPlace: (place: Place) => void // 도착지로 고른다
   onPickRoute: (route: FavoriteRoute) => void // 출발지·도착지를 채워 S2로 간다
   onRemovePlace: (place: Place) => void
-  onRemoveRoute: (id: string) => void
+  onRemoveRoute: (id: number) => void
   onClose: () => void
 }
 

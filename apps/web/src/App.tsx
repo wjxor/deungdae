@@ -18,7 +18,6 @@ export default function App() {
   const geo = useGeolocation()
   const daylight = useDaylightMode()
   const auth = useAuth()
-  const favorites = useFavorites()
   const [destination, setDestination] = useState<Place | null>(null)
   const [screen, setScreen] = useState<Screen>('home')
 
@@ -46,13 +45,22 @@ export default function App() {
   const [pickedOrigin, setPickedOrigin] = useState<Place | null>(null)
   const [trip, setTrip] = useState<{ origin: LatLng; originLabel: string; originPlace: Place | null } | null>(null)
 
-  // 로그아웃·탈퇴하면 그 사람이 고른 도착지·출발지·즐겨찾기가 다음 사람 화면에 남지 않게 비운다
-  const endSession = () => {
-    favorites.clear()
+  // 로그아웃·탈퇴·로그인 만료 때 그 사람이 고른 도착지·출발지가 다음 사람 화면에 남지 않게 비우고 지도 홈으로
+  const resetTrip = () => {
     setDestination(null)
     setPickedOrigin(null)
     setTrip(null)
     go('home', 'replace')
+  }
+  // 즐겨찾기 요청이 401이면 로그아웃시키고 지도 홈에서 다시 로그인하라고 안내한다 (즐겨찾기 목록은 훅이 비운다)
+  const favorites = useFavorites(auth.token, () => {
+    auth.expire()
+    resetTrip()
+  })
+  // 로그아웃·탈퇴하면 즐겨찾기도 바로 비운다
+  const endSession = () => {
+    favorites.clear()
+    resetTrip()
   }
 
   // 도착해서 닫으면 이동이 끝난 것이다. 도착지·출발지를 비우고 지도 홈으로 돌아간다 (기록은 홈 → 출발지 → 경로 두 칸 앞)
@@ -105,6 +113,7 @@ export default function App() {
             ? {
                 on: favorites.hasRoute(trip.originPlace, destination),
                 onToggle: () => favorites.toggleRoute(trip.originPlace, trip.originLabel, destination),
+                error: favorites.error,
               }
             : undefined
         }

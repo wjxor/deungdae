@@ -112,3 +112,13 @@ export type SocialLoginRequest = { code: string; redirectUri: string; state?: st
 export type AuthResponse = { user: User; accessToken: string };
 
 export type MeResponse = { user: User };
+
+// 즐겨찾기 (API.md 5-1장, FR-012). 회원만 쓰고, 서버는 장소 정보를 암호화해 저장한다 (NFR-004).
+// 경로는 출발지·도착지만 저장하고 불러올 때 다시 검색한다 — 점수·경로 모양은 시설 데이터·낮밤에 따라 달라져서
+export type FavoritePlace = { id: number; place: Place }; // id는 서버 행 id (place.id는 카카오 장소 ID 등)
+export type FavoriteRoute = { id: number; name: string; origin: Place | null; destination: Place }; // origin null = "현재 위치"
+export type FavoritesResponse = { places: FavoritePlace[]; routes: FavoriteRoute[] };
+export type AddFavoritePlaceRequest = { place: Place };
+export type AddFavoriteRouteRequest = { name: string; origin: Place | null; destination: Place };
+export type FavoritePlaceResponse = { place: FavoritePlace };
+export type FavoriteRouteResponse = { route: FavoriteRoute };

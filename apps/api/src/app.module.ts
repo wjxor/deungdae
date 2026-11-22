@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module.js';
 import { DaylightModule } from './daylight/daylight.module.js';
 import { FacilitiesModule } from './facilities/facilities.module.js';
+import { FavoritesModule } from './favorites/favorites.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PlacesModule } from './places/places.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -19,6 +20,7 @@ import { RoutesModule } from './routes/routes.module.js';
     RoutesModule,
     FacilitiesModule,
     AuthModule,
+    FavoritesModule,
   ],
 })
 export class AppModule {}

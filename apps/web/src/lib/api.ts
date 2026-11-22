@@ -1,10 +1,18 @@
 import type {
+  AddFavoritePlaceRequest,
+  AddFavoriteRouteRequest,
   AuthResponse,
   DaylightResponse,
   FacilitiesResponse,
+  FavoritePlace,
+  FavoritePlaceResponse,
+  FavoriteRoute,
+  FavoriteRouteResponse,
+  FavoritesResponse,
   KakaoLoginRequest,
   LatLng,
   MeResponse,
+  Place,
   PlacesResponse,
   RouteSearchRequest,
   RouteSearchResponse,
@@ -99,4 +107,36 @@ export async function deleteMe(token: string, reauth?: SocialLoginRequest): Prom
     headers: reauth ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { Authorization: `Bearer ${token}` },
     body: reauth ? JSON.stringify(reauth) : undefined,
   })
+}
+
+// 즐겨찾기 (API.md 5-1장, FR-012). 모두 로그인 토큰이 필요하다
+const bearer = (token: string) => ({ Authorization: `Bearer ${token}` })
+const bearerJson = (token: string) => ({ ...bearer(token), 'Content-Type': 'application/json' })
+
+// GET /api/favorites — 장소·경로를 저장한 순서로
+export function fetchFavorites(token: string): Promise<FavoritesResponse> {
+  return request('/favorites', { headers: bearer(token) })
+}
+
+// POST /api/favorites/places — 이미 저장한 곳이면 서버가 그 행을 돌려준다
+export async function addFavoritePlace(token: string, place: Place): Promise<FavoritePlace> {
+  const body: AddFavoritePlaceRequest = { place }
+  const res = await request<FavoritePlaceResponse>('/favorites/places', { method: 'POST', headers: bearerJson(token), body: JSON.stringify(body) })
+  return res.place
+}
+
+// DELETE /api/favorites/places/:id — 204라 본문이 없다
+export async function deleteFavoritePlace(token: string, id: number): Promise<void> {
+  await request<null>(`/favorites/places/${id}`, { method: 'DELETE', headers: bearer(token) })
+}
+
+// POST /api/favorites/routes — 출발지·도착지만 저장한다 (origin null = 현재 위치)
+export async function addFavoriteRoute(token: string, req: AddFavoriteRouteRequest): Promise<FavoriteRoute> {
+  const res = await request<FavoriteRouteResponse>('/favorites/routes', { method: 'POST', headers: bearerJson(token), body: JSON.stringify(req) })
+  return res.route
+}
+
+// DELETE /api/favorites/routes/:id
+export async function deleteFavoriteRoute(token: string, id: number): Promise<void> {
+  await request<null>(`/favorites/routes/${id}`, { method: 'DELETE', headers: bearer(token) })
 }

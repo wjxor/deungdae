@@ -33,7 +33,8 @@ curl 'http://localhost:3000/api/facilities?bbox=36.35,127.33,36.37,127.36'
 - 카카오 로그인(`/api/auth/kakao`, 카카오 회원 탈퇴 포함, API.md 5장)은 `KAKAO_REST_API_KEY`·`KAKAO_CLIENT_SECRET`(카카오 콘솔 [REST API 키] > 클라이언트 시크릿)·`KAKAO_ADMIN_KEY`(어드민 키, 탈퇴 때 연결 끊기)가 필요하다. 없으면 서버는 뜨고 카카오 로그인·탈퇴만 502 `EXTERNAL_API_ERROR`. 리다이렉트 URI는 카카오·네이버·구글 모두 `CORS_ORIGINS`의 주소 루트만 받는다
 - `JWT_SECRET`은 우리 로그인 토큰(HS256)의 서명 값이라 카카오·네이버·구글 로그인과 `GET·DELETE /api/auth/me`에 모두 필요하다. 32자 이상 무작위 값으로 두고, 로컬과 배포 값을 다르게 한다. 없거나 32자보다 짧으면 쓰지 않아(서버를 켤 때 경고 로그) 이 API들이 502 `EXTERNAL_API_ERROR`. 값을 바꾸면 이미 내준 토큰이 모두 401이 되어, 웹은 다음에 열 때 비회원으로 돌아간다 (다시 로그인)
 - 네이버·구글 로그인(`/api/auth/naver`·`/api/auth/google`, 탈퇴 재인증 포함)은 `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`(네이버 개발자센터 앱), `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`(구글 클라우드 OAuth 클라이언트)이 필요하다. 없으면 그 서비스의 로그인·탈퇴만 502. 콘솔 설정은 `docs/EXTERNAL_APIS.md`
-- 시크릿(카카오·네이버·구글)·어드민 키·`JWT_SECRET`은 GitHub·노션에 적지 않는다. 어드민 키는 모든 사용자에게 관리자 권한으로 쓸 수 있는 키다
+- 즐겨찾기(`/api/favorites`, API.md 5-1장)는 `FAVORITES_KEY`가 필요하다. 32바이트 무작위 값의 base64(`openssl rand -base64 32`)이고, 장소 정보를 암호화하는 데 쓴다. **로컬과 배포 서버(Vercel)에 같은 값**을 넣는다 — 같은 공용 DB를 써서, 다르면 한쪽에서 저장한 즐겨찾기를 다른 쪽이 못 읽는다(목록에서 빠지고 경고 로그). 없거나 32바이트가 아니면 서버를 켤 때 경고 로그를 남기고 즐겨찾기만 502 `EXTERNAL_API_ERROR`. 잃으면 저장된 즐겨찾기를 되살릴 수 없어서 학기 중에는 바꾸지 않는다
+- 시크릿(카카오·네이버·구글)·어드민 키·`JWT_SECRET`·`FAVORITES_KEY`는 GitHub·노션에 적지 않는다. 어드민 키는 모든 사용자에게 관리자 권한으로 쓸 수 있는 키다
 
 ## DB 연결 (Supabase)
 
@@ -129,6 +130,7 @@ apps/api/
     ├── places/             # GET /api/places
     ├── facilities/         # GET /api/facilities (지도 범위 안의 CCTV·안심벨·지구대, 종류·좌표가 같으면 하나로 묶음)
     ├── auth/               # POST /api/auth/kakao·naver·google, GET·DELETE /api/auth/me (users, 로그인 토큰 JWT_SECRET)
+    ├── favorites/          # GET·POST·DELETE /api/favorites (favorite_places·favorite_routes, 장소 정보 AES-256-GCM 암호화 FAVORITES_KEY)
     └── routes/             # POST /api/routes/search (약 50m 구간, 안전점수, 안심경로 고르기 — 값은 safety.ts)
 test/
 ├── *.e2e-spec.ts           # DB·카카오·천문연을 가짜로 바꾼 e2e

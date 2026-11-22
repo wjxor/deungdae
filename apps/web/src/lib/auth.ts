@@ -31,6 +31,8 @@ export const DELETE_FAILED_MESSAGE = '탈퇴하지 못했어요. 잠시 후 다�
 export const DELETE_CANCELLED_MESSAGE = '탈퇴를 취소했어요.'
 // 만료된 토큰으로는 몇 번을 다시 눌러도 서버가 401로 거절한다. 그래서 로그아웃시키고 다시 로그인하라고 안내한다
 export const DELETE_EXPIRED_MESSAGE = '로그인이 만료됐어요. 다시 로그인한 뒤 탈퇴해 주세요.'
+// 즐겨찾기처럼 로그인이 필요한 요청이 401로 거절됐을 때 (expire)
+export const SESSION_EXPIRED_MESSAGE = '로그인이 만료됐어요. 다시 로그인해 주세요.'
 // 로그인 서비스에서 돌아와 서버 응답을 기다리는 동안(1~3초) 지도 홈에 띄운다
 const LOGIN_BUSY_MESSAGE = '로그인하는 중이에요…'
 const DELETE_BUSY_MESSAGE = '탈퇴하는 중이에요…'
@@ -295,6 +297,13 @@ export function useAuth() {
     setSession(null)
   }
 
+  // 로그인이 필요한 요청이 401(만료·탈퇴)이면 로그아웃시키고 지도 홈에 다시 로그인하라고 안내한다 (탈퇴의 'expired'와 같게)
+  const expire = () => {
+    clearSession()
+    setSession(null)
+    setAccountNotice(SESSION_EXPIRED_MESSAGE)
+  }
+
   // 카카오 회원은 서버가 바로 연결을 끊고 회원을 지운 뒤 이 브라우저의 로그인도 지운다 ('deleted').
   // 네이버·구글 회원은 서버가 연결을 끊으려면 그 서비스 토큰이 필요해서, 서비스 로그인을 한 번 더 거친다 ('redirecting' — 결과는 돌아와서).
   // 그 전에 로그인이 살아 있는지 먼저 본다. 만료된 채로 다녀오면 서버가 401로 거절해 확인을 헛걸음하게 된다.
@@ -323,6 +332,7 @@ export function useAuth() {
     token: session?.accessToken ?? null, // 즐겨찾기처럼 로그인이 필요한 요청에 쓴다
     login,
     logout,
+    expire,
     deleteAccount,
     loginError,
     clearLoginError: () => setLoginError(null),

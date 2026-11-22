@@ -17,6 +17,11 @@ export function invalidInput(message: string): ApiException {
   return new ApiException(HttpStatus.BAD_REQUEST, 'INVALID_INPUT', message);
 }
 
+/** 400 OUT_OF_AREA — 대상 지역(대전광역시) 밖 좌표 */
+export function outOfArea(message: string): ApiException {
+  return new ApiException(HttpStatus.BAD_REQUEST, 'OUT_OF_AREA', message);
+}
+
 /** 502 EXTERNAL_API_ERROR — 카카오·천문연 API 실패·응답 없음, 시설 조회 중 DB 실패 */
 export function externalApiError(message: string): ApiException {
   return new ApiException(

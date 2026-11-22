@@ -11,5 +11,7 @@ import { AuthService } from './auth.service.js';
   imports: [KakaoModule, NaverModule, GoogleModule],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard],
+  // 즐겨찾기처럼 로그인이 필요한 다른 모듈이 AuthGuard를 쓴다
+  exports: [AuthService, AuthGuard],
 })
 export class AuthModule {}

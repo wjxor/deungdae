@@ -13,13 +13,14 @@ type Props = {
   facilityVisible?: Record<FacilityType, boolean> // 지도 홈(S1) 필터. 없으면 모두 숨긴다. 경로 화면은 이 값 대신 안심벨·지구대만 보인다
   heading?: number | null // 이동 중 진행 방향(북쪽 0도). 있으면 내 위치 점에 방향 삼각형을 붙인다
   route?: RouteView // 있으면 경로 화면(S3): 경로를 그리고 안심벨·지구대만 보이며 도착지 핀은 RouteLayer가 그린다
+  onMapClick?: (location: LatLng, mapCenter: LatLng) => void // 지도를 누른 자리와 그때 지도의 실제 중심 (S1 도착지·S2 출발지 고르기)
 }
 
 const NAV_LEVEL = 2 // 이동 중 지도 확대 단계 (숫자가 작을수록 가깝다)
 
 const toKakao = (p: LatLng) => new kakao.maps.LatLng(p.lat, p.lng)
 
-export default function KakaoMap({ center, myLocation, pin, originPin = null, facilityVisible = NO_FACILITIES, heading = null, route }: Props) {
+export default function KakaoMap({ center, myLocation, pin, originPin = null, facilityVisible = NO_FACILITIES, heading = null, route, onMapClick }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const myOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
   const pinOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null)
@@ -66,6 +67,23 @@ export default function KakaoMap({ center, myLocation, pin, originPin = null, fa
     if (navigating) map.panTo(toKakao(center))
     else map.setCenter(toKakao(center))
   }, [center, map, navigating])
+
+  // 지도를 누르면 그 자리를 알린다. 화면이 바뀔 때마다 리스너를 다시 달지 않게 마지막 함수를 ref로 본다.
+  // 사용자가 손으로 옮긴 지도는 center 값과 다르므로, 지도를 그대로 두고 싶은 화면이 쓰게 실제 중심도 같이 넘긴다
+  const onMapClickRef = useRef(onMapClick)
+  useEffect(() => {
+    onMapClickRef.current = onMapClick
+  })
+  const clickable = onMapClick !== undefined
+  useEffect(() => {
+    if (!map || !clickable) return
+    const onClick = (e: kakao.maps.event.MouseEvent) => {
+      const c = map.getCenter()
+      onMapClickRef.current?.({ lat: e.latLng.getLat(), lng: e.latLng.getLng() }, { lat: c.getLat(), lng: c.getLng() })
+    }
+    kakao.maps.event.addListener(map, 'click', onClick)
+    return () => kakao.maps.event.removeListener(map, 'click', onClick)
+  }, [map, clickable])
 
   // 현재 위치 점
   useEffect(() => {

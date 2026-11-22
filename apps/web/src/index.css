@@ -727,6 +727,29 @@ button {
   justify-self: start;
 }
 
+.map-pick-hint {
+  justify-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.map-pick-hint svg {
+  flex: none;
+  color: var(--here); /* S1 도착지 핀과 같은 색 */
+}
+
+.origin-pick .map-pick-hint svg {
+  color: #2f80ed; /* S2 출발 핀과 같은 색 */
+}
+
 .place-pin.origin {
   background: #2f80ed;
 }

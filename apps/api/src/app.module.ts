@@ -7,6 +7,7 @@ import { FavoritesModule } from './favorites/favorites.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PlacesModule } from './places/places.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 import { RoutesModule } from './routes/routes.module.js';
 
 @Module({
@@ -21,6 +22,7 @@ import { RoutesModule } from './routes/routes.module.js';
     FacilitiesModule,
     AuthModule,
     FavoritesModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

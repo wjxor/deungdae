@@ -97,6 +97,11 @@ export type Report = {
   createdAt: string;
 };
 
+// 위험 제보 (6장, FR-009). 회원만 쓰고 사진은 받지 않는다 (2026-11-23 PR #93).
+// description은 200자까지이고, 빠지거나 null이거나 빈칸뿐이면 null로 저장한다
+export type CreateReportRequest = { location: LatLng; type: ReportType; description?: string | null };
+export type ReportResponse = { report: Report };
+
 export type SocialProvider = "kakao" | "naver" | "google";
 
 // 카카오는 사용자가 동의하지 않으면 이메일을 주지 않아 email이 null일 수 있다

@@ -1,7 +1,7 @@
 import type { SafetyLevel } from '../../../../shared/types.js';
 
-// 안전점수·안심경로 값. 2026-10-25 귀갓길 60쌍 분석(docs/safety-score-experiment.md)으로 정한 MVP 임시값이고,
-// 팀 회의에서 확정한다 (ROADMAP "팀에서 정해야 할 것"). 우회 한도는 2026-11-04 확정 (ROADMAP "결정된 것").
+// 안전점수·안심경로 값. 2026-10-25 귀갓길 60쌍 분석(docs/safety-score-experiment.md)으로 정한 MVP 임시값에서 시작했고,
+// 우회 한도 2026-11-04, 상한 11/19, 정규화 11/21, 최소 점수 차 11/23에 팀이 확정했다 (ROADMAP "결정된 것").
 // 바꾸면 그 문서의 스크립트를 다시 돌려 결과를 확인한다
 
 /**
@@ -19,7 +19,10 @@ export const LIGHT_CAP_PER_SEGMENT = 5;
 /** `LIGHT_CAP_PER_SEGMENT`를 합쳐서 거는 시설 종류 (ERD `facility_types.code`) */
 export const CAPPED_LIGHT_TYPES = ['street_light', 'security_light'] as const;
 
-/** 안심경로는 최단경로보다 이 점수 이상 높아야 고른다. 그래서 S3 차이 요약의 안전점수 차이("+N점")도 늘 이 이상이다 */
+/**
+ * 안심경로는 최단경로보다 이 점수 이상 높아야 고른다. 그래서 S3 차이 요약의 안전점수 차이("+N점")도 늘 이 이상이다.
+ * 2026-11-23 확정 — 승민 의견, 상협 동의 (PR #93)
+ */
 export const SAFE_MIN_GAIN = 5;
 
 /**

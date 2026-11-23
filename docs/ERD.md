@@ -262,11 +262,11 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | `id` | integer | PK | API `Report.id` |
-| `user_id` | integer | FK → `users.id`, NULL 허용 | 제보에 로그인이 필요한지 미합의라 null 허용 |
+| `user_id` | integer | FK → `users.id` ON DELETE SET NULL, NULL 허용 | 회원만 제보하지만, 탈퇴하면 제보는 남기고 작성자만 지워서 null 허용 (2026-11-23 PR #93) |
 | `location` | geography(Point, 4326) | NOT NULL, GIST 인덱스 | 제보 위치 |
 | `type` | text | NOT NULL | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `suspicious` 우범지역 / `others` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음) |
 | `description` | text | | |
-| `photo_url` | text | | 사진 첨부 여부 미정. 사진은 클라우드 스토리지에 두고 URL만 저장 (사진 자체 저장은 Won't) |
+| `photo_url` | text | | 쓰지 않음 — 2026-11-23 사진은 받지 않기로 했다 (PR #93). 그 전 초안은 사진을 클라우드 스토리지에 두고 URL만 저장 (사진 자체 저장은 Won't) |
 | `created_at` | timestamptz | 기본 now() | 최근 30일 감점 계산에 쓴다 |
 
 ## 안전점수 계산에서 테이블을 쓰는 방식

@@ -9,9 +9,10 @@ import Login from './screens/Login'
 import MapHome from './screens/MapHome'
 import type { Origin } from './screens/OriginPick'
 import OriginPick from './screens/OriginPick'
+import ReportScreen from './screens/ReportScreen'
 import RouteCompare from './screens/RouteCompare'
 
-type Screen = 'login' | 'home' | 'origin' | 'route'
+type Screen = 'login' | 'home' | 'origin' | 'route' | 'report'
 
 // 화면을 오가도 남겨야 하는 값(낮/밤, 현재 위치, 도착지, 출발지)은 여기서 들고 있고, 화면은 받아서 쓴다
 export default function App() {
@@ -100,6 +101,11 @@ export default function App() {
     )
   }
 
+  // 제보는 회원만. 로그아웃·탈퇴로 회원이 아니게 되면 보여 주지 않고 지도 홈으로 둔다
+  if (screen === 'report' && auth.user) {
+    return <ReportScreen geo={geo} daylight={daylight} onBack={() => history.back()} />
+  }
+
   if (screen === 'route' && destination && trip) {
     return (
       <RouteCompare
@@ -147,6 +153,7 @@ export default function App() {
       onPickDestination={setDestination}
       onClearDestination={() => setDestination(null)}
       onFindRoute={() => go('origin')}
+      onReport={() => go('report')}
       user={auth.user}
       onLogin={() => go('login')}
       favorites={favorites}

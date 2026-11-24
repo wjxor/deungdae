@@ -120,7 +120,7 @@ export type Place = {
 
 export type PlacesResponse = { places: Place[] };
 
-export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";
+export type ReportType = "dark" | "no_cctv" | "others";
 
 export type Report = {
   id: number;

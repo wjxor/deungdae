@@ -30,10 +30,11 @@ type Props = {
   accountNotice: string | null // 네이버·구글 탈퇴 확인에서 돌아온 결과 ("탈퇴했어요" 등), 탈퇴하려다 로그인 만료로 로그아웃된 안내
   authBusy: string | null // 로그인 서비스에서 돌아와 서버 응답을 기다리는 동안의 안내. 그동안 [로그인]은 막는다
   onFindRoute: () => void // 도착지를 골랐을 때 [안심 경로 찾기]를 누르면 출발지를 정하는 S2로 간다
+  onReport: () => void // 회원의 [제보하기]. 제보 화면(S4)으로 간다
 }
 
 // S1 지도 홈
-export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, user, onLogin, favorites, onPickFavoriteRoute, onLogout, onDelete, onDeleted, accountNotice, authBusy }: Props) {
+export default function MapHome({ geo, daylight, destination, onPickDestination, onClearDestination, onFindRoute, onReport, user, onLogin, favorites, onPickFavoriteRoute, onLogout, onDelete, onDeleted, accountNotice, authBusy }: Props) {
   const myLocation = geo.state.status === 'ready' ? geo.state.location : null
   // 버튼이나 검색 결과로 이동할 때는 새 객체를 넣는다. 지도를 직접 움직인 뒤에도 다시 이동하게 하려는 것
   const [recenter, setRecenter] = useState<LatLng | null>(null)
@@ -152,9 +153,9 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
 
       <section className="sheet" aria-label="경로">
         <div className="acts">
-          {/* 회원만: 제보·즐겨찾기·내 정보. 제보(FR-009)는 13주차라 비활성 */}
+          {/* 회원만: 제보·즐겨찾기·내 정보. 제보(FR-009) 화면은 임시 */}
           {user && (
-            <button type="button" className="report" disabled aria-label="제보하기">
+            <button type="button" className="report" aria-label="제보하기" onClick={onReport}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 3l10 18H2z" />
                 <path d="M12 10v5M12 18v.5" />

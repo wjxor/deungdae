@@ -1599,3 +1599,49 @@ button {
   border-bottom: 14px solid var(--here);
   filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
 }
+
+/* S4 위험 제보 (임시 화면) */
+.report-screen .report-title {
+  flex: 1;
+  font-size: 16px;
+}
+
+.report-types {
+  display: flex;
+  gap: 6px;
+}
+
+.report-types button {
+  flex: 1;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 19px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.report-types button[aria-checked='true'] {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-color: transparent;
+}
+
+.report-desc {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* iOS Safari는 16px 미만이면 입력칸을 누를 때 화면을 확대한다 */
+  resize: none;
+}
+
+.report-screen .sheet .text-btn {
+  justify-self: start;
+}

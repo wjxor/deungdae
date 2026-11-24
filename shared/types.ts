@@ -86,8 +86,8 @@ export type Place = {
 
 export type PlacesResponse = { places: Place[] };
 
-// 화면 S4 유형: 조명 부족 / CCTV 없음 / 우범지역 / 기타
-export type ReportType = "dark" | "no_cctv" | "suspicious" | "others";
+// 화면 S4 유형: 조명 부족 / CCTV 없음 / 기타 (우범지역은 기준이 애매하고 데이터가 없어 뺐다, 2026-11-23)
+export type ReportType = "dark" | "no_cctv" | "others";
 
 export type Report = {
   id: number;

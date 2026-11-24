@@ -70,6 +70,21 @@ describe('KakaoWalkClient', () => {
     expect(init?.headers).toEqual({ Authorization: 'KakaoAK test-key' });
   });
 
+  it('경유지는 via_x(경도)·via_y(위도)에 순서대로 쉼표로 잇는다 (A 보강)', async () => {
+    const { lastCall } = stubFetch(() => respond(200, WALK_OK));
+    await client('test-key').walk(DAEJEON_STATION, WOOSONG, 'BROAD_FIRST', [
+      { lat: 36.3341, lng: 127.4402 },
+      { lat: 36.3355, lng: 127.4421 },
+    ]);
+
+    const params = Object.fromEntries(lastCall().url.searchParams);
+    expect(params).toMatchObject({
+      route_mode: 'BROAD_FIRST',
+      via_x: '127.4402,127.4421',
+      via_y: '36.3341,36.3355',
+    });
+  });
+
   it('경로를 못 찾은 응답(HTTP 200 + status)도 에러 없이 돌려준다', async () => {
     stubFetch(() => respond(200, { status: 'TOO_FAR_AWAY' }));
     const res = await client('test-key').walk(

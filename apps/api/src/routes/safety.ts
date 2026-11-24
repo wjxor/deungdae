@@ -66,6 +66,24 @@ export function toSafetyLevel(score: number): SafetyLevel {
   return 'danger';
 }
 
+/**
+ * 제보 감점 (FR-010, 2026-11-24 확정 — 상협 제안, 승민 동의, PR #93 1-4). 구간 30m 안 최근 `REPORT_WINDOW_DAYS`일 제보를
+ * 서로 다른 회원 `REPORT_MIN_REPORTERS`명 이상이 올렸으면 그 구간 원점수에서 이만큼을 한 번 뺀다 (더 쌓여도 같다).
+ * 0~100점에서 빼면 75점 구간이 70점으로 여전히 안전이라 원점수에서 뺀다 (승민) — 같은 구간이 0점(위험)이 된다
+ */
+export const REPORT_PENALTY_RAW = 5;
+
+/** 감점하려면 구간 근처 제보를 올린 사람이 이만큼 있어야 한다. 같은 회원이 여러 번 올리면 한 명이라 한 사람이 점수를 바로 내리지 못한다 */
+export const REPORT_MIN_REPORTERS = 3;
+
+/** 최근 이 일수 안의 제보만 센다 (DB 시각 기준) */
+export const REPORT_WINDOW_DAYS = 30;
+
+/** 제보가 쌓인 구간의 원점수. 빼서 0보다 작아지면 0이다 (로그 변환이 0 이하에서 정의되지 않아 `toSegmentScore`도 0점으로 본다) */
+export function applyReportPenalty(raw: number): number {
+  return Math.max(0, raw - REPORT_PENALTY_RAW);
+}
+
 /** 점수를 매긴 후보 경로 */
 export type ScoredCandidate = { distanceM: number; safetyScore: number };
 

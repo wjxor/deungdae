@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import type {
   FacilityCounts,
   Route,
@@ -20,6 +20,13 @@ import {
 } from './safety.js';
 import { SafetyScoreService } from './safety-score.service.js';
 import { splitPath } from './segments.js';
+import {
+  MAX_RETRACE_M,
+  pickWaypoints,
+  retraceM,
+  routeOverlap,
+  shouldAugment,
+} from './waypoints.js';
 
 /**
  * 안심경로 후보로 더 부르는 카카오 `route_mode`. 편안한 길(`ACCESSIBLE`)은 귀갓길 60쌍 중 최단·넓은 길 우선 둘 다와
@@ -39,11 +46,14 @@ type ScoredRoute = {
 /**
  * 경로 검색 (API.md 3장, FR-004·006·007). 안심경로는 B안 — 카카오 `route_mode` 후보를 구간별 안전점수로 비교한다.
  * 1. 최단(`SHORTEST`)과 넓은 길 우선(`BROAD_FIRST`)을 함께 부른다
- * 2. 후보마다 약 50m 구간으로 나눠 반경 30m 안 시설로 점수를 매긴다
- * 3. 최단보다 5점 이상 높고 30% 넘게 돌아가지 않는 후보가 있으면 안심경로, 없으면 최단경로가 곧 안심경로(`sameRoute`)
+ * 2. 후보마다 약 50m 구간으로 나눠 반경 30m 안 시설로 점수를 매긴다. 제보가 쌓인 구간은 감점한다 (FR-010)
+ * 3. 후보끼리 겹치거나 점수가 낮으면 안심시설 밀집 지점을 경유지로 넣은 후보를 더한다 (A 보강, `augment`)
+ * 4. 최단보다 5점 이상 높고 30% 넘게 돌아가지 않는 후보가 있으면 안심경로, 없으면 최단경로가 곧 안심경로(`sameRoute`)
  */
 @Injectable()
 export class RoutesService {
+  private readonly logger = new Logger(RoutesService.name);
+
   constructor(
     private readonly walk: WalkRouteService,
     private readonly scores: SafetyScoreService,
@@ -61,7 +71,8 @@ export class RoutesService {
 
     const walks = await this.findCandidates(req);
     const [shortest, ...others] = await this.score(walks);
-    const safe = pickSafe(shortest, others);
+    const augmented = await this.augment(req, shortest, others);
+    const safe = pickSafe(shortest, [...others, ...augmented]);
     return {
       recommended: req.mode === 'night' ? 'safe' : 'shortest',
       routes: [toRoute('shortest', shortest), toRoute('safe', safe)],
@@ -88,6 +99,77 @@ export class RoutesService {
       else if (!isClientError(result.reason)) throw result.reason;
     }
     return found;
+  }
+
+  /**
+   * A 보강 (FR-006, 2026-11-23 PR #93 — 승민 안). 최단·큰길이 거의 같은 길이거나 둘 중 높은 점수도 기준보다 낮으면,
+   * 기준 경로(최단·큰길)마다 근처 안심시설 밀집 지점 1~3개를 경유지로 넣은 경로를 같은 `route_mode`로 더 부른다.
+   * 카카오는 검색당 최대 2건 더 쓴다(최대 4건). 왔던 길을 되돌아가는 경유지 경로는 뺀다.
+   * 보강은 덤이라, 경유지 조회·카카오·점수 중 무엇이 실패해도 검색은 실패시키지 않고 B안 후보로만 고른다 (2026-11-24 상협).
+   * 조건 숫자는 2026-11-24 정했고(PR #101), 경유지를 고르는 나머지 값은 실험 값 그대로다 (`waypoints.ts`)
+   */
+  private async augment(
+    req: RouteSearchRequest,
+    shortest: ScoredRoute,
+    others: ScoredRoute[],
+  ): Promise<ScoredRoute[]> {
+    const broad = others[0];
+    const overlap = broad
+      ? routeOverlap(shortest.walk.path, broad.walk.path)
+      : 1;
+    const best = Math.max(
+      shortest.safetyScore,
+      ...others.map((r) => r.safetyScore),
+    );
+    if (!shouldAugment(overlap, best)) return [];
+
+    try {
+      const bases: { route: ScoredRoute; mode: KakaoRouteMode }[] = [
+        { route: shortest, mode: 'SHORTEST' },
+        ...(broad ? [{ route: broad, mode: 'BROAD_FIRST' as const }] : []),
+      ];
+      const corridorPaths = bases.map((b) => b.route.walk.path);
+      const picked = await Promise.all(
+        bases.map(async (b) => {
+          const candidates = await this.scores.waypointCandidates({
+            corridorPaths,
+            basePath: b.route.walk.path,
+            origin: req.origin,
+            destination: req.destination,
+          });
+          const waypoints = pickWaypoints(
+            candidates,
+            b.route.walk.path,
+            req.origin,
+            req.destination,
+            shortest.distanceM,
+          );
+          return { mode: b.mode, waypoints };
+        }),
+      );
+      const targets = picked.filter((t) => t.waypoints.length > 0);
+      if (targets.length === 0) return [];
+
+      const results = await Promise.allSettled(
+        targets.map((t) =>
+          this.walk.find(req.origin, req.destination, t.mode, t.waypoints),
+        ),
+      );
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length > 0) {
+        this.logger.warn(
+          `A 보강 경유지 경로 ${failed.length}건 실패: ${failed.map((r) => errorCode(r.reason)).join(', ')}`,
+        );
+      }
+      const walks = results
+        .filter((r) => r.status === 'fulfilled')
+        .map((r) => r.value)
+        .filter((w) => retraceM(w.path) < MAX_RETRACE_M);
+      return walks.length > 0 ? await this.score(walks) : [];
+    } catch (e) {
+      this.logger.warn(`A 보강을 건너뜀 (B안 후보로 고름): ${errorCode(e)}`);
+      return [];
+    }
   }
 
   /**
@@ -119,6 +201,15 @@ export class RoutesService {
       };
     });
   }
+}
+
+/** 로그용 에러 이름 — ApiException은 code, 그 밖은 이름만 (좌표가 든 메시지를 남기지 않으려고) */
+function errorCode(e: unknown): string {
+  if (e instanceof ApiException) {
+    const body = e.getResponse() as { error?: { code?: string } };
+    return body.error?.code ?? String(e.getStatus());
+  }
+  return e instanceof Error ? e.name : 'unknown';
 }
 
 /** 4xx ApiException인지 (그 후보로는 경로를 못 찾음) */

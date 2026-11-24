@@ -29,6 +29,7 @@ const ENTRY = {
   key: 'k',
   provider: 'kakao',
   routeMode: 'SHORTEST',
+  waypoints: [{ lat: 36.3341, lng: 127.4402 }],
   response: WALK_OK,
   distanceM: 342,
   durationS: 335,
@@ -109,6 +110,8 @@ describe('RouteCacheService', () => {
       cacheKey: 'k',
       provider: 'kakao',
       routeMode: 'SHORTEST',
+      // 경유지(A 보강)도 route_cache.waypoints에 남긴다
+      waypoints: [{ lat: 36.3341, lng: 127.4402 }],
       response: WALK_OK,
       distanceM: 342,
       durationS: 335,

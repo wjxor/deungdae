@@ -35,6 +35,8 @@
  *   --max-via N      경유지 최대 개수 (기본 3. 카카오 한도는 5)
  *   --min-gap M      경유지끼리 최소 거리 m (기본 300)
  *   --min-density N  이 밀집도(원점수) 미만인 지점은 경유지로 쓰지 않는다 (기본 5)
+ *   --light-cap off  경유지 밀집도를 셀 때 가로등·보안등 상한(LIGHT_CAP_PER_SEGMENT)을 두지 않는다 (기본 on — 서버 점수와 같게).
+ *                    점수는 늘 서버와 같다(상한 있음). 상한 때문에 밀집도가 5에서 멈춰 고르는 기준이 가르지 못하는지 보려는 변형 (2026-11-24)
  *   --max-calls N    이 실행에서 카카오를 부를 최대 건수 (기본 150). 하루 한도는 앱 하나에 1,000건
  *
  * docs/waypoint-experiment.md의 숫자는 기본값이 아니라 200쌍(--pairs 세 파일) · --when all · --corridor 100 · --max-retrace 10으로 낸 것이다
@@ -92,10 +94,14 @@ const MAX_VIA = Number(opt('--max-via') ?? 3);
 const MAX_RETRACE_M = opt('--max-retrace') === undefined ? Infinity : Number(opt('--max-retrace'));
 const MIN_GAP_M = Number(opt('--min-gap') ?? 300);
 const MIN_DENSITY = Number(opt('--min-density') ?? 5);
+const LIGHT_CAP = opt('--light-cap') ?? 'on';
+if (!['on', 'off'].includes(LIGHT_CAP)) throw new Error('--light-cap은 on 또는 off');
+/** 경유지 밀집도에서 가로등·보안등을 몇 개까지 셀지. off면 사실상 제한 없음 (원점수 상한 SCORE_CAP_RAW는 그대로) */
+const DENSITY_LIGHT_CAP = LIGHT_CAP === 'on' ? LIGHT_CAP_PER_SEGMENT : 1_000_000;
 if (!['same', 'all'].includes(WHEN)) throw new Error('--when은 same 또는 all');
 const PAIR_FILES = opt('--pairs')?.split(',') ?? ['scripts/route-pairs.json', 'scripts/route-pairs-score.json'];
 // 설정이 기본값과 다르면 후보·보고서 파일 이름에 붙여서, 다른 설정의 결과를 덮어쓰지 않게 한다
-const SUFFIX = `${WHEN === 'all' ? '-all' : ''}${TYPES ? `-${TYPES.join('+')}` : ''}${CORRIDOR_M !== DEFAULT_CORRIDOR_M ? `-c${CORRIDOR_M}` : ''}${MAX_VIA !== 3 ? `-n${MAX_VIA}` : ''}${MIN_GAP_M !== 300 ? `-gap${MIN_GAP_M}` : ''}${MIN_DENSITY !== 5 ? `-d${MIN_DENSITY}` : ''}`;
+const SUFFIX = `${WHEN === 'all' ? '-all' : ''}${TYPES ? `-${TYPES.join('+')}` : ''}${CORRIDOR_M !== DEFAULT_CORRIDOR_M ? `-c${CORRIDOR_M}` : ''}${MAX_VIA !== 3 ? `-n${MAX_VIA}` : ''}${MIN_GAP_M !== 300 ? `-gap${MIN_GAP_M}` : ''}${MIN_DENSITY !== 5 ? `-d${MIN_DENSITY}` : ''}${LIGHT_CAP === 'off' ? '-nocap' : ''}`;
 // 되돌아감 기준은 후보를 바꾸지 않고 report에서만 쓰므로, 후보 파일 이름이 아니라 보고서 이름에만 붙인다
 const REPORT_SUFFIX = `${SUFFIX}${MAX_RETRACE_M !== Infinity ? `-r${MAX_RETRACE_M}` : ''}`;
 
@@ -270,7 +276,7 @@ async function pickVias(client, pair, base, shortest, broad) {
   const baseWalk = base.key === 'S' ? shortest : broad;
   const o = rounded(pair.origin.location);
   const d = rounded(pair.destination.location);
-  const values = [lineWkt([shortest.path, broad.path]), CORRIDOR_M, pointWkt(o), END_MARGIN_M, pointWkt(d), DENSITY_M, lineWkt([baseWalk.path]), OFF_ROUTE_M, SCORE_CAP_RAW, [...CAPPED_LIGHT_TYPES], LIGHT_CAP_PER_SEGMENT];
+  const values = [lineWkt([shortest.path, broad.path]), CORRIDOR_M, pointWkt(o), END_MARGIN_M, pointWkt(d), DENSITY_M, lineWkt([baseWalk.path]), OFF_ROUTE_M, SCORE_CAP_RAW, [...CAPPED_LIGHT_TYPES], DENSITY_LIGHT_CAP];
   if (TYPES) values.push(TYPES);
   const typeFilter = TYPES ? 'AND f.type = ANY($12::text[])' : '';
   const densityTypeFilter = TYPES ? 'AND f2.type = ANY($12::text[])' : '';

@@ -71,6 +71,7 @@ erDiagram
         text nickname
         text email "받지 않아 null"
         timestamptz created_at
+        uuid report_key "익명 제보자 키, 무작위"
     }
     favorite_places {
         int id PK
@@ -89,6 +90,7 @@ erDiagram
     reports {
         int id PK
         int user_id FK
+        uuid reporter_key "작성자 report_key, 탈퇴해도 남음"
         geography location "Point 4326, GIST"
         text type
         text description "200자까지"
@@ -105,7 +107,7 @@ erDiagram
 | Must | `sun_times` | FR-005 | `GET /daylight` |
 | Could | `users` | FR-011 | `/auth/kakao`, `/auth/me` (2026-11-13 생성) |
 | Could | `favorite_places`·`favorite_routes` | FR-012, NFR-004 | `/favorites` (2026-11-22) |
-| Could | `reports` | FR-009·010 | `POST /reports` (2026-11-23 생성), `POST /routes/search` (점수 감점, FR-010 — 아직 없음) |
+| Could | `reports` | FR-009·010 | `POST /reports` (2026-11-23 생성), `POST /routes/search` (점수 감점, FR-010 — 2026-11-24) |
 
 `GET /places`는 카카오 로컬 API 결과를 그대로 돌려주므로 테이블이 없다.
 
@@ -134,6 +136,8 @@ erDiagram
 보안등·지구대는 REQUIREMENTS 점수 표에 없어서 9주차 MVP용 임시값을 넣었다 (2026-10-21 상협). 지구대는 처음 5(안심벨과 같게)로 잡았다가 승민 제안으로 10 (PR #21). 200쌍 실험(2026-10-31, PR #49)에서는 가중치 숫자보다 가로등·보안등을 구간당 몇 개까지 셀지(상한)가 고르는 길을 바꿨다. 2026-11-19에 상한은 가로등·보안등 합쳐 구간당 5개, 가중치는 구글폼 설문의 AHP 쌍대비교로 구한 시설별 비율로 정했다 (PR #84, ROADMAP "결정된 것"). 비율을 넣으려고 `weight`를 정수에서 실수로 바꾸고(마이그레이션 `20261121150000_facility_weight_float`), 가로등·보안등을 1로 맞춘 배수를 넣는다(`20261122010000_facility_weight_survey`). 계산은 `scripts/survey-weights.py`이고, 응답이 쌓이면 14주차까지 새 마이그레이션으로 다시 넣는다. 가로등·보안등 상한은 테이블이 아니라 점수 쿼리에 있다 (`LIGHT_CAP_PER_SEGMENT`).
 
 제보 감점(최근 30일, 구간 30m 안 3건 이상이면 원점수에서 −5 한 번, 0보다 작아지면 0 — 2026-11-24 정함, PR #93)은 시설이 아니라 `reports`에서 계산한다.
+
+제보 감점은 시설 점수 쿼리와 따로 센다 (`reportedSegmentQuery`, 2026-11-24). 구간 선에서 30m 안, `created_at`이 최근 30일인 제보를 `reporter_key`로 사람 수를 세어 3명 이상인 구간만 고르고, 서버가 그 구간 원점수에서 5를 뺀다(0 아래면 0). 쿼리를 나눈 것은 분석 스크립트가 시설 점수만 다시 셀 수 있게 하려는 것이다 — 제보는 날마다 바뀌는 사용자 데이터라 200쌍 실험에 섞으면 다시 돌릴 때마다 결과가 달라진다.
 
 24시 시설(편의점·심야 약국, 초안의 `store_24h`)은 2026-10-10 제외했다 (REQUIREMENTS FR-002 참고). 나중에 다시 넣게 되면 이 표에 행 하나만 추가하면 된다.
 
@@ -234,6 +238,7 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 | `nickname` | text | NOT NULL | 로그인할 때마다 그 서비스의 닉네임(카카오 닉네임, 네이버 별명, 구글 이름)으로 고친다. 비면 "등대 회원" |
 | `email` | text | NULL 허용 | 이메일은 받지 않아 늘 null (API `User.email`) — 카카오는 비즈 앱 전용이고, 네이버·구글은 동의항목·범위에서 뺐다. 받게 되면 서비스마다 같은 이메일이 올 수 있어 UNIQUE를 두지 않는다 |
 | `created_at` | timestamptz | 기본 now() | |
+| `report_key` | uuid | NOT NULL, 기본 `gen_random_uuid()` | 익명 제보자 키 (FR-010, 2026-11-24). 제보를 저장할 때 `reports.reporter_key`로 복사된다. 회원 id에서 계산한 값이 아니라 무작위라, 회원 행이 지워지면 키로 누구였는지 알 수 없다. API 응답에는 넣지 않는다 |
 
 - 2026-11-13 마이그레이션 `add_users`로 만들었다. 다른 테이블처럼 RLS를 켰다 (정책 없음)
 - 사람은 (`provider`, `provider_id`)로 구분한다. 같은 사람이 카카오와 구글로 각각 로그인하면 회원이 둘이다. 한 사람으로 묶어야 하면 `user_identities`(provider, provider_id)로 나누는 마이그레이션을 한다
@@ -262,6 +267,7 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 |---|---|---|---|
 | `id` | integer | PK | API `Report.id` |
 | `user_id` | integer | FK → `users.id` ON DELETE SET NULL, NULL 허용 | 회원만 제보하지만, 탈퇴하면 제보는 남기고 작성자만 지워서 null 허용 (2026-11-23 PR #93) |
+| `reporter_key` | uuid | NOT NULL, 트리거가 채움 | 익명 제보자 키 — 작성자의 `users.report_key`. 탈퇴해 `user_id`가 비워져도 남아서, 제보 감점의 "서로 다른 회원 3명"을 탈퇴 전과 같게 센다 (A·B가 같은 곳에 올리고 둘 다 탈퇴해도 2명, A 혼자 3번 올리고 탈퇴해도 1명. 2026-11-24 상협) |
 | `location` | geography(Point, 4326) | NOT NULL, GIST 인덱스 | 제보 위치. 점수 반영 때 구간 30m 안을 찾아야 해서 즐겨찾기처럼 암호화하지 않는다 |
 | `type` | text | NOT NULL, CHECK (`dark`·`no_cctv`·`others`) | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `others` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음). 우범지역(`suspicious`)은 2026-11-23에 뺐다 (PR #92) |
 | `description` | text | CHECK (null이거나 1~200자) | 선택. 서버가 앞뒤 빈칸을 지우고, 빈칸뿐이면 null로 넣는다 |
@@ -269,6 +275,7 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 
 - 사진은 받지 않기로 해서(2026-11-23 PR #93) 초안의 `photo_url`은 만들지 않았다
 - 마이그레이션 `20261123160000_reports` (2026-11-23). CHECK 두 개와 RLS(정책 없음)는 SQL에 직접 넣었다. 위치가 `geography`라 Prisma Client로는 쓰지 못하고 `$queryRaw`로 넣는다(`src/reports/reports.service.ts`)
+- `reporter_key`는 마이그레이션 `20261124120000_reporter_key` (2026-11-24, merge 전에 공용 DB에 넣음). `BEFORE INSERT` 트리거 `reports_fill_reporter_key`가 작성자의 `report_key`로 채워서 서버 INSERT는 이 열을 넣지 않는다. 작성자가 있으면 다른 값을 넣어도 작성자 키로 바뀌고, 작성자가 없는 행(DB에 직접 넣은 행)은 행마다 다른 무작위 키다. `user_id`로 세지 않는 것은 탈퇴한 회원(null)이 빠지거나 한데 묶여 탈퇴만으로 점수가 바뀌어서다
 
 ## 안전점수 계산에서 테이블을 쓰는 방식
 

@@ -42,15 +42,37 @@ describe('WalkRouteService', () => {
       { lat: 36.3323, lng: 127.4346 },
       { lat: 36.3371, lng: 127.4451 },
       'SHORTEST',
+      [],
     );
     expect(cache.put).toHaveBeenCalledWith(
       expect.objectContaining({
         provider: 'kakao',
         routeMode: 'SHORTEST',
+        waypoints: [],
         response: WALK_OK,
         distanceM: 342,
         durationS: 335,
       }),
+    );
+  });
+
+  it('경유지(A 보강)도 소수점 4자리로 반올림해 카카오와 캐시에 넘기고, 경유지가 다르면 따로 부른다', async () => {
+    const { service, walk, cache } = setup(ok);
+    const via = { lat: 36.334123, lng: 127.440234 };
+    await service.find(DAEJEON_STATION, WOOSONG, 'SHORTEST', [via]);
+    await service.find(DAEJEON_STATION, WOOSONG, 'SHORTEST');
+
+    expect(walk).toHaveBeenNthCalledWith(
+      1,
+      { lat: 36.3323, lng: 127.4346 },
+      { lat: 36.3371, lng: 127.4451 },
+      'SHORTEST',
+      [{ lat: 36.3341, lng: 127.4402 }],
+    );
+    expect(walk).toHaveBeenCalledTimes(2);
+    expect(cache.put).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ waypoints: [{ lat: 36.3341, lng: 127.4402 }] }),
     );
   });
 

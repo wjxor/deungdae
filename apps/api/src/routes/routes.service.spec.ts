@@ -4,6 +4,7 @@ import {
   WALK_OK,
   WOOSONG,
 } from '../../test/fixtures/kakao-walk.js';
+import { Logger } from '@nestjs/common';
 import { ApiException, externalApiError } from '../common/api-exception.js';
 import type { KakaoRouteMode } from '../walk/kakao-walk.client.js';
 import { toWalkRoute, type WalkRoute } from '../walk/kakao-walk.convert.js';
@@ -54,9 +55,15 @@ function setup({
     (routes: LatLng[][][]): Promise<FacilityCounts[]> =>
       Promise.resolve(routes.map((_, k) => countsOf(k))),
   );
+  // 이 묶음의 큰길은 최단과 모양이 같아 A 보강 조건(겹침)에 걸린다. 경유지 후보는 없다고 답해 B안만 본다
+  const waypointCandidates = vi.fn(() => Promise.resolve([]));
   const service = new RoutesService(
     { find } as unknown as WalkRouteService,
-    { rawScores, facilityCounts } as unknown as SafetyScoreService,
+    {
+      rawScores,
+      facilityCounts,
+      waypointCandidates,
+    } as unknown as SafetyScoreService,
   );
   return { service, find, rawScores, facilityCounts };
 }
@@ -255,4 +262,161 @@ describe('RoutesService', () => {
       expect(find).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('RoutesService A 보강 (FR-006)', () => {
+  const ORIGIN = SHORTEST.path[0];
+  const DESTINATION = SHORTEST.path[SHORTEST.path.length - 1];
+  const REQ_NEAR = {
+    origin: ORIGIN,
+    destination: DESTINATION,
+    mode: 'night',
+  } as const;
+  /** 경로 가운데 꼭짓점 — 출발 → 여기 → 도착 직선 합이 최단 거리보다 짧아 우회 한도에 걸리지 않는다 */
+  const MID = SHORTEST.path[Math.floor(SHORTEST.path.length / 2)];
+  /** 큰길을 최단에서 북쪽으로 약 110m 옮긴 길 — 겹침 0 */
+  const apart: WalkRoute = {
+    ...SHORTEST,
+    distanceM: 380,
+    path: SHORTEST.path.map((p) => ({ lat: p.lat + 0.001, lng: p.lng })),
+  };
+  /** 경유지를 넣은 경로 — 모양은 최단과 같고 58m 더 돈다 (17%) */
+  const VIA: WalkRoute = { ...SHORTEST, distanceM: 400 };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /**
+   * 카카오는 경유지가 있으면 `viaRoute`, 없으면 최단·큰길. 원점수는 첫 호출(최단·큰길)에 `baseRaw`, 그 뒤(경유지 경로)에 `viaRaw`
+   */
+  function setupAugment({
+    broadRoute = SHORTEST as WalkRoute,
+    baseRaw = 1,
+    viaRaw = 5,
+    viaRoute = (): Promise<WalkRoute> => Promise.resolve(VIA),
+    candidates = (): Promise<unknown> =>
+      Promise.resolve([{ ...MID, density: 6 }]),
+  } = {}) {
+    const find = vi.fn(
+      (
+        _o: LatLng,
+        _d: LatLng,
+        mode: KakaoRouteMode,
+        waypoints: LatLng[] = [],
+      ): Promise<WalkRoute> => {
+        if (waypoints.length > 0) return viaRoute();
+        return Promise.resolve(mode === 'SHORTEST' ? SHORTEST : broadRoute);
+      },
+    );
+    let call = 0;
+    const rawScores = vi.fn((paths: LatLng[][]) => {
+      const raw = call++ === 0 ? baseRaw : viaRaw;
+      return Promise.resolve(paths.map(() => raw));
+    });
+    const facilityCounts = vi.fn(
+      (routes: LatLng[][][]): Promise<FacilityCounts[]> =>
+        Promise.resolve(routes.map((_, k) => countsOf(k))),
+    );
+    const waypointCandidates = vi.fn(candidates);
+    const service = new RoutesService(
+      { find } as unknown as WalkRouteService,
+      {
+        rawScores,
+        facilityCounts,
+        waypointCandidates,
+      } as unknown as SafetyScoreService,
+    );
+    return { service, find, waypointCandidates };
+  }
+
+  /** `find`가 받은 (route_mode, 경유지) 목록 */
+  const callsOf = (find: ReturnType<typeof vi.fn>) =>
+    find.mock.calls.map((c: unknown[]) => [c[2], c[3] ?? []]);
+
+  it('겹침이 낮고 점수도 70점 이상이면 보강하지 않는다', async () => {
+    const { service, find, waypointCandidates } = setupAugment({
+      broadRoute: apart,
+      baseRaw: 5, // 75점
+    });
+    await service.search(REQ_NEAR);
+    expect(waypointCandidates).not.toHaveBeenCalled();
+    expect(find).toHaveBeenCalledTimes(2);
+  });
+
+  it('최단·큰길이 같은 길이면 경유지 경로 2건을 같은 route_mode로 더 부르고, 5점 이상 높으면 안심경로', async () => {
+    const { service, find, waypointCandidates } = setupAugment({
+      baseRaw: 5, // 75점이어도 겹침 100%라 보강
+      viaRaw: 10, // 100점
+    });
+    const res = await service.search(REQ_NEAR);
+
+    // 기준 경로(최단·큰길)마다 경유지 후보를 고른다
+    expect(waypointCandidates).toHaveBeenCalledTimes(2);
+    expect(callsOf(find)).toEqual(
+      expect.arrayContaining([
+        ['SHORTEST', [MID]],
+        ['BROAD_FIRST', [MID]],
+      ]),
+    );
+    expect(find).toHaveBeenCalledTimes(4);
+    expect(res.sameRoute).toBe(false);
+    expect(res.routes[1]).toMatchObject({ distanceM: 400, safetyScore: 100 });
+  });
+
+  it('겹치지 않아도 높은 점수가 70점 미만이면 보강한다', async () => {
+    const { service, waypointCandidates } = setupAugment({
+      broadRoute: apart,
+      baseRaw: 1, // 29점
+    });
+    const res = await service.search(REQ_NEAR);
+    expect(waypointCandidates).toHaveBeenCalled();
+    expect(res.routes[1].distanceM).toBe(400);
+  });
+
+  it('경유지 후보가 없으면 카카오를 더 부르지 않는다', async () => {
+    const { service, find } = setupAugment({
+      candidates: () => Promise.resolve([{ ...MID, density: 4 }]), // 밀집도 5 미만
+    });
+    const res = await service.search(REQ_NEAR);
+    expect(find).toHaveBeenCalledTimes(2);
+    expect(res.sameRoute).toBe(true);
+  });
+
+  it('왔던 길을 되돌아가는 경유지 경로는 뺀다', async () => {
+    const back = [...SHORTEST.path, ...[...SHORTEST.path].reverse()];
+    const { service } = setupAugment({
+      viaRoute: () => Promise.resolve({ ...VIA, path: back }),
+    });
+    const res = await service.search(REQ_NEAR);
+    expect(res.sameRoute).toBe(true);
+  });
+
+  it('경유지 후보 조회가 실패하면 에러 없이 B안 결과로 답한다', async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => {});
+    const { service, find } = setupAugment({
+      candidates: () => Promise.reject(externalApiError('DB 실패')),
+    });
+    const res = await service.search(REQ_NEAR);
+    expect(res.sameRoute).toBe(true);
+    expect(find).toHaveBeenCalledTimes(2);
+    expect(warn.mock.calls.map((c) => String(c[0])).join('\n')).toContain(
+      'EXTERNAL_API_ERROR',
+    );
+  });
+
+  it('경유지 경로가 한도 초과(503)여도 B안 결과로 답한다', async () => {
+    vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+    const quota = new ApiException(
+      503,
+      'QUOTA_EXCEEDED',
+      '오늘은 경로 검색이 많아요',
+    );
+    const { service } = setupAugment({ viaRoute: () => Promise.reject(quota) });
+    const res = await service.search(REQ_NEAR);
+    expect(res.sameRoute).toBe(true);
+    expect(res.routes[1].distanceM).toBe(SHORTEST.distanceM);
+  });
 });

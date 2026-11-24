@@ -103,6 +103,9 @@ model User {
   nickname   String
   email      String? // 카카오는 이메일 동의항목을 받지 않아 늘 null (비즈 앱 전용)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  // 익명 제보자 키 (FR-010, 2026-11-24). 회원마다 무작위 값이고, 제보를 저장할 때 reports.reporter_key로 복사된다.
+  // 탈퇴해도 제보에 남아 "서로 다른 회원 3명" 감점을 탈퇴 전과 같게 센다. 회원 id에서 계산한 값이 아니라 회원 행이 지워지면 누구였는지 알 수 없다
+  reportKey  String   @default(dbgenerated("gen_random_uuid()")) @map("report_key") @db.Uuid
 
   favoritePlaces FavoritePlace[]
   favoriteRoutes FavoriteRoute[]
@@ -141,10 +144,12 @@ model FavoriteRoute {
 
 // 위험 제보 (FR-009, 2026-11-23 PR #93). 회원만 쓰고 사진은 받지 않는다.
 // 탈퇴하면 제보는 남기고 작성자만 비운다(SET NULL) — 제보가 구간 점수(FR-010)에 들어가서, 지우면 다른 사람이 보는 점수가 바뀐다.
-// 위치는 PostGIS geography라 $queryRaw로 쓴다. type·description CHECK는 마이그레이션 SQL에 직접 넣는다
+// 위치는 PostGIS geography라 $queryRaw로 쓴다. type·description CHECK는 마이그레이션 SQL에 직접 넣는다.
+// reporter_key는 저장할 때 DB 트리거(reports_fill_reporter_key)가 작성자의 users.report_key로 채운다 — INSERT에 넣지 않아도 된다
 model Report {
   id          Int                                   @id @default(autoincrement())
   userId      Int?                                  @map("user_id")
+  reporterKey String                                @map("reporter_key") @db.Uuid // 익명 제보자 키. 탈퇴해도 남는다 (FR-010 감점은 이 값으로 사람 수를 센다)
   location    Unsupported("geography(Point, 4326)")
   type        String // dark, no_cctv, others (shared/types.ts ReportType. 우범지역은 2026-11-23에 뺐다)
   description String? // 200자까지. 빈칸뿐이면 null

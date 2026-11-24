@@ -33,14 +33,19 @@ export class WalkRouteService {
     private readonly cache: RouteCacheService,
   ) {}
 
-  /** 출발 → 도착 도보 경로. 실패는 API.md 에러 코드(ApiException)로 던진다 */
+  /**
+   * 출발 → (경유지 →) 도착 도보 경로. 실패는 API.md 에러 코드(ApiException)로 던진다.
+   * 경유지(A 보강)도 소수점 4자리로 반올림해 캐시 키와 카카오 호출에 같이 쓴다
+   */
   find(
     origin: LatLng,
     destination: LatLng,
     routeMode: KakaoRouteMode,
+    waypoints: readonly LatLng[] = [],
   ): Promise<WalkRoute> {
     const start = roundLatLng(origin);
     const end = roundLatLng(destination);
+    const vias = waypoints.map(roundLatLng);
     if (start.lat === end.lat && start.lng === end.lng) {
       // 카카오도 SAME_POINT로 답하지만 한도를 쓰지 않게 먼저 거른다
       return Promise.reject(invalidInput('출발지와 도착지가 같아요'));
@@ -51,12 +56,12 @@ export class WalkRouteService {
       routeMode,
       origin: start,
       destination: end,
-      waypoints: [],
+      waypoints: vias,
     });
     const pending = this.inFlight.get(key);
     if (pending) return pending;
 
-    const loading = this.load(key, start, end, routeMode).finally(() => {
+    const loading = this.load(key, start, end, routeMode, vias).finally(() => {
       this.inFlight.delete(key);
     });
     this.inFlight.set(key, loading);
@@ -69,6 +74,7 @@ export class WalkRouteService {
     origin: LatLng,
     destination: LatLng,
     routeMode: KakaoRouteMode,
+    waypoints: LatLng[],
   ): Promise<WalkRoute> {
     const cached = await this.cache.get(key);
     if (cached) {
@@ -80,13 +86,19 @@ export class WalkRouteService {
       }
     }
 
-    const res = await this.kakao.walk(origin, destination, routeMode);
+    const res = await this.kakao.walk(
+      origin,
+      destination,
+      routeMode,
+      waypoints,
+    );
     // OK가 아니면 여기서 에러로 던지고 캐시하지 않는다
     const route = toWalkRoute(res);
     await this.cache.put({
       key,
       provider: PROVIDER,
       routeMode,
+      waypoints,
       response: res,
       distanceM: route.distanceM,
       durationS: route.durationS,

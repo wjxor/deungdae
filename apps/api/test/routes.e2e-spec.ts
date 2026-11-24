@@ -5,8 +5,10 @@ import type { App } from 'supertest/types.js';
 import type { ApiError, RouteSearchResponse } from '../../../shared/types.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
+import type { Prisma } from '../src/generated/prisma/client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { KakaoWalkClient } from '../src/walk/kakao-walk.client.js';
+import { toWalkRoute } from '../src/walk/kakao-walk.convert.js';
 import {
   DAEJEON_STATION,
   WALK_OK,
@@ -123,6 +125,58 @@ describe('POST /api/routes/search (e2e)', () => {
     const modes = fakeWalk.walk.mock.calls.map((c: unknown[]) => c[2]);
     expect(modes).toHaveLength(2);
     expect(modes).toEqual(expect.arrayContaining(['SHORTEST', 'BROAD_FIRST']));
+  });
+
+  it('제보가 쌓인 구간(FR-010)은 원점수에서 5를 빼서 위험이 된다', async () => {
+    // 모든 구간에 가로등 5개(원점수 5 = 75점)가 있다고 답하고, 제보 감점 쿼리는 첫 구간만 고른다
+    fakePrisma.$queryRaw.mockImplementation((sql: Prisma.Sql) => {
+      if (sql.text.includes('reporter_key')) return Promise.resolve([{ i: 0 }]);
+      if (sql.text.includes('AS raw')) {
+        const ids = sql.values[2] as number[];
+        return Promise.resolve(ids.map((i) => ({ i, raw: 5 })));
+      }
+      return Promise.resolve([]);
+    });
+    const res = await request(app.getHttpServer())
+      .post('/api/routes/search')
+      .send(BODY)
+      .expect(200);
+    const [shortest] = (res.body as RouteSearchResponse).routes;
+
+    expect(shortest.segments[0]).toMatchObject({
+      safetyScore: 0,
+      level: 'danger',
+    });
+    expect(shortest.segments.slice(1).map((s) => s.safetyScore)).toEqual(
+      shortest.segments.slice(1).map(() => 75),
+    );
+    expect(shortest.safetyScore).toBeLessThan(75);
+  });
+
+  it('A 보강(FR-006): 최단·큰길이 같은 길이면 경유지 경로를 같은 route_mode로 2건 더 부른다', async () => {
+    // 가짜 카카오는 늘 같은 경로라 최단·큰길 겹침 100%. 경유지 후보 쿼리에만 경로 가운데 지점을 답한다
+    const path = toWalkRoute(WALK_OK).path;
+    const mid = path[Math.floor(path.length / 2)];
+    fakePrisma.$queryRaw.mockImplementation((sql: Prisma.Sql) =>
+      Promise.resolve(
+        sql.text.includes('AS density') ? [{ ...mid, density: 6 }] : [],
+      ),
+    );
+    await request(app.getHttpServer())
+      .post('/api/routes/search')
+      .send({
+        origin: path[0],
+        destination: path[path.length - 1],
+        mode: 'night',
+      })
+      .expect(200);
+
+    const calls = fakeWalk.walk.mock.calls as unknown[][];
+    expect(calls).toHaveLength(4);
+    const withVia = calls.filter((c) => ((c[3] as unknown[]) ?? []).length > 0);
+    expect(
+      withVia.map((c) => String(c[2])).sort((a, b) => a.localeCompare(b)),
+    ).toEqual(['BROAD_FIRST', 'SHORTEST']);
   });
 
   it('안전점수 쿼리가 실패하면 502 EXTERNAL_API_ERROR', async () => {

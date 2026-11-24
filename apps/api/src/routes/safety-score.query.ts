@@ -4,10 +4,18 @@ import type {
   ScoreFacilityType,
 } from '../../../../shared/types.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { CAPPED_LIGHT_TYPES, LIGHT_CAP_PER_SEGMENT } from './safety.js';
+import {
+  CAPPED_LIGHT_TYPES,
+  LIGHT_CAP_PER_SEGMENT,
+  REPORT_MIN_REPORTERS,
+  REPORT_WINDOW_DAYS,
+} from './safety.js';
 
 /** 구간마다 이 반경 안의 시설을 센다 (REQUIREMENTS 안전점수 규칙) */
 export const FACILITY_RADIUS_M = 30;
+
+/** 구간마다 이 반경 안의 제보를 센다 (FR-010 "구간 30m 안", PR #93 1-4) */
+export const REPORT_RADIUS_M = 30;
 
 /** 5종 모두 0인 시설 개수. `ScoreFacilityType`과 종류가 어긋나면(빠지거나 남으면) `satisfies`가 컴파일 에러로 알려 준다 */
 const ZERO_FACILITY_COUNTS = {
@@ -33,6 +41,9 @@ export type SegmentScoreRow = { i: number; raw: number };
 
 /** `routeFacilityQuery` 결과 한 행. `type`은 DB 값 그대로라 5종 밖의 값이 올 수도 있다. 없는 종류는 행이 없다 */
 export type RouteFacilityRow = { i: number; type: string; n: number };
+
+/** `reportedSegmentQuery` 결과 한 행 — 감점할 구간 번호 */
+export type ReportedSegmentRow = { i: number };
 
 /**
  * 구간(선)마다 반경 30m 안 시설의 가중치 합(원점수)을 구하는 SQL. 가중치는 `facility_types.weight`라
@@ -75,6 +86,26 @@ export function routeFacilityQuery(
     SELECT spot.i, spot.type, count(*)::int AS n
     FROM (${spotsNear(ids, segmentsByRoute.flat())}) AS spot
     GROUP BY spot.i, spot.type`;
+}
+
+/**
+ * 제보 감점(FR-010)을 받을 구간을 고르는 SQL. 구간(선)에서 30m 안에 최근 30일 제보를 올린 사람이 3명 이상인 구간의 `i`를 돌려준다.
+ * 사람은 `reporter_key`(익명 제보자 키)로 센다 — 같은 회원이 여러 번 올리면 한 명이고, 탈퇴해 `user_id`가 비워져도 키는 남아
+ * 탈퇴 전과 같게 센다 (2026-11-24 상협). 30일은 DB 시각(`now()`) 기준이다.
+ * 시설 점수(`segmentScoreQuery`)와 쿼리를 나눈 것은 분석 스크립트가 시설 점수만 셀 수 있게 하려는 것이다 —
+ * 제보는 날마다 바뀌는 사용자 데이터라 200쌍 실험에 섞으면 다시 돌릴 때마다 결과가 달라진다
+ */
+export function reportedSegmentQuery(paths: readonly LatLng[][]): Prisma.Sql {
+  const ids = paths.map((_, i) => i);
+  const lines = paths.map(toLineWkt);
+  return Prisma.sql`
+    SELECT s.i
+    FROM unnest(${ids}::int[], ${lines}::text[]) AS s(i, wkt)
+    JOIN reports r
+      ON ST_DWithin(r.location, ST_GeogFromText(s.wkt), ${REPORT_RADIUS_M}::float8)
+     AND r.created_at > now() - make_interval(days => ${REPORT_WINDOW_DAYS}::int)
+    GROUP BY s.i
+    HAVING count(DISTINCT r.reporter_key) >= ${REPORT_MIN_REPORTERS}::int`;
 }
 
 /** 선마다 반경 30m 안의 지점(종류·좌표가 같으면 `ids`별로 한 행) — 점수·개수 쿼리가 같이 쓴다. `ids[j]`가 `paths[j]`의 번호 */

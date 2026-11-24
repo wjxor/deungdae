@@ -15,7 +15,8 @@ const EXPIRED_MESSAGE = '로그인이 만료됐어요. 다시 로그인해 주�
 
 /**
  * 위험 제보 (API.md 6장, FR-009). 회원만 쓰고 사진은 받지 않는다 (2026-11-23 PR #93).
- * 구간 점수 반영(FR-010)은 3건 누적·감점 단위가 정해진 뒤 따로 붙인다 (ROADMAP "팀에서 정해야 할 것")
+ * 구간 점수 반영(FR-010)은 경로 검색이 요청마다 DB에서 센다 (`routes/safety-score.query.ts`의 `reportedSegmentQuery`).
+ * 그때 사람 수를 세는 익명 제보자 키(`reporter_key`)는 INSERT에 넣지 않고 DB 트리거가 작성자의 `users.report_key`로 채운다
  */
 @Injectable()
 export class ReportsService {

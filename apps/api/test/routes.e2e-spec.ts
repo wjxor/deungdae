@@ -5,6 +5,7 @@ import type { App } from 'supertest/types.js';
 import type { ApiError, RouteSearchResponse } from '../../../shared/types.js';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
+import type { Prisma } from '../src/generated/prisma/client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { KakaoWalkClient } from '../src/walk/kakao-walk.client.js';
 import {
@@ -123,6 +124,32 @@ describe('POST /api/routes/search (e2e)', () => {
     const modes = fakeWalk.walk.mock.calls.map((c: unknown[]) => c[2]);
     expect(modes).toHaveLength(2);
     expect(modes).toEqual(expect.arrayContaining(['SHORTEST', 'BROAD_FIRST']));
+  });
+
+  it('제보가 쌓인 구간(FR-010)은 원점수에서 5를 빼서 위험이 된다', async () => {
+    // 모든 구간에 가로등 5개(원점수 5 = 75점)가 있다고 답하고, 제보 감점 쿼리는 첫 구간만 고른다
+    fakePrisma.$queryRaw.mockImplementation((sql: Prisma.Sql) => {
+      if (sql.text.includes('reporter_key')) return Promise.resolve([{ i: 0 }]);
+      if (sql.text.includes('AS raw')) {
+        const ids = sql.values[2] as number[];
+        return Promise.resolve(ids.map((i) => ({ i, raw: 5 })));
+      }
+      return Promise.resolve([]);
+    });
+    const res = await request(app.getHttpServer())
+      .post('/api/routes/search')
+      .send(BODY)
+      .expect(200);
+    const [shortest] = (res.body as RouteSearchResponse).routes;
+
+    expect(shortest.segments[0]).toMatchObject({
+      safetyScore: 0,
+      level: 'danger',
+    });
+    expect(shortest.segments.slice(1).map((s) => s.safetyScore)).toEqual(
+      shortest.segments.slice(1).map(() => 75),
+    );
+    expect(shortest.safetyScore).toBeLessThan(75);
   });
 
   it('안전점수 쿼리가 실패하면 502 EXTERNAL_API_ERROR', async () => {

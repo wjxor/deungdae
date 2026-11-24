@@ -1,5 +1,9 @@
 import {
+  applyReportPenalty,
   pickSafe,
+  REPORT_MIN_REPORTERS,
+  REPORT_PENALTY_RAW,
+  REPORT_WINDOW_DAYS,
   SAFE_MAX_DETOUR,
   SAFE_MIN_GAIN,
   toRouteScore,
@@ -21,6 +25,28 @@ describe('toSegmentScore', () => {
     [27, 100],
   ])('원점수 %i → %i점', (raw, score) => {
     expect(toSegmentScore(raw)).toBe(score);
+  });
+});
+
+describe('applyReportPenalty', () => {
+  it('구간 30m 안 최근 30일, 서로 다른 회원 3명 — 원점수에서 5 (2026-11-24 PR #93 1-4)', () => {
+    expect(REPORT_PENALTY_RAW).toBe(5);
+    expect(REPORT_MIN_REPORTERS).toBe(3);
+    expect(REPORT_WINDOW_DAYS).toBe(30);
+  });
+
+  it.each([
+    [7, 2],
+    [5, 0], // 가로등·보안등 5개 구간(75점)이 0점(위험)이 된다 — 0~100점에서 빼면 70점(안전)이라 원점수에서 뺀다
+    [3, 0], // 0보다 작아지면 0
+    [0, 0],
+  ])('원점수 %d → %d', (raw, penalized) => {
+    expect(applyReportPenalty(raw)).toBe(penalized);
+  });
+
+  it('소수 가중치도 그대로 뺀다', () => {
+    expect(applyReportPenalty(5.74)).toBeCloseTo(0.74);
+    expect(toSegmentScore(applyReportPenalty(5))).toBe(0);
   });
 });
 

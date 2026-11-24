@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { ApiException } from '../common/api-exception.js';
+import type { Prisma } from '../generated/prisma/client.js';
 import type { PrismaService } from '../prisma/prisma.service.js';
 import { SafetyScoreService } from './safety-score.service.js';
 
@@ -42,15 +43,60 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** `rawScores`가 동시에 부르는 두 쿼리에 따로 답한다 — 제보 감점 쿼리(reporter_key)와 시설 점수 쿼리 */
+function answerScores(
+  queryRaw: ReturnType<typeof vi.fn>,
+  scoreRows: unknown[],
+  reportedRows: unknown[],
+) {
+  queryRaw.mockImplementation((sql: Prisma.Sql) =>
+    Promise.resolve(
+      sql.text.includes('reporter_key') ? reportedRows : scoreRows,
+    ),
+  );
+}
+
 describe('SafetyScoreService', () => {
   it('구간 순서대로 원점수, 시설이 없는 구간(행 없음)은 0', async () => {
     const { service, queryRaw } = fakePrisma();
-    queryRaw.mockResolvedValue([
-      { i: 2, raw: 7 },
-      { i: 0, raw: 3 },
-    ]);
+    answerScores(
+      queryRaw,
+      [
+        { i: 2, raw: 7 },
+        { i: 0, raw: 3 },
+      ],
+      [],
+    );
     expect(await service.rawScores(PATHS)).toEqual([3, 0, 7]);
-    expect(queryRaw).toHaveBeenCalledOnce();
+    // 시설 점수와 제보 감점 쿼리를 함께 부른다
+    expect(queryRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('제보가 쌓인 구간은 원점수에서 5를 한 번 빼고, 0 아래면 0 (FR-010)', async () => {
+    const { service, queryRaw } = fakePrisma();
+    answerScores(
+      queryRaw,
+      [
+        { i: 0, raw: 7 },
+        { i: 2, raw: 3 },
+      ],
+      // 구간 1은 시설이 없어도(원점수 0) 그대로 0
+      [{ i: 0 }, { i: 1 }, { i: 2 }],
+    );
+    expect(await service.rawScores(PATHS)).toEqual([2, 0, 0]);
+  });
+
+  it('제보가 없는 구간은 그대로', async () => {
+    const { service, queryRaw } = fakePrisma();
+    answerScores(
+      queryRaw,
+      [
+        { i: 0, raw: 7 },
+        { i: 2, raw: 3 },
+      ],
+      [{ i: 2 }],
+    );
+    expect(await service.rawScores(PATHS)).toEqual([7, 0, 0]);
   });
 
   it('구간이 없으면 쿼리하지 않는다', async () => {
@@ -83,6 +129,24 @@ describe('SafetyScoreService', () => {
     const logged = warn.mock.calls.map((args) => String(args[0])).join('\n');
     expect(logged).toContain('안전점수 조회 실패');
     expect(logged).not.toMatch(/127\.4346|36\.3323/);
+  });
+
+  it('제보 감점 쿼리만 실패해도 502 — 감점이 빠진 점수는 주지 않는다', async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => {});
+    const { service, queryRaw } = fakePrisma();
+    queryRaw.mockImplementation((sql: Prisma.Sql) =>
+      sql.text.includes('reporter_key')
+        ? Promise.reject(new Error('relation "reports" does not exist'))
+        : Promise.resolve([{ i: 0, raw: 7 }]),
+    );
+    expect(await errorOf(service.rawScores(PATHS))).toEqual({
+      status: 502,
+      code: 'EXTERNAL_API_ERROR',
+    });
+    const logged = warn.mock.calls.map((args) => String(args[0])).join('\n');
+    expect(logged).toContain('제보 감점 조회 실패');
   });
 });
 

@@ -29,7 +29,7 @@ export type WaypointQueryInput = {
  * 최단·큰길에서 100m 안의 시설 중, 기준 경로 위(60m 안)가 아니고 출발·도착에서 150m 넘게 떨어진 것을
  * 밀집도가 높은 순(같으면 기준 경로에 가까운 순)으로 돌려준다.
  * 밀집도는 서버 점수와 같은 식이다 — 지점 반경 30m 안 시설의 가중치 합, 종류별로 같은 좌표는 한 곳,
- * 가로등·보안등은 합쳐 `LIGHT_CAP_PER_SEGMENT`개까지(승민 #90 의견 — 고르는 기준이 점수와 다르면 비교가 어긋나서), 원점수 상한까지.
+ * 가로등·보안등은 합쳐 `LIGHT_CAP_PER_SEGMENT`개까지(승민 #90 의견 — 고르는 기준이 점수와 다르면 비교가 어긋나서, 2026-11-24 PR #101 확정), 원점수 상한까지.
  * 상한 없이 세는 변형은 고르는 길이 200쌍 중 1쌍만 달라 쓰지 않았다 (2026-11-24, docs/waypoint-experiment.md)
  */
 export function waypointCandidateQuery(input: WaypointQueryInput): Prisma.Sql {

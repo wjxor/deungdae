@@ -16,7 +16,7 @@ describe('waypointCandidateQuery', () => {
     destination: { lat: 36.333, lng: 127.4355 },
   });
 
-  it('최단·큰길 100m 안, 기준 경로 60m 밖, 출발·도착 150m 밖의 시설 (임시 실험 값)', () => {
+  it('최단·큰길 100m 안, 기준 경로 60m 밖, 출발·도착 150m 밖의 시설 (경유지 실험 값)', () => {
     expect(q.values).toEqual([
       ['street_light', 'security_light'],
       30,

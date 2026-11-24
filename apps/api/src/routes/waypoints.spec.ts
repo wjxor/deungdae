@@ -22,7 +22,7 @@ function eastward(meters: number, lat = 36.3323): LatLng[] {
   }));
 }
 
-describe('shouldAugment (승민 안 — 임시값)', () => {
+describe('shouldAugment (승민 안 — 2026-11-24 PR #101 확정)', () => {
   it('겹침 98% 이상이거나 높은 점수가 70점 미만이면 보강한다', () => {
     expect(AUGMENT_OVERLAP_MIN).toBe(0.98);
     expect(AUGMENT_SCORE_BELOW).toBe(70);

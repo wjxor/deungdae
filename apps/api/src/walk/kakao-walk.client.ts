@@ -44,13 +44,14 @@ export class KakaoWalkClient {
   }
 
   /**
-   * 출발 → 도착 도보 경로를 한 번 부른다.
+   * 출발 → (경유지 →) 도착 도보 경로를 한 번 부른다. 경유지는 순서대로 지나며 카카오는 5개까지 받는다.
    * 키 없음·연결 실패·시간 초과·응답 형식 오류는 502, 하루 한도 초과는 503 QUOTA_EXCEEDED
    */
   async walk(
     origin: LatLng,
     destination: LatLng,
     routeMode: KakaoRouteMode,
+    waypoints: readonly LatLng[] = [],
   ): Promise<KakaoWalkResponse> {
     if (!this.restKey) {
       this.logger.warn(
@@ -67,6 +68,11 @@ export class KakaoWalkClient {
       end_y: String(destination.lat),
       route_mode: routeMode,
     });
+    if (waypoints.length > 0) {
+      // 경유지 여러 개는 쉼표로 잇는다 (2026-10-31 실험에서 경유지 1~2개 모두 경로가 4~11m 안을 지났다, docs/waypoint-experiment.md)
+      params.set('via_x', waypoints.map((p) => String(p.lng)).join(','));
+      params.set('via_y', waypoints.map((p) => String(p.lat)).join(','));
+    }
 
     let res: Response;
     try {

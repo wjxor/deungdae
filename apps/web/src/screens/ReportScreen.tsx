@@ -56,11 +56,13 @@ export default function ReportScreen({ geo, daylight, onBack }: Props) {
 
   const notice = outside
     ? '대전 안에서만 위치를 고를 수 있어요.'
-    : location
-      ? null
-      : geo.state.status === 'loading'
+    : location && !isInDaejeonRect(location)
+      ? '대전 안에서만 제보할 수 있어요. 지도를 눌러 대전 안을 골라 주세요.' // 현재 위치가 대전 밖이면 [제보하기]가 꺼지는 이유
+      : location
         ? null
-        : '현재 위치를 가져오지 못했어요. 지도를 눌러 위치를 골라 주세요.'
+        : geo.state.status === 'loading'
+          ? null
+          : '현재 위치를 가져오지 못했어요. 지도를 눌러 위치를 골라 주세요.'
 
   return (
     <main className="map-home report-screen" data-mode={daylight.mode}>

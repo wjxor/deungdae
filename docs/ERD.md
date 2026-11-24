@@ -264,7 +264,7 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 | `id` | integer | PK | API `Report.id` |
 | `user_id` | integer | FK → `users.id` ON DELETE SET NULL, NULL 허용 | 회원만 제보하지만, 탈퇴하면 제보는 남기고 작성자만 지워서 null 허용 (2026-11-23 PR #93) |
 | `location` | geography(Point, 4326) | NOT NULL, GIST 인덱스 | 제보 위치 |
-| `type` | text | NOT NULL | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `suspicious` 우범지역 / `others` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음) |
+| `type` | text | NOT NULL | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `others` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음) |
 | `description` | text | | |
 | `photo_url` | text | | 쓰지 않음 — 2026-11-23 사진은 받지 않기로 했다 (PR #93). 그 전 초안은 사진을 클라우드 스토리지에 두고 URL만 저장 (사진 자체 저장은 Won't) |
 | `created_at` | timestamptz | 기본 now() | 최근 30일 감점 계산에 쓴다 |
@@ -308,5 +308,5 @@ GROUP BY f.type, t.weight;
 
 - [x] 시설 가중치와 가로등·보안등 상한 — MVP용 임시값 보안등 1·지구대 10 (2026-10-21 상협, 지구대는 승민 제안으로 5 → 10, PR #21). 2026-11-19 정함: 가로등·보안등 합쳐 구간당 5개까지, 가중치는 설문 AHP 비율 (PR #84, ROADMAP "결정된 것"). `weight`는 실수로 바꾸고 설문 값을 넣는다 (2026-11-22 PR #87, 11/21 응답 21명)
 - [ ] `route_cache` 좌표 반올림 자릿수(초안 4자리)·만료 시간(초안 24시간)
-- [x] 제보 유형: 화면 S4(조명 부족·CCTV 없음·우범지역)에 맞춰 `dark`/`no_cctv`/`suspicious`/`others`로 통일 (2026-10-10 승민 리뷰, 기타는 승민 의견대로 `others`. `shared/types.ts`·API 명세 함께 수정)
+- [x] 제보 유형: 화면 S4(조명 부족·CCTV 없음·기타)에 맞춰 `dark`/`no_cctv`/`others`로 통일 (2026-10-10 승민 리뷰, 기타는 승민 의견대로 `others`. `shared/types.ts`·API 명세 함께 수정). 우범지역(`suspicious`)은 2026-11-23에 뺐다 — 기준이 애매하고 범죄다발구역 데이터가 없어서 (상협·승민)
 - [x] 24시 시설 범위: 편의점·심야 약국 모두 제외하고 `store_24h` 행 삭제 (2026-10-10 승민 제안·상협 동의, PR #6)

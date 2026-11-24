@@ -23,6 +23,8 @@ export type RouteCacheEntry = {
   key: string;
   provider: string;
   routeMode: string;
+  /** 경유지 (A 보강). 없으면 빈 배열 — `route_cache.waypoints`에 그대로 남긴다 */
+  waypoints: LatLng[];
   /** 경로 API 원본 응답 */
   response: unknown;
   distanceM: number;
@@ -99,6 +101,7 @@ export class RouteCacheService {
             cacheKey: entry.key,
             provider: entry.provider,
             routeMode: entry.routeMode,
+            waypoints: entry.waypoints,
             ...data,
           },
           update: { ...data, createdAt: now },

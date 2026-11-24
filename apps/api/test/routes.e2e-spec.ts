@@ -8,6 +8,7 @@ import { configureApp } from '../src/app.setup.js';
 import type { Prisma } from '../src/generated/prisma/client.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { KakaoWalkClient } from '../src/walk/kakao-walk.client.js';
+import { toWalkRoute } from '../src/walk/kakao-walk.convert.js';
 import {
   DAEJEON_STATION,
   WALK_OK,
@@ -150,6 +151,32 @@ describe('POST /api/routes/search (e2e)', () => {
       shortest.segments.slice(1).map(() => 75),
     );
     expect(shortest.safetyScore).toBeLessThan(75);
+  });
+
+  it('A 보강(FR-006): 최단·큰길이 같은 길이면 경유지 경로를 같은 route_mode로 2건 더 부른다', async () => {
+    // 가짜 카카오는 늘 같은 경로라 최단·큰길 겹침 100%. 경유지 후보 쿼리에만 경로 가운데 지점을 답한다
+    const path = toWalkRoute(WALK_OK).path;
+    const mid = path[Math.floor(path.length / 2)];
+    fakePrisma.$queryRaw.mockImplementation((sql: Prisma.Sql) =>
+      Promise.resolve(
+        sql.text.includes('AS density') ? [{ ...mid, density: 6 }] : [],
+      ),
+    );
+    await request(app.getHttpServer())
+      .post('/api/routes/search')
+      .send({
+        origin: path[0],
+        destination: path[path.length - 1],
+        mode: 'night',
+      })
+      .expect(200);
+
+    const calls = fakeWalk.walk.mock.calls as unknown[][];
+    expect(calls).toHaveLength(4);
+    const withVia = calls.filter((c) => ((c[3] as unknown[]) ?? []).length > 0);
+    expect(
+      withVia.map((c) => String(c[2])).sort((a, b) => a.localeCompare(b)),
+    ).toEqual(['BROAD_FIRST', 'SHORTEST']);
   });
 
   it('안전점수 쿼리가 실패하면 502 EXTERNAL_API_ERROR', async () => {

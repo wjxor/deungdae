@@ -1,5 +1,7 @@
 import {
   FACILITY_RADIUS_M,
+  REPORT_RADIUS_M,
+  reportedSegmentQuery,
   routeFacilityQuery,
   SCORE_FACILITY_TYPES,
   segmentScoreQuery,
@@ -67,7 +69,52 @@ describe('segmentScoreQuery', () => {
     ]);
 
     // 좌표는 ST_AsBinary로 비교한다. 실험 스크립트의 spots와 같은 방식이고, 반올림하지 않은 완전히 같은 값만 같은 곳이다
-    expect(q.text).toContain('SELECT DISTINCT s.i, f.type, ST_AsBinary(f.location)');
+    expect(q.text).toContain(
+      'SELECT DISTINCT s.i, f.type, ST_AsBinary(f.location)',
+    );
+  });
+});
+
+describe('reportedSegmentQuery', () => {
+  const q = reportedSegmentQuery([
+    [
+      { lat: 36.3323, lng: 127.4346 },
+      { lat: 36.3325, lng: 127.4349 },
+    ],
+    [
+      { lat: 36.3325, lng: 127.4349 },
+      { lat: 36.3327, lng: 127.4352 },
+    ],
+  ]);
+
+  it('구간 선마다 반경 30m 안, 최근 30일 제보를 본다 (FR-010, PR #93 1-4)', () => {
+    expect(REPORT_RADIUS_M).toBe(30);
+    expect(q.values).toEqual([
+      [0, 1],
+      [
+        'SRID=4326;LINESTRING(127.4346 36.3323, 127.4349 36.3325)',
+        'SRID=4326;LINESTRING(127.4349 36.3325, 127.4352 36.3327)',
+      ],
+      30,
+      30,
+      3,
+    ]);
+    expect(q.text).toContain(
+      'ST_DWithin(r.location, ST_GeogFromText(s.wkt), $3::float8)',
+    );
+    // 30일은 DB 시각 기준
+    expect(q.text).toContain(
+      'r.created_at > now() - make_interval(days => $4::int)',
+    );
+  });
+
+  it('사람 수는 익명 제보자 키로 센다 — 같은 회원은 한 명, 탈퇴해도 그대로', () => {
+    // user_id로 세면 탈퇴한 회원(null)이 빠지거나 한데 묶여서, 탈퇴해도 남는 reporter_key로 센다 (2026-11-24 상협)
+    expect(q.text).toContain(
+      'HAVING count(DISTINCT r.reporter_key) >= $5::int',
+    );
+    expect(q.text).not.toContain('user_id');
+    expect(q.text).toContain('GROUP BY s.i');
   });
 });
 

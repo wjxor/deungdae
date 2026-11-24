@@ -1645,3 +1645,7 @@ button {
 .report-screen .sheet .text-btn {
   justify-self: start;
 }
+
+.rs-big2 small.share {
+  margin-top: 2px;
+}

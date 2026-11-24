@@ -1527,6 +1527,23 @@ button {
   color: var(--ink);
 }
 
+.nav-acts {
+  display: flex;
+  gap: 10px;
+}
+
+.nav-acts .nav-stop {
+  flex: 1;
+}
+
+/* 이동 중 화면의 SOS는 [안내 종료]와 같은 높이다. 검색창 줄의 .sos는 margin-left:auto라 여기서는 끈다 */
+.nav-sos {
+  height: 44px;
+  margin-left: 0;
+  border-radius: 22px;
+  font-size: 14px;
+}
+
 .nav-nums {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1649,3 +1666,60 @@ button {
 .rs-big2 small.share {
   margin-top: 2px;
 }
+
+/* SOS (FR-014). 검색창 아래 줄 오른쪽 끝. 시트 안 버튼은 눌러서 전화·문자 앱을 여는 링크다 */
+.sos {
+  margin-left: auto;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 17px;
+  background: #d93025;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+}
+
+.sos-sheet p {
+  margin-bottom: 14px;
+}
+
+.sos-acts {
+  display: grid;
+  gap: 10px;
+}
+
+.sos-acts a,
+.sos-acts span {
+  display: grid;
+  place-items: center;
+  height: 48px;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sos-call {
+  background: #d93025;
+  color: #fff;
+}
+
+.sos-share {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.sos-share[aria-disabled='true'] {
+  color: var(--disabled);
+}
+
+.sos-sheet p.sos-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+

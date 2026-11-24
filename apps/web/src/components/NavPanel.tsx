@@ -9,11 +9,12 @@ type Props = {
   progress: NavProgress | null // 위치를 아직 못 받았으면 null
   onStop: () => void // 도중에 안내 종료: 경로 비교 화면으로
   onArrived: () => void // 도착 뒤 닫기: 이동이 끝났으니 지도 홈으로
+  onSos: () => void // 밤길을 걷는 동안 바로 누를 수 있게 이 화면에도 둔다 (FR-014)
 }
 
 // 이동 중 화면의 하단 패널. 받아 둔 경로를 따라 남은 거리·시간만 보여 주고 서버는 부르지 않는다.
 // 경로를 벗어나도 다시 찾지 않고 알리기만 한다 (경로 호출은 사용자가 "경로 찾기"를 눌렀을 때만, CLAUDE.md)
-export default function NavPanel({ route, watch, progress, onStop, onArrived }: Props) {
+export default function NavPanel({ route, watch, progress, onStop, onArrived, onSos }: Props) {
   const arrived = progress?.arrived === true
   const off = progress !== null && progress.offRouteM > OFF_ROUTE_M
 
@@ -54,9 +55,14 @@ export default function NavPanel({ route, watch, progress, onStop, onArrived }: 
   return (
     <section className="sheet nav-panel" aria-label="이동 중 안내">
       {body}
-      <button type="button" className="nav-stop" onClick={arrived ? onArrived : onStop}>
-        {arrived ? '닫기' : '안내 종료'}
-      </button>
+      <div className="nav-acts">
+        <button type="button" className="sos nav-sos" aria-label="SOS, 112 전화와 위치 보내기" onClick={onSos}>
+          SOS
+        </button>
+        <button type="button" className="nav-stop" onClick={arrived ? onArrived : onStop}>
+          {arrived ? '닫기' : '안내 종료'}
+        </button>
+      </div>
     </section>
   )
 }

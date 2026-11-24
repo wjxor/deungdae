@@ -137,7 +137,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect, onSt
         <span className="sc" data-level={r.level}>
           {r.safetyScore}
         </span>
-        <span className="mt">{formatDistance(r.distanceM)}</span>
+        <span className="mt">{formatDistance(r.distanceM)} · 안전 구간 {levelShares(r).safe}%</span>
         <Ribbon route={r} longest={longest} />
       </button>
     )
@@ -208,6 +208,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect, onSt
                 {route.safetyScore}
                 <span>/100 {LEVEL_LABEL[route.level]}</span>
               </b>
+              <small className="share">안전 구간 {levelShares(route).safe}%</small>
             </div>
           </div>
           <Ribbon route={route} longest={longest} large />
@@ -248,7 +249,7 @@ export default function RouteSheet({ routes, selected, sameRoute, onSelect, onSt
                   <span className="sc" data-level={route.level}>
                     {route.safetyScore}
                   </span>
-                  <span className="mt">{formatDistance(route.distanceM)}</span>
+                  <span className="mt">{formatDistance(route.distanceM)} · 안전 구간 {levelShares(route).safe}%</span>
                   <Ribbon route={route} longest={longest} />
                 </div>
               </div>

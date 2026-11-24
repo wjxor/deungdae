@@ -2,9 +2,10 @@
 
 기본은 점검만 한다(DB에 아무것도 쓰지 않음). 실제 적재는 --commit 을 붙여야 한다.
 
-  python data/load_facilities.py            # 점검만 (DB 연결도 안 함)
-  python data/load_facilities.py --check-db # DB 연결해서 현재 상태만 읽어 봄
-  python data/load_facilities.py --commit   # 실제 적재 (상협과 합의 후)
+  python data/load_facilities.py                    # 점검만 (DB 연결도 안 함)
+  python data/load_facilities.py --check-db         # DB 연결해서 현재 상태만 읽어 봄
+  python data/load_facilities.py --commit           # 빈 DB에 적재
+  python data/load_facilities.py --commit --replace # 기존 facilities/data_sources 지우고 다시 적재
 
 DB 주소는 프로젝트 루트 .env 의 DIRECT_URL (없으면 DATABASE_URL) 을 쓴다.
 주소와 비밀번호는 화면에 출력하지 않는다.
@@ -101,13 +102,22 @@ def check_db():
     print(f"DB 연결 OK. facilities {n}건, data_sources {m}건, PostGIS {p}")
 
 
-def commit(data):
+def commit(data, replace=False):
     with connect() as conn:  # with 블록이 정상 종료되면 commit, 에러면 rollback (전부 취소)
-        if conn.execute("SELECT count(*) FROM facilities").fetchone()[0] != 0:
-            sys.exit("facilities 에 이미 데이터가 있음. 중복 적재 방지를 위해 멈춤")
-        if conn.execute("SELECT count(*) FROM data_sources").fetchone()[0] != 0:
-            sys.exit("data_sources 에 이미 데이터가 있음. 멈춤")
         cur = conn.cursor()
+        fac_cnt = cur.execute("SELECT count(*) FROM facilities").fetchone()[0]
+        src_cnt = cur.execute("SELECT count(*) FROM data_sources").fetchone()[0]
+
+        if replace:
+            print(f"기존 데이터 삭제 중... (facilities {fac_cnt:,}건, data_sources {src_cnt:,}건)")
+            cur.execute("DELETE FROM facilities")
+            cur.execute("DELETE FROM data_sources")
+        else:
+            if fac_cnt != 0:
+                sys.exit("facilities 에 이미 데이터가 있음. 기존 데이터를 지우고 다시 넣으려면 --replace 옵션을 붙이세요")
+            if src_cnt != 0:
+                sys.exit("data_sources 에 이미 데이터가 있음. 기존 데이터를 지우고 다시 넣으려면 --replace 옵션을 붙이세요")
+
         for t, df in data.items():
             raw, title, url = SOURCES[t]
             ds_id = cur.execute(
@@ -139,6 +149,7 @@ def commit(data):
             if got != len(df):
                 raise RuntimeError(f"{t}: 넣은 건수 {got} != CSV {len(df)}  (전부 취소됨)")
             print(f"적재: {t} {got:,}건")
+
         # 좌표 방향 확인: 모든 점이 대전 범위 안이어야 함 (lat/lng 뒤집히면 여기서 걸림)
         bad = cur.execute(
             "SELECT count(*) FROM facilities WHERE NOT (ST_Y(location::geometry) BETWEEN %s AND %s"
@@ -153,11 +164,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--check-db", action="store_true")
     ap.add_argument("--commit", action="store_true")
+    ap.add_argument("--replace", action="store_true", help="기존 facilities 및 data_sources 데이터를 삭제하고 재적재")
     a = ap.parse_args()
     data = load_and_validate()
     if a.check_db:
         check_db()
     elif a.commit:
-        commit(data)
+        commit(data, replace=a.replace)
     else:
         print("점검만 했습니다. DB에는 아무것도 쓰지 않았습니다.")

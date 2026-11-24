@@ -7,6 +7,7 @@ import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import MyInfo from '../components/MyInfo'
 import PlaceSearch from '../components/PlaceSearch'
+import SosSheet from '../components/SosSheet'
 import StarIcon from '../components/StarIcon'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import type { useGeolocation } from '../hooks/useGeolocation'
@@ -43,6 +44,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
   const toggleFacility = (type: FacilityType) => setFacilityVisible((v) => ({ ...v, [type]: !v[type] }))
   const [myInfoOpen, setMyInfoOpen] = useState(false)
   const [favoritesOpen, setFavoritesOpen] = useState(false)
+  const [sosOpen, setSosOpen] = useState(false)
   // 즐겨찾기에서 장소를 고르면 검색창이 그 이름으로 다시 그려지게 한다 (타이핑 중에는 바꾸지 않아 입력이 끊기지 않는다)
   const [searchKey, setSearchKey] = useState(0)
   const pin = destination?.location ?? null
@@ -103,6 +105,10 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
               onChange={setMode}
             />
             <FacilityFilter visible={facilityVisible} onToggle={toggleFacility} onDismiss={() => (filterDismissedAt.current = Date.now())} />
+            {/* 회원·비회원 모두 보인다. 급할 때 로그인부터 하게 하지 않는다 */}
+            <button type="button" className="sos" aria-label="SOS, 112 전화와 위치 보내기" onClick={() => setSosOpen(true)}>
+              SOS
+            </button>
           </div>
           {user && destination && (
             <button type="button" className="favpill" aria-label={`${destination.name} 즐겨찾기`} aria-pressed={favorites.hasPlace(destination)} onClick={() => favorites.togglePlace(destination)}>
@@ -203,6 +209,7 @@ export default function MapHome({ geo, daylight, destination, onPickDestination,
           onClose={() => setFavoritesOpen(false)}
         />
       )}
+      {sosOpen && <SosSheet myLocation={myLocation} onClose={() => setSosOpen(false)} />}
       {user && myInfoOpen && <MyInfo user={user} onLogout={onLogout} onDelete={onDelete} onDeleted={onDeleted} onClose={() => setMyInfoOpen(false)} />}
     </main>
   )

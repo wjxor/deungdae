@@ -4,6 +4,7 @@ import KakaoMap from '../components/KakaoMap'
 import ModeToggle from '../components/ModeToggle'
 import StarIcon from '../components/StarIcon'
 import NavPanel from '../components/NavPanel'
+import SosSheet from '../components/SosSheet'
 import RouteSheet from '../components/RouteSheet'
 import type { useDaylightMode } from '../hooks/useDaylightMode'
 import { WALK_SPEED_MPS, useSimulatedWalk } from '../hooks/useSimulatedWalk'
@@ -51,6 +52,7 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
   const selected = picked ?? recommendedOf(mode)
   // 이동 중 화면. 받아 둔 경로를 따라 내 위치만 갱신하고 서버는 다시 부르지 않는다
   const [navigating, setNavigating] = useState(false)
+  const [sosOpen, setSosOpen] = useState(false)
   const real = useWatchPosition(navigating && WALK_SPEED_MPS === 0)
 
   useEffect(() => {
@@ -132,7 +134,7 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
       </div>
 
       {routes && navigating ? (
-        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} progress={progress} onStop={() => setNavigating(false)} onArrived={onArrived} />
+        <NavPanel route={routes[sameRoute ? 'safe' : selected]} watch={watch} progress={progress} onStop={() => setNavigating(false)} onArrived={onArrived} onSos={() => setSosOpen(true)} />
       ) : routes ? (
         <RouteSheet routes={routes} selected={selected} sameRoute={sameRoute} onSelect={setPicked} onStart={() => setNavigating(true)} />
       ) : (
@@ -165,6 +167,8 @@ export default function RouteCompare({ origin, originLabel, myLocation, destinat
           )}
         </section>
       )}
+      {/* 이동 중에는 위치를 계속 받고 있어 그 위치를 그대로 보낸다. 위치를 아직 못 받았으면 S1처럼 새로 잡아 본다 */}
+      {sosOpen && <SosSheet myLocation={here ?? myLocation} live={here !== null} onClose={() => setSosOpen(false)} />}
     </main>
   )
 }

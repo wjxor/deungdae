@@ -91,8 +91,7 @@ erDiagram
         int user_id FK
         geography location "Point 4326, GIST"
         text type
-        text description
-        text photo_url
+        text description "200자까지"
         timestamptz created_at
     }
 ```
@@ -106,7 +105,7 @@ erDiagram
 | Must | `sun_times` | FR-005 | `GET /daylight` |
 | Could | `users` | FR-011 | `/auth/kakao`, `/auth/me` (2026-11-13 생성) |
 | Could | `favorite_places`·`favorite_routes` | FR-012, NFR-004 | `/favorites` (2026-11-22) |
-| Could | `reports` | FR-009·010 | `/reports`, `POST /routes/search` (점수 감점). 아직 만들지 않음 (13주차) |
+| Could | `reports` | FR-009·010 | `POST /reports` (2026-11-23 생성), `POST /routes/search` (점수 감점, FR-010 — 아직 없음) |
 
 `GET /places`는 카카오 로컬 API 결과를 그대로 돌려주므로 테이블이 없다.
 
@@ -263,11 +262,13 @@ API 응답의 시각 값은 끝에 공백이 있고 `HHMM`·`HHMMSS`가 섞여 �
 |---|---|---|---|
 | `id` | integer | PK | API `Report.id` |
 | `user_id` | integer | FK → `users.id` ON DELETE SET NULL, NULL 허용 | 회원만 제보하지만, 탈퇴하면 제보는 남기고 작성자만 지워서 null 허용 (2026-11-23 PR #93) |
-| `location` | geography(Point, 4326) | NOT NULL, GIST 인덱스 | 제보 위치 |
-| `type` | text | NOT NULL | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `others` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음) |
-| `description` | text | | |
-| `photo_url` | text | | 쓰지 않음 — 2026-11-23 사진은 받지 않기로 했다 (PR #93). 그 전 초안은 사진을 클라우드 스토리지에 두고 URL만 저장 (사진 자체 저장은 Won't) |
-| `created_at` | timestamptz | 기본 now() | 최근 30일 감점 계산에 쓴다 |
+| `location` | geography(Point, 4326) | NOT NULL, GIST 인덱스 | 제보 위치. 점수 반영 때 구간 30m 안을 찾아야 해서 즐겨찾기처럼 암호화하지 않는다 |
+| `type` | text | NOT NULL, CHECK (`dark`·`no_cctv`·`others`) | `dark` 조명 부족 / `no_cctv` CCTV 없음 / `others` 기타 (`shared/types.ts`의 `ReportType`, 화면 S4 유형과 같음). 우범지역(`suspicious`)은 2026-11-23에 뺐다 (PR #92) |
+| `description` | text | CHECK (null이거나 1~200자) | 선택. 서버가 앞뒤 빈칸을 지우고, 빈칸뿐이면 null로 넣는다 |
+| `created_at` | timestamptz | 기본 now(), 인덱스 | 최근 30일 감점 계산에 쓴다 |
+
+- 사진은 받지 않기로 해서(2026-11-23 PR #93) 초안의 `photo_url`은 만들지 않았다
+- 마이그레이션 `20261123160000_reports` (2026-11-23). CHECK 두 개와 RLS(정책 없음)는 SQL에 직접 넣었다. 위치가 `geography`라 Prisma Client로는 쓰지 못하고 `$queryRaw`로 넣는다(`src/reports/reports.service.ts`)
 
 ## 안전점수 계산에서 테이블을 쓰는 방식
 
@@ -294,7 +295,7 @@ GROUP BY f.type, t.weight;
 | 서버 배포처 — Vercel로 확정 (2026-11-11) | 영향 없음 (캐시를 DB에 둠) |
 | 정제 기준 — 정함 (2026-11-23) | 테이블은 그대로. 뺄 행은 다시 적재할 때 뺀다 (근영) |
 | 시설 가중치와 가로등·보안등 상한 — 정함 (2026-11-19·21) | 가중치는 `facility_types.weight` 값(실수)만 바꾼다. 구간당 상한은 테이블이 아니라 점수 쿼리에 있다 |
-| 제보 로그인 필요 여부, 사진 첨부 | `reports.user_id`·`photo_url`을 null 허용으로 둠 |
+| 제보 로그인 필요 여부, 사진 첨부 — 정함 (2026-11-23, PR #93) | 회원만 제보하지만 탈퇴하면 작성자만 지워 `reports.user_id`는 null 허용(ON DELETE SET NULL). 사진은 받지 않아 `photo_url`은 만들지 않았다 |
 
 ## Prisma·PostGIS 메모
 

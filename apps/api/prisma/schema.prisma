@@ -1,4 +1,4 @@
-// 등대 DB 스키마. docs/ERD.md의 Must 테이블 5개 + users(FR-011, 2026-11-12 카카오 로그인) + 즐겨찾기 2개(FR-012, 2026-11-22). reports는 13주차
+// 등대 DB 스키마. docs/ERD.md의 Must 테이블 5개 + users(FR-011, 2026-11-12 카카오 로그인) + 즐겨찾기 2개(FR-012, 2026-11-22) + reports(FR-009, 2026-11-23)
 // 테이블·컬럼은 snake_case, 모델·필드는 PascalCase·camelCase (@@map·@map)
 // DB 접속 주소는 이 파일이 아니라 prisma.config.ts에 있다 (Prisma 7)
 
@@ -106,6 +106,7 @@ model User {
 
   favoritePlaces FavoritePlace[]
   favoriteRoutes FavoriteRoute[]
+  reports        Report[]
 
   @@unique([provider, providerId])
   @@map("users")
@@ -136,4 +137,21 @@ model FavoriteRoute {
 
   @@unique([userId, routeKey])
   @@map("favorite_routes")
+}
+
+// 위험 제보 (FR-009, 2026-11-23 PR #93). 회원만 쓰고 사진은 받지 않는다.
+// 탈퇴하면 제보는 남기고 작성자만 비운다(SET NULL) — 제보가 구간 점수(FR-010)에 들어가서, 지우면 다른 사람이 보는 점수가 바뀐다.
+// 위치는 PostGIS geography라 $queryRaw로 쓴다. type·description CHECK는 마이그레이션 SQL에 직접 넣는다
+model Report {
+  id          Int                                   @id @default(autoincrement())
+  userId      Int?                                  @map("user_id")
+  location    Unsupported("geography(Point, 4326)")
+  type        String // dark, no_cctv, others (shared/types.ts ReportType. 우범지역은 2026-11-23에 뺐다)
+  description String? // 200자까지. 빈칸뿐이면 null
+  createdAt   DateTime                              @default(now()) @map("created_at") @db.Timestamptz
+  user        User?                                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([location], type: Gist)
+  @@index([createdAt])
+  @@map("reports")
 }

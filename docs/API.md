@@ -130,6 +130,11 @@ export type Report = {
   createdAt: string;
 };
 
+// 위험 제보 (6장, FR-009). 회원만 쓰고 사진은 받지 않는다 (2026-11-23 PR #93).
+// description은 200자까지이고, 빠지거나 null이거나 빈칸뿐이면 null로 저장한다
+export type CreateReportRequest = { location: LatLng; type: ReportType; description?: string | null };
+export type ReportResponse = { report: Report };
+
 export type SocialProvider = "kakao" | "naver" | "google";
 
 // 카카오는 이메일 동의항목을 받지 않아 email이 null이다 (PR #48, 2026-11-04 · 비즈 앱 전용이라 닉네임만, 2026-11-12)
@@ -403,21 +408,34 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 
 ## 6. 제보
 
-2026-11-23에 정했다 (승민 의견·상협 동의, PR #93 — ROADMAP "결정된 것" 제보). 서버는 아직 없다.
+회원이 위험한 곳을 제보한다 (FR-009, 2026-11-23). 받는 방식은 2026-11-23에 정했다 (승민 의견·상협 동의, PR #93 — ROADMAP "결정된 것" 제보).
 
-- 회원만 제보한다. 사진은 받지 않아 `photoUrl`은 두지 않는다
-- 설명(`description`)은 200자까지 (화면 S4와 같음, PR #92)
-- 탈퇴하면 제보는 남기고 작성자만 지운다 (`reports.user_id` ON DELETE SET NULL, 5장 `DELETE /auth/me`)
-- 점수 반영(FR-010, 3장): 구간 30m 안 최근 30일 제보가 3건 이상이면 그 구간 원점수에서 5를 한 번 빼고(0보다 작아지면 0), 같은 회원이 그 구간에 여러 번 올린 제보는 1건으로 센다 (2026-11-24 정함, PR #93). 서버 점수 반영은 아직 없다
+- 회원만 제보한다. 사진은 받지 않는다
+- 설명은 200자까지 (화면 S4와 같음, PR #92)
+- 탈퇴하면 제보는 남기고 작성자만 지운다 (`reports.user_id` ON DELETE SET NULL, 5장 `DELETE /auth/me`). 제보가 구간 점수에 들어가서, 지우면 다른 사람이 보는 점수가 바뀌기 때문이다
+- 점수 반영(FR-010, 3장)은 아직 서버에 없다. 구간 30m 안 최근 30일 제보가 3건 이상이면 그 구간 원점수에서 5를 한 번 빼고(0보다 작아지면 0), 같은 회원이 그 구간에 여러 번 올린 제보는 1건으로 센다 (2026-11-24 정함, PR #93)
+- 지도에 남의 제보를 보여 주는 조회(`GET /reports?bbox=`)는 초안에 있었지만 요구사항(FR-009·010)과 화면(S1~S4)에 없어 만들지 않았다 (2026-11-23 상협). 점수 반영은 서버가 DB에서 바로 센다
 
-### POST /api/reports  (인증 필요 — 회원만, 2026-11-23)
+### POST /api/reports  (인증 필요 — 회원만)
+요청 `CreateReportRequest`
 ```json
 { "location": { "lat": 36.361, "lng": 127.345 }, "type": "dark", "description": "가로등 고장" }
 ```
-→ 201 `{ "report": Report }`
+→ 201 `ReportResponse`
+```json
+{ "report": { "id": 12, "location": { "lat": 36.361, "lng": 127.345 }, "type": "dark", "description": "가로등 고장", "createdAt": "2026-11-23T21:30:00+09:00" } }
+```
+- `type`은 `dark`(조명 부족)·`no_cctv`(CCTV 없음)·`others`(기타). 우범지역(`suspicious`)은 기준이 애매하고 범죄다발구역 데이터가 없어 뺐다 (PR #92)
+- `description`은 선택이다. 앞뒤 빈칸을 지우고, 빠지거나 null이거나 빈칸뿐이면 null로 저장한다
+- 응답의 `location`은 보낸 좌표 그대로다. 위치는 PostGIS `geography`로 저장한다(점수 반영 때 구간 30m 안을 찾으려고). 즐겨찾기처럼 암호화하지 않는 것은 공간 조회에 써야 해서다
+- 서버 로그에는 제보 위치를 남기지 않는다 (회원과 이어진 위치라서)
 
-### GET /api/reports?bbox=...
-→ 200 `{ "reports": Report[] }` — 지도에 제보 마커 표시용
+| HTTP | code | 상황 |
+|---|---|---|
+| 400 | INVALID_INPUT | 본문 형식이 틀림(좌표가 숫자가 아님, 모르는 유형, 설명이 글자가 아님), 설명이 200자를 넘음("설명은 200자까지 쓸 수 있어요") |
+| 400 | OUT_OF_AREA | 좌표가 대전 사각형 밖 ("대전 안에서만 제보할 수 있어요. 지도를 눌러 대전 안을 골라 주세요") |
+| 401 | UNAUTHORIZED | 토큰 없음·만료, 탈퇴한 회원의 토큰 ("로그인이 만료됐어요. 다시 로그인해 주세요") |
+| 502 | EXTERNAL_API_ERROR | DB 실패, 서버 설정 문제(`DATABASE_URL` 없음) |
 
 ## 7. 개발 순서
 
@@ -427,6 +445,6 @@ FR-002 안전시설 아이콘 표시용. **CCTV·안심벨·지구대만** 돌�
 | 8~9주 | `POST /routes/search`에 safe 추가, `GET /facilities` (FR-002가 Must), `GET /daylight` (FR-005) |
 | 11주 | `/auth/kakao`, `/auth/me` (FR-011 Could — 서버 카카오 로그인만 앞당김, 2026-11-13) |
 | 12주 | `/auth/naver`, `/auth/google`, 네이버·구글 회원 탈퇴 (FR-011, 2026-11-17 — 11/20 발표 전) |
-| 13주 | `/favorites` (FR-012, 2026-11-22), `/reports` (Could) |
+| 13주 | `/favorites` (FR-012, 2026-11-22), `POST /reports` (FR-009, 2026-11-23 — 점수 반영 FR-010은 다음 PR) |
 
 8주차까지 프론트는 이 문서의 JSON 예시를 목(mock) 데이터로 써서 화면을 먼저 만들었다. 9주차에 실제 서버에 연결하고 목 데이터는 지웠다 (PR #32·#38).

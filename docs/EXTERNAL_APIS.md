@@ -52,7 +52,7 @@
 **네이버** (네이버 개발자센터, 상협 계정)
 - 앱 "등대", 사용 API [네이버 로그인], 제공 정보는 별명만 필수 (이름·이메일·휴대전화는 받지 않는다)
 - 서비스 환경 [PC웹]: 서비스 URL `https://deungdae-map.vercel.app`, Callback URL `http://localhost:5173/`와 `https://deungdae-map.vercel.app/` (끝 `/`까지 같아야 한다)
-- "개발 중" 상태에서는 개발자센터 계정과 [멤버관리] 테스터 ID에 등록한 아이디만 로그인된다. 다른 아이디는 네이버가 "개발 중" 화면을 띄우고 넘어가지 않는다 (검수가 거절됐을 때도 같은 화면). 누구나 쓰게 하려면 [네이버 로그인 검수상태]에서 검수를 요청한다. 네이버 검수 가이드(`developers.naver.com/docs/login/verify/verify.md`)가 요구하는 것: 서비스 주소에 들어갈 수 있을 것, 제공받는 정보(회원 ID 말고)를 서비스 어디에 쓰는지 보이는 화면 캡처, "네이버 로그인" 버튼부터 로그인·회원가입 완료까지 단계별 캡처(하나로 묶어 첨부), 따로 비밀번호를 받지 않을 것, 로고·앱 이름이 네이버로 보이지 않을 것. 결과는 2~3 영업일 안에 개발자센터 계정 메일로 온다. 등대는 2026-11-22에 요청했다 (ROADMAP "네이버 로그인 검수 결과")
+- "개발 중" 상태에서는 개발자센터 계정과 [멤버관리] 테스터 ID에 등록한 아이디만 로그인된다. 다른 아이디는 네이버가 "개발 중" 화면을 띄우고 넘어가지 않는다 (검수가 거절됐을 때도 같은 화면). 누구나 쓰게 하려면 [네이버 로그인 검수상태]에서 검수를 요청한다. 네이버 검수 가이드(`developers.naver.com/docs/login/verify/verify.md`)가 요구하는 것: 서비스 주소에 들어갈 수 있을 것, 제공받는 정보(회원 ID 말고)를 서비스 어디에 쓰는지 보이는 화면 캡처, "네이버 로그인" 버튼부터 로그인·회원가입 완료까지 단계별 캡처(하나로 묶어 첨부), 따로 비밀번호를 받지 않을 것, 로고·앱 이름이 네이버로 보이지 않을 것. 결과는 2~3 영업일 안에 개발자센터 계정 메일로 온다. 등대는 2026-11-22에 요청해 11/23에 승인됐다 (상협, 개발자센터 메일). 그 전에는 승민·근영 아이디를 테스터로 등록해 팀원 셋만 로그인됐다 (11/18)
 - 서버 `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`, 웹 `VITE_NAVER_CLIENT_ID`(Client ID와 같은 값). 웹 변수에 Client Secret을 넣지 않는다 — `VITE_` 값은 번들에 그대로 나간다
 - 호출: 토큰 `POST https://nid.naver.com/oauth2.0/token`(`grant_type=authorization_code`, `code`, 인가 요청과 같은 `state`), 사용자 정보 `GET https://openapi.naver.com/v1/nid/me`(`response.id`·`response.nickname`), 연결 끊기는 같은 토큰 주소에 `grant_type=delete`·`access_token`·`service_provider=NAVER`. 거부도 HTTP 200에 `error`로 온다(`invalid_request` 등)
 

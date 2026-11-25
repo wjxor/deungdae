@@ -62,7 +62,7 @@
 - 서버 `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET`, 웹 `VITE_GOOGLE_CLIENT_ID`(클라이언트 ID와 같은 값)
 - 호출: 토큰 `POST https://oauth2.googleapis.com/token`(코드 만료·재사용은 400 `invalid_grant`), 사용자 정보 `GET https://openidconnect.googleapis.com/v1/userinfo`(`sub`·`name`), 연결 끊기 `POST https://oauth2.googleapis.com/revoke`(`token=`)
 - 돌아올 때 `code`·`state` 말고도 `scope`·`authuser`·`prompt`·`hd`, 보낸 곳을 알리는 `iss`(RFC 9207)를 붙인다. 웹이 주소에서 모두 지운다
-- 앱 안 브라우저(카카오톡·인스타그램 등 웹뷰)에서는 구글이 OAuth를 막는다 — 403 `disallowed_useragent` 화면에서 멈추고 등대로 돌아오지 않는다. 웹은 카카오톡 안이면 `kakaotalk://web/openExternal?url=…`로 외부 브라우저에서 등대를 다시 열고, 그 밖의 앱 안 브라우저면 "사파리·크롬에서 열어 주세요"를 보여 준다. 카카오 로그인은 앱 안에서도 된다. 네이버는 앱 안에서 되는지 아직 확인하지 못했다
+- 앱 안 브라우저(카카오톡·인스타그램 등 웹뷰)에서는 구글이 OAuth를 막는다 — 403 `disallowed_useragent` 화면에서 멈추고 등대로 돌아오지 않는다. 웹은 카카오톡 안이면 `kakaotalk://web/openExternal?url=…`로 외부 브라우저에서 등대를 다시 열고, 그 밖의 앱 안 브라우저면 "사파리·크롬에서 열어 주세요"를 보여 준다. 카카오 로그인은 앱 안에서도 된다. 네이버는 카카오톡 안에서도 로그인되는 것을 2026-11-20 상협이 확인했다 (HISTORY 12주차)
 
 **공통**
 - 웹 PR 미리보기 주소는 리다이렉트 URI에 등록하지 않아 미리보기에서는 로그인이 안 된다 (카카오와 같음). 새 주소는 기존 값을 고쳐 쓰지 말고 추가한다

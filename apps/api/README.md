@@ -83,7 +83,7 @@ npx prisma migrate deploy
 - **`prisma migrate dev`·`prisma migrate reset`은 쓰지 않는다.** 스키마와 DB가 어긋나면 DB를 초기화하자고 묻는데, 공용 DB라 셋의 데이터가 다 지워진다
 - 적용한 `migration.sql`은 고치지 않는다. Prisma가 적용한 파일을 기록해 두어서, 바꾸려면 새 마이그레이션을 만든다
 - 첫 마이그레이션(`20261021225702_init`)에는 Prisma 스키마로 못 쓰는 것을 SQL로 직접 넣었다: PostGIS 확장, `facilities.district` CHECK(대전 5개 구), 테이블 5개 RLS(정책 없음 — Data API 역할로는 행이 안 보이고, 테이블 주인인 `postgres`로 붙는 서버·적재는 영향 없음), `facility_types` 5행
-- 안전점수 가중치는 마이그레이션이 아니라 `UPDATE facility_types SET weight = … WHERE code = …`로 바꾼다 (ERD `facility_types`)
+- 안전점수 가중치는 값만 바꾸는 새 마이그레이션(`UPDATE facility_types SET weight = … WHERE code = …`)으로 넣는다 — 2026-11-22 `20261122010000_facility_weight_survey`처럼. 공용 DB에 넣는 순간 배포 주소 점수가 바뀌어서, merge하고 배포가 끝난 뒤 `migrate deploy`한다 (ERD `facility_types`, PR #87)
 
 ## 시설 데이터 적재할 때
 

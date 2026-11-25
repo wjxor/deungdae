@@ -1,6 +1,6 @@
 # 등대 웹 (`apps/web`)
 
-React 19 + TypeScript + Vite + 카카오맵 JavaScript SDK. 모바일 웹앱(PWA 예정)이다. 서버는 [`apps/api`](../api/README.md), API 명세는 [`docs/API.md`](../../docs/API.md), 화면은 [`docs/REQUIREMENTS.md`](../../docs/REQUIREMENTS.md) "화면".
+React 19 + TypeScript + Vite + 카카오맵 JavaScript SDK. 모바일 웹앱(PWA)이다. 서버는 [`apps/api`](../api/README.md), API 명세는 [`docs/API.md`](../../docs/API.md), 화면은 [`docs/REQUIREMENTS.md`](../../docs/REQUIREMENTS.md) "화면".
 
 ## 실행
 
@@ -43,12 +43,16 @@ apps/web/src/
 ├── screens/             # S1~S3 화면
 │   ├── MapHome.tsx      # S1 지도 홈 (도착지 검색, 시설 아이콘)
 │   ├── OriginPick.tsx   # S2 출발지 입력
-│   ├── RouteCompare.tsx # S3 경로 비교 (최단·안심경로, 구간 색상)
+│   ├── RouteCompare.tsx # S3 경로 비교 (최단·안심경로, 구간 색상), [안내 시작] 뒤 이동 중 화면
+│   ├── ReportScreen.tsx # S4 위험 제보 (서버 POST /reports 연결은 남음)
 │   └── Login.tsx        # 로그인
-├── components/          # 지도·경로 레이어, 시트(RouteSheet·MyInfo·FavoritesSheet), 검색, 낮/밤 토글 등
+├── components/          # 지도·경로 레이어, 시트(RouteSheet·MyInfo·FavoritesSheet·SosSheet), 이동 중 패널(NavPanel), 설치 안내(InstallHint), 검색, 낮/밤 토글 등
 ├── hooks/
 │   ├── useDaylightMode.ts  # 서버 /daylight의 일출·일몰을 기기 시각과 비교해 낮/밤 판별(켜 둔 채 일몰이 지나도 바뀜), 사용자가 누르면 그 값이 우선하고 자동 값이 바뀌면 다시 자동
 │   ├── useGeolocation.ts   # 현재 위치와 권한 상태
+│   ├── useWatchPosition.ts, useRouteProgress.ts, useHeading.ts  # 이동 중 화면: 위치 따라가기, 경로 위 진행·이탈·도착, 진행 방향
+│   ├── useSimulatedWalk.ts # 개발 서버 `?walk` 가짜 걸음 (PC에서 이동 중 화면 확인)
+│   ├── usePwaInstall.ts    # 안드로이드 크롬 설치 이벤트
 │   └── useSheet.ts         # 바닥 시트(ESC·포커스·뒤로가기)
 └── lib/
     ├── api.ts, apiError.ts # 서버 호출, 에러 응답({ error: { code, message } })
@@ -66,7 +70,7 @@ apps/web/src/
 
 - **로그인**: 카카오·네이버·구글 로그인은 서버(`/api/auth/*`, API.md 5장)가 처리한다. [카카오로 시작하기]는 `lib/kakaoSdk.ts`가 카카오 JS SDK(JS 키)로, 네이버·구글은 `lib/socialLogin.ts`가 SDK 없이 인가 주소로 동의 화면에 보낸다. 셋 다 루트(`/`)로 돌아오면 `lib/auth.ts`가 인가 코드를 서버에 넘겨 받은 로그인 토큰을 localStorage(`deungdae.auth`)에 둔다. 세 서비스에 등록한 리다이렉트 URI가 `http://localhost:5173/`과 배포 주소라 로컬은 5173 포트에서만, PR 미리보기 주소에서는 안 된다. 네이버·구글 회원 탈퇴는 그 서비스 로그인을 한 번 더 거친다
 - **즐겨찾기**: 회원 계정에 묶여 서버에 저장된다 (API.md 5-1장, 2026-11-22). 로그인하거나 앱을 다시 열면 불러오고, ☆를 누르면 화면을 먼저 바꾼 뒤 저장해서 실패하면 되돌리고 안내를 4초 보여 준다. 401(로그인 만료·탈퇴)이면 로그아웃시키고 지도 홈에서 다시 로그인하라고 안내한다(탈퇴 흐름과 같게). 경로는 출발지·도착지만 저장해 고르면 다시 검색한다
-- **PWA**: manifest·임시 앱 아이콘(PR #64)과 서비스 워커(PR #75)가 있다. 서비스 워커는 앱 파일(JS·CSS·아이콘)만 미리 저장하고 지도·API 요청은 가로채지 않는다. 화면 주소(index.html)는 열 때마다 서버에서 먼저 받아 배포 직후 처음 열어도 새 버전이 뜨고, 오프라인이면 마지막으로 받은 화면을 쓴다 (PR #83). 쓰는 중인 화면은 새 버전이 와도 바꾸지 않고, 개발 서버(`npm run dev`)에서는 등록하지 않는다. 아이콘 확정은 ROADMAP "PWA 설치 설정"
+- **PWA**: manifest·앱 아이콘(PR #64, 2026-11-24 J2b로 바꿈 PR #97)과 서비스 워커(PR #75)가 있다. 서비스 워커는 앱 파일(JS·CSS·아이콘)만 미리 저장하고 지도·API 요청은 가로채지 않는다. 화면 주소(index.html)는 열 때마다 서버에서 먼저 받아 배포 직후 처음 열어도 새 버전이 뜨고, 오프라인이면 마지막으로 받은 화면을 쓴다 (PR #83). 쓰는 중인 화면은 새 버전이 와도 바꾸지 않고, 개발 서버(`npm run dev`)에서는 등록하지 않는다. 폰에서 설치해 보는 것은 ROADMAP "배포 주소에서 실기기 확인"
 
 ## 메모
 

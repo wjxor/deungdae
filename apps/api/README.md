@@ -131,8 +131,8 @@ apps/api/
     ├── facilities/         # GET /api/facilities (지도 범위 안의 CCTV·안심벨·지구대, 종류·좌표가 같으면 하나로 묶음)
     ├── auth/               # POST /api/auth/kakao·naver·google, GET·DELETE /api/auth/me (users, 로그인 토큰 JWT_SECRET)
     ├── favorites/          # GET·POST·DELETE /api/favorites (favorite_places·favorite_routes, 장소 정보 AES-256-GCM 암호화 FAVORITES_KEY)
-    ├── reports/            # POST /api/reports (위험 제보, 회원만. 점수 반영 FR-010은 정한 뒤)
-    └── routes/             # POST /api/routes/search (약 50m 구간, 안전점수, 안심경로 고르기 — 값은 safety.ts)
+    ├── reports/            # POST /api/reports (위험 제보, 회원만. 점수 반영 FR-010은 routes/의 감점 쿼리)
+    └── routes/             # POST /api/routes/search (약 50m 구간, 안전점수·제보 감점, 안심경로 고르기 — 값은 safety.ts, A 보강 경유지는 waypoints.ts)
 test/
 ├── *.e2e-spec.ts           # DB·카카오·천문연을 가짜로 바꾼 e2e
 └── fixtures/               # 테스트용 카카오·천문연 응답 (실제 응답 일부)

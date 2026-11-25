@@ -2,9 +2,10 @@
 
 기본은 점검만 한다(DB에 아무것도 쓰지 않음). 실제 적재는 --commit 을 붙여야 한다.
 
-  python data/load_facilities.py            # 점검만 (DB 연결도 안 함)
-  python data/load_facilities.py --check-db # DB 연결해서 현재 상태만 읽어 봄
-  python data/load_facilities.py --commit   # 실제 적재 (상협과 합의 후)
+  python data/load_facilities.py                    # 점검만 (DB 연결도 안 함)
+  python data/load_facilities.py --check-db         # DB 연결해서 현재 상태만 읽어 봄
+  python data/load_facilities.py --commit           # 빈 DB에 적재
+  python data/load_facilities.py --commit --replace # 기존 facilities를 지우고 다시 적재 (data_sources는 이력으로 남김)
 
 DB 주소는 프로젝트 루트 .env 의 DIRECT_URL (없으면 DATABASE_URL) 을 쓴다.
 주소와 비밀번호는 화면에 출력하지 않는다.
@@ -34,6 +35,12 @@ SOURCES = {
     "police": (31, "경찰청 전국 지구대·파출소 주소", "https://www.data.go.kr/data/15077036/fileData.do"),
 }
 BASE_DATE = "2026-09-30"
+# 다시 적재할 때 새 data_sources 행의 note에 적는, 정제 때 뺀 기준 (2026-11-23 정제 기준, PR #93)
+NOTES = {
+    "security_light": "주소와 300m 넘게 어긋난 282행 제외 (2026-11-23 정제 기준, PR #93)",
+    "cctv": "완전 중복 1행, 주소와 300m 넘게 어긋난 124행 제외 (같은 기준)",
+    "emergency_bell": "점검 불량(N) 3건 제외 (같은 기준)",
+}
 ATTR_KEYS = {
     "emergency_bell": {"place_type", "last_check", "installed_year", "police_link"},
     "cctv": {"cctv_type", "manager"},
@@ -101,19 +108,28 @@ def check_db():
     print(f"DB 연결 OK. facilities {n}건, data_sources {m}건, PostGIS {p}")
 
 
-def commit(data):
+def commit(data, replace=False):
     with connect() as conn:  # with 블록이 정상 종료되면 commit, 에러면 rollback (전부 취소)
-        if conn.execute("SELECT count(*) FROM facilities").fetchone()[0] != 0:
-            sys.exit("facilities 에 이미 데이터가 있음. 중복 적재 방지를 위해 멈춤")
-        if conn.execute("SELECT count(*) FROM data_sources").fetchone()[0] != 0:
-            sys.exit("data_sources 에 이미 데이터가 있음. 멈춤")
         cur = conn.cursor()
+        fac_cnt = cur.execute("SELECT count(*) FROM facilities").fetchone()[0]
+        src_cnt = cur.execute("SELECT count(*) FROM data_sources").fetchone()[0]
+
+        if replace:
+            # facilities 만 지운다. data_sources 는 이력으로 남기고, 아래에서 새 행을 만든다
+            print(f"기존 facilities {fac_cnt:,}건 삭제 중... (data_sources {src_cnt:,}건은 이력으로 남김)")
+            cur.execute("DELETE FROM facilities")
+        else:
+            if fac_cnt != 0:
+                sys.exit("facilities 에 이미 데이터가 있음. 기존 데이터를 지우고 다시 넣으려면 --replace 옵션을 붙이세요")
+            if src_cnt != 0:
+                sys.exit("data_sources 에 이미 데이터가 있음. 기존 데이터를 지우고 다시 넣으려면 --replace 옵션을 붙이세요")
+
         for t, df in data.items():
             raw, title, url = SOURCES[t]
             ds_id = cur.execute(
-                "INSERT INTO data_sources (facility_type, title, source_url, base_date, raw_count, loaded_count)"
-                " VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-                (t, title, url, BASE_DATE, raw, len(df)),
+                "INSERT INTO data_sources (facility_type, title, source_url, base_date, raw_count, loaded_count, note)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (t, title, url, BASE_DATE, raw, len(df), NOTES.get(t)),
             ).fetchone()[0]
             cur.execute(
                 "CREATE TEMP TABLE stg (source_key text, name text, address text, district text,"
@@ -139,6 +155,7 @@ def commit(data):
             if got != len(df):
                 raise RuntimeError(f"{t}: 넣은 건수 {got} != CSV {len(df)}  (전부 취소됨)")
             print(f"적재: {t} {got:,}건")
+
         # 좌표 방향 확인: 모든 점이 대전 범위 안이어야 함 (lat/lng 뒤집히면 여기서 걸림)
         bad = cur.execute(
             "SELECT count(*) FROM facilities WHERE NOT (ST_Y(location::geometry) BETWEEN %s AND %s"
@@ -153,11 +170,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--check-db", action="store_true")
     ap.add_argument("--commit", action="store_true")
+    ap.add_argument("--replace", action="store_true", help="기존 facilities를 삭제하고 재적재 (data_sources는 이력으로 남김)")
     a = ap.parse_args()
     data = load_and_validate()
     if a.check_db:
         check_db()
     elif a.commit:
-        commit(data)
+        commit(data, replace=a.replace)
     else:
         print("점검만 했습니다. DB에는 아무것도 쓰지 않았습니다.")

@@ -82,9 +82,9 @@ python data/clean_facilities.py
 | 종류 | 입력 | 저장 | 제외 | 좌표를 고친 행 |
 |---|---:|---:|---:|---|
 | 가로등 | 43,082 | 43,082 | 0 | 0 |
-| 보안등 | 28,579 | 28,579 | 0 | 0 |
-| CCTV | 2,985 | 2,984 | 1 (완전 중복) | 95 (`coord_source=corrected`) |
-| 안심벨 | 575 | 575 | 0 | 1 (직접 설정) + 변환 29 |
+| 보안등 | 28,579 | 28,297 | 282 (주소 불일치) | 0 |
+| CCTV | 2,985 | 2,860 | 125 (완전 중복 1 + 주소 불일치 124) | 95 (`coord_source=corrected`) |
+| 안심벨 | 575 | 572 | 3 (점검 불량 `'N'`) | 1 (직접 설정) + 변환 29 |
 | 지구대·파출소 | 31 | 31 | 0 | 0 (31곳 모두 주소를 변환한 좌표, `geocoded`) |
 
 좌표가 없거나 대전 범위 밖(위도 36.18~36.51, 경도 127.24~127.57, `validation/common.py`의 `DAEJEON_BBOX`와 같음)인 행은 5종 모두 걸러서 제외 건수를 출력한다. 위 표에서 대전 밖으로 빠진 행은 0건이다. 안심벨·CCTV의 대전 밖 좌표는 아래처럼 먼저 고쳤기 때문이다.
@@ -148,11 +148,14 @@ python data/load_facilities.py --check-db
 
 # 3. 적재 - 팀과 합의한 뒤 한 번만
 python data/load_facilities.py --commit
+
+# 4. 다시 적재 - 정제 기준이 바뀐 뒤 (기존 facilities를 지우고 새로 넣는다)
+python data/load_facilities.py --commit --replace
 ```
 
 - DB 주소는 루트 `.env`의 `DIRECT_URL`(없으면 `DATABASE_URL`)을 읽는다. 주소와 비밀번호는 화면에 출력하지 않는다
 - 종류별로 `data_sources` 행을 만들고(원본 건수, 적재 건수, 출처 주소, 수집일 2026-09-30) 그 `id`를 `facilities.data_source_id`에 넣는다. 위치는 `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography`로 경도가 먼저다
-- 한 번에 처리해서 하나라도 틀리면 전부 취소한다. `facilities`나 `data_sources`에 이미 데이터가 있으면 중복 적재를 막으려고 멈춘다. 정제 기준이 바뀌어 다시 적재하려면 스크립트를 고쳐야 한다(별도 PR). 안전점수는 요청마다 DB로 다시 세서 `route_cache`(카카오 경로만 저장)는 비우지 않아도 된다
+- 한 번에 처리해서 하나라도 틀리면 전부 취소한다. `facilities`나 `data_sources`에 이미 데이터가 있으면 `--commit`만 붙였을 때는 중복 적재를 막으려고 멈춘다. 정제 기준이 바뀌어 다시 적재할 때는 `--commit --replace`를 쓴다. 기존 `facilities`만 지우고 `data_sources`는 이력으로 남기며, 새로 만드는 행의 `note`에 정제 때 뺀 기준을 적는다. 안전점수는 요청마다 DB로 다시 세서 `route_cache`(카카오 경로만 저장)는 비우지 않아도 된다
 - 적재가 끝나면 모든 점이 대전 범위 안에 있는지 확인한다
 
 적재 결과 (2026-10-26, 정제 CSV와 DB의 행이 같은 것을 상협이 확인):

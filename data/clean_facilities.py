@@ -190,7 +190,8 @@ def filter_cctv_mismatch(rows, mismatch_df=None):
     m = mismatch_df if mismatch_df is not None else load_mismatch()
     cctv_mismatch_ids = set(m[m["dataset"] == "CCTV"]["id"])
     corrected_ids = {r["source_key"] for r in rows if r["coord_source"] == "corrected"}
-    drop_ids = cctv_mismatch_ids - corrected_ids
+    # 검증 목록 비고가 "서쪽 밀림"이어도 지도에서 확인해 원본이 맞다고 본 행(LNG_SHIFT_EXCLUDE)은 안심벨 10행처럼 남긴다
+    drop_ids = cctv_mismatch_ids - corrected_ids - LNG_SHIFT_EXCLUDE
 
     kept, dropped = [], 0
     for r in rows:
@@ -198,7 +199,7 @@ def filter_cctv_mismatch(rows, mismatch_df=None):
             dropped += 1
         else:
             kept.append(r)
-    print(f"  CCTV 주소 불일치 제외: {dropped:,}건 (목록 {len(cctv_mismatch_ids):,}건 중 보정 {len(cctv_mismatch_ids & corrected_ids):,}건 제외)")
+    print(f"  CCTV 주소 불일치 제외: {dropped:,}건 (목록 {len(cctv_mismatch_ids):,}건 중 보정 {len(cctv_mismatch_ids & corrected_ids):,}건, 원본 유지 {len(cctv_mismatch_ids & LNG_SHIFT_EXCLUDE):,}건 제외)")
     return kept
 
 
